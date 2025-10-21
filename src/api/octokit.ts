@@ -20,13 +20,47 @@ function getGitHubToken(): string {
 /**
  * Octokit REST API クライアントのインスタンスを作成
  */
+function getRestEndpoint(): string {
+  return import.meta.env.VITE_GITHUB_API_ENDPOINT || "https://api.github.com";
+}
+
+function getGraphQLEndpoint(): string {
+  const graphQLEnv = import.meta.env.VITE_GITHUB_GRAPHQL_ENDPOINT;
+  if (graphQLEnv) {
+    return graphQLEnv;
+  }
+
+  const restEndpoint = getRestEndpoint();
+
+  try {
+    const url = new URL(restEndpoint);
+    let pathname = url.pathname.replace(/\/+$/, "");
+
+    if (pathname.endsWith("/v3")) {
+      pathname = pathname.replace(/\/v3$/, "/graphql");
+    } else if (pathname === "" || pathname === "/") {
+      pathname = "/graphql";
+    } else {
+      pathname = `${pathname}/graphql`;
+    }
+
+    url.pathname = pathname;
+    url.search = "";
+    url.hash = "";
+
+    return url.toString();
+  } catch (error) {
+    return `${restEndpoint.replace(/\/+$/, "")}/graphql`;
+  }
+}
+
 export function createOctokit(): Octokit {
   const token = getGitHubToken();
 
   return new Octokit({
     auth: token,
     userAgent: "GitHub-Dashboard-MVP/0.1.0",
-    baseUrl: import.meta.env.VITE_GITHUB_API_ENDPOINT || "https://api.github.com",
+    baseUrl: getRestEndpoint(),
   });
 }
 
@@ -40,7 +74,7 @@ export function createGraphQLClient() {
     headers: {
       authorization: `token ${token}`,
     },
-    baseUrl: import.meta.env.VITE_GITHUB_API_ENDPOINT || "https://api.github.com",
+    baseUrl: getGraphQLEndpoint(),
   });
 }
 
