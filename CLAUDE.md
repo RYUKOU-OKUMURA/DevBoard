@@ -98,3 +98,18 @@ Thresholds (60/180 days) should be configurable with these as defaults.
 - Bulk operations
 - CI status or Issue/PR information
 - Advanced management features
+
+## Task Management
+
+When completing tasks during implementation:
+
+1. **Update execution_plan.md**: Mark completed tasks with `[x]` in the appropriate phase section
+2. **Add phase completion marker**: When all tasks in a phase are done, add "✅ 完了" to the phase header
+3. **Example format**:
+   ```markdown
+   ### フェーズ 0: 環境準備 (0.5h) ✅ 完了
+   - [x] (単純) Node.js / npm のバージョン確認とログ取得。
+   - [x] (単純) プロジェクト雛形の初期化（Tauri or Next.js）とリポジトリ設定。
+   ```
+
+This helps track progress and provides visibility into what has been completed.

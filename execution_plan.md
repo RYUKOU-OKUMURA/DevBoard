@@ -11,11 +11,11 @@
 
 ## 3. フェーズ別タスク
 
-### フェーズ 0: 環境準備 (0.5h)
-- [ ] (単純) Node.js / pnpm/npm のバージョン確認とログ取得。
-- [ ] (単純) プロジェクト雛形の初期化（Tauri or Next.js）とリポジトリ設定。
-- [ ] (単純) Octokit と UI ライブラリ（React / Tailwind 等）の依存関係を追加。
-- [ ] (単純) GitHub API トークン取得手順を README か内部ドキュメントに記載。
+### フェーズ 0: 環境準備 (0.5h) ✅ 完了
+- [x] (単純) Node.js / pnpm/npm のバージョン確認とログ取得。
+- [x] (単純) プロジェクト雛形の初期化（Tauri or Next.js）とリポジトリ設定。
+- [x] (単純) Octokit と UI ライブラリ（React / Tailwind 等）の依存関係を追加。
+- [x] (単純) GitHub API トークン取得手順を README か内部ドキュメントに記載。
 
 ### フェーズ 1: 認証・API 基盤 (2h)
 - [ ] (複雑) GitHub OAuth Device Flow または GitHub App を登録し、環境変数を設定。

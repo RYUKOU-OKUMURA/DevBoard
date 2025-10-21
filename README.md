@@ -22,7 +22,7 @@ GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更�
 ## 開発環境の準備
 1. **Node.js / パッケージマネージャー**
    - Node.js 18+ を推奨。
-   - `pnpm` または `npm`/`yarn` をインストール。
+   - `npm` をインストール（Node.js に付属）。
 2. **リポジトリの取得**
    ```bash
    git clone <this-repo-url>
@@ -30,21 +30,78 @@ GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更�
    ```
 3. **依存関係のインストール**
    ```bash
-   pnpm install      # npm / yarn でも可
+   npm install
    ```
 4. **GitHub 認証の準備**
-   - OAuth Device Flow または GitHub App を登録。
-   - `GITHUB_CLIENT_ID` など必要な環境変数を `.env`（もしくは Tauri の `tauri.conf.json`）に設定。
-   - 開発初期は Personal Access Token とモックデータで代替しても良い。
+   - Personal Access Token を取得（開発初期はこちら推奨）
+   - [GitHub Settings - Personal access tokens](https://github.com/settings/tokens) にアクセス
+   - スコープ: `repo`, `read:org` を選択
+   - `.env.local` を作成し、トークンを設定
+     ```
+     VITE_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+     ```
 
-## プロジェクト構成（暫定）
-`````text
+## 開発コマンド
+
+```bash
+# ローカル開発サーバーを起動（Tauri ウィンドウが開きます）
+npm run dev
+
+# 本番ビルド
+npm run build
+
+# テスト実行
+npm test
+
+# 単一テストを実行
+npm test -- src/utils/classifyRepo.test.ts
+
+# テスト UI を表示
+npm run test:ui
+
+# Linting チェック
+npm run lint
+
+# Linting エラーを自動修正
+npm run lint:fix
+```
+
+## プロジェクト構成
+```text
 GitHub_Dashboard/
 ├─ README.md                 # 本ドキュメント
+├─ CLAUDE.md                 # Claude Code ガイダンス
 ├─ requirements.md           # MVP 要件定義
 ├─ execution_plan.md         # 実装タスクとチェックリスト
-└─ src/                      # 実装用ディレクトリ（未作成）
-`````
+├─ package.json              # npm パッケージ設定
+├─ package-lock.json         # npm 依存関係ロック
+├─ tsconfig.json             # TypeScript 設定
+├─ vite.config.ts            # Vite ビルド設定
+├─ tailwind.config.js        # Tailwind CSS 設定
+├─ tauri.conf.json           # Tauri アプリ設定
+├─ .env.example              # 環境変数テンプレート
+├─ .gitignore                # Git 除外ファイル
+├─ .eslintrc.cjs             # ESLint 設定
+└─ src/
+   ├─ main.tsx               # React エントリーポイント
+   ├─ App.tsx                # ルートコンポーネント
+   ├─ App.css                # グローバルスタイル
+   ├─ components/            # React コンポーネント
+   │  ├─ RepoBoard.tsx       # メインボード
+   │  ├─ TopBar.tsx          # トップバー
+   │  ├─ Column.tsx          # 列
+   │  └─ RepoCard.tsx        # リポジトリカード
+   ├─ utils/                 # ユーティリティ関数
+   │  ├─ classifyRepo.ts     # 分類ロジック
+   │  ├─ timeAgo.ts          # 相対時間表示
+   │  ├─ search.ts           # 検索フィルタリング
+   │  └─ storage.ts          # ローカルストレージ
+   ├─ api/                   # API 通信
+   │  ├─ octokit.ts          # Octokit 初期化
+   │  └─ repos.ts            # リポジトリ取得
+   └─ types/
+      └─ index.ts            # TypeScript 型定義
+```
 
 ## 実装手順のガイド
 1. 環境準備（フェーズ 0）
