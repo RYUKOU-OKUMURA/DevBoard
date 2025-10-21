@@ -17,11 +17,11 @@
 - [x] (単純) Octokit と UI ライブラリ（React / Tailwind 等）の依存関係を追加。
 - [x] (単純) GitHub API トークン取得手順を README か内部ドキュメントに記載。
 
-### フェーズ 1: 認証・API 基盤 (2h)
-- [ ] (複雑) GitHub OAuth Device Flow または GitHub App を登録し、環境変数を設定。
-- [ ] (複雑) Octokit インスタンス生成ユーティリティを実装して接続テストを実施。
-- [ ] (複雑) GraphQL クエリを作成し、必要フィールド（`id`、`nameWithOwner`、`htmlUrl`、`pushedAt`、`isArchived`、`isPrivate`、`description`、`primaryLanguage`、`topics`）を取得。
-- [ ] (複雑) API レスポンスの型ガード／バリデータを追加し、異常系ログを整備。
+### フェーズ 1: 認証・API 基盤 (2h) ✅ 完了
+- [x] (複雑) GitHub OAuth Device Flow または GitHub App を登録し、環境変数を設定。
+- [x] (複雑) Octokit インスタンス生成ユーティリティを実装して接続テストを実施。
+- [x] (複雑) GraphQL クエリを作成し、必要フィールド（`id`、`nameWithOwner`、`htmlUrl`、`pushedAt`、`isArchived`、`isPrivate`、`description`、`primaryLanguage`、`topics`）を取得。
+- [x] (複雑) API レスポンスの型ガード／バリデータを追加し、異常系ログを整備。
 
 ### フェーズ 2: データ管理と分類ロジック (1.5h)
 - [ ] (単純) TypeScript 型 (`Repo`, `ColumnKey`) を定義し共有モジュール化。
