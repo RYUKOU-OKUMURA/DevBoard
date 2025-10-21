@@ -134,6 +134,11 @@ export async function fetchAllRepositories(): Promise<Repo[]> {
 }
 
 /**
+ * ユーザーのリポジトリを取得（エイリアス）
+ */
+export const fetchUserRepos = fetchAllRepositories;
+
+/**
  * モックデータを生成（開発・テスト用）
  */
 export function generateMockRepositories(): Repo[] {
