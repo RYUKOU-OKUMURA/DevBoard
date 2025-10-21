@@ -92,7 +92,7 @@ function transformRepository(repo: GraphQLRepository): Repo {
 /**
  * すべてのリポジトリを取得（ページネーション対応）
  */
-export async function fetchAllRepositories(): Promise<Repo[]> {
+export async function fetchAllRepositories(retryAttempt = false): Promise<Repo[]> {
   const graphqlClient = createGraphQLClient();
   const repositories: Repo[] = [];
   let hasNextPage = true;
@@ -114,6 +114,10 @@ export async function fetchAllRepositories(): Promise<Repo[]> {
 
       // 変換後のデータをバリデーション
       const validRepos = validateRepos(repos);
+
+      if (validRepos.length === 0) {
+        console.warn("Validated repository batch returned no entries.");
+      }
       repositories.push(...validRepos);
 
       hasNextPage = response.viewer.repositories.pageInfo.hasNextPage;
@@ -122,6 +126,15 @@ export async function fetchAllRepositories(): Promise<Repo[]> {
       console.log(
         `Fetched ${repos.length} repositories (${validRepos.length} valid, total: ${repositories.length})`
       );
+    }
+
+    if (repositories.length === 0) {
+      console.warn("Repository fetch completed but returned no data.");
+      if (!retryAttempt) {
+        console.info("Retrying repository fetch once due to empty result...");
+        return fetchAllRepositories(true);
+      }
+      console.warn("Retry attempt also returned an empty repository list.");
     }
 
     console.log(`Successfully fetched ${repositories.length} repositories`);
