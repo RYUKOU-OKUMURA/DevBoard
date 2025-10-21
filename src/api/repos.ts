@@ -16,13 +16,15 @@ interface GraphQLRepository {
   primaryLanguage: {
     name: string;
   } | null;
-  repositoryTopics: {
-    nodes: Array<{
-      topic: {
-        name: string;
-      };
-    }>;
-  };
+  repositoryTopics?: {
+    nodes?:
+      | Array<{
+          topic: {
+            name: string;
+          };
+        }>
+      | null;
+  } | null;
 }
 
 interface GraphQLResponse {
@@ -75,7 +77,7 @@ const REPOSITORIES_QUERY = `
 /**
  * GraphQL レスポンスを Repo 型に変換
  */
-function transformRepository(repo: GraphQLRepository): Repo {
+export function transformRepository(repo: GraphQLRepository): Repo {
   return {
     id: repo.id,
     nameWithOwner: repo.nameWithOwner,
@@ -85,7 +87,7 @@ function transformRepository(repo: GraphQLRepository): Repo {
     isPrivate: repo.isPrivate,
     description: repo.description || undefined,
     primaryLanguage: repo.primaryLanguage?.name || undefined,
-    topics: repo.repositoryTopics.nodes.map((node) => node.topic.name),
+    topics: (repo.repositoryTopics?.nodes ?? []).map((node) => node.topic.name),
   };
 }
 
