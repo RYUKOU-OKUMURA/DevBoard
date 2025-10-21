@@ -1,30 +1,12 @@
 import { createGraphQLClient } from "./octokit";
 import type { Repo } from "../types";
 import { validateRepos, getErrorMessage } from "../utils/validators";
+import { transformRepositories, type GraphQLRepository } from "../lib/transformRepository";
+import { sortRepositories } from "../lib/repoSearch";
 
 /**
  * GitHub GraphQL API レスポンスの型定義
  */
-interface GraphQLRepository {
-  id: string;
-  nameWithOwner: string;
-  url: string;
-  pushedAt: string;
-  isArchived: boolean;
-  isPrivate: boolean;
-  description: string | null;
-  primaryLanguage: {
-    name: string;
-  } | null;
-  repositoryTopics: {
-    nodes: Array<{
-      topic: {
-        name: string;
-      };
-    }>;
-  };
-}
-
 interface GraphQLResponse {
   viewer: {
     repositories: {
@@ -73,23 +55,6 @@ const REPOSITORIES_QUERY = `
 `;
 
 /**
- * GraphQL レスポンスを Repo 型に変換
- */
-function transformRepository(repo: GraphQLRepository): Repo {
-  return {
-    id: repo.id,
-    nameWithOwner: repo.nameWithOwner,
-    htmlUrl: repo.url,
-    pushedAt: repo.pushedAt,
-    isArchived: repo.isArchived,
-    isPrivate: repo.isPrivate,
-    description: repo.description || undefined,
-    primaryLanguage: repo.primaryLanguage?.name || undefined,
-    topics: repo.repositoryTopics.nodes.map((node) => node.topic.name),
-  };
-}
-
-/**
  * すべてのリポジトリを取得（ページネーション対応）
  */
 export async function fetchAllRepositories(): Promise<Repo[]> {
@@ -110,7 +75,7 @@ export async function fetchAllRepositories(): Promise<Repo[]> {
         throw new Error("Invalid API response: missing repositories data");
       }
 
-      const repos = response.viewer.repositories.nodes.map(transformRepository);
+      const repos = transformRepositories(response.viewer.repositories.nodes);
 
       // 変換後のデータをバリデーション
       const validRepos = validateRepos(repos);
@@ -125,7 +90,7 @@ export async function fetchAllRepositories(): Promise<Repo[]> {
     }
 
     console.log(`Successfully fetched ${repositories.length} repositories`);
-    return repositories;
+    return sortRepositories(repositories, "lastUpdated");
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     console.error("Failed to fetch repositories:", errorMessage);
@@ -141,7 +106,7 @@ export function generateMockRepositories(): Repo[] {
   const daysAgo = (days: number) =>
     new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
 
-  return [
+  const repos: Repo[] = [
     {
       id: "1",
       nameWithOwner: "user/active-project",
@@ -198,4 +163,6 @@ export function generateMockRepositories(): Repo[] {
       topics: ["rust", "cli", "tools"],
     },
   ];
+
+  return sortRepositories(repos, "lastUpdated");
 }
