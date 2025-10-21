@@ -8,7 +8,7 @@ GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更�
 - テキスト検索（name / topic / description / primaryLanguage に対応）
 - 最終更新日または名前での並び替え
 - 最大 5 件まで保存できるカスタムビュー（検索語・並び順）
-- GitHub Octokit を利用したデータ取得（GraphQL 想定）
+- バックエンド経由の GitHub API プロキシ（GraphQL 想定）
 
 詳細要件は `requirements.md`、実行計画は `execution_plan.md` を参照してください。
 
@@ -33,12 +33,12 @@ GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更�
    npm install
    ```
 4. **GitHub 認証の準備**
-   - Personal Access Token を取得（開発初期はこちら推奨）
-   - [GitHub Settings - Personal access tokens](https://github.com/settings/tokens) にアクセス
-   - スコープ: `repo`, `read:org` を選択
-   - `.env.local` を作成し、トークンを設定
+   - Personal Access Token をバックエンドやセキュアストレージに保管
+   - バックエンドで GitHub API を代理実行するエンドポイントを用意
+   - フロントエンドからはプロキシのベース URL を参照
+   - `.env.local` を作成し、プロキシの URL を設定
      ```
-     VITE_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+     VITE_API_PROXY_BASE_URL=http://localhost:3000/api
      ```
 
 ## 開発コマンド

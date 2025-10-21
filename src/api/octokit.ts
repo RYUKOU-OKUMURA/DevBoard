@@ -1,65 +1,102 @@
-import { Octokit } from "@octokit/rest";
-import { graphql } from "@octokit/graphql";
+const DEFAULT_PROXY_BASE_URL = "/api";
 
-/**
- * GitHub API トークンを環境変数から取得
- */
-function getGitHubToken(): string {
-  const token = import.meta.env.VITE_GITHUB_TOKEN;
+const API_PROXY_BASE_URL =
+  import.meta.env.VITE_API_PROXY_BASE_URL || DEFAULT_PROXY_BASE_URL;
 
-  if (!token) {
+type GraphQLVariables = Record<string, unknown>;
+
+type GraphQLClient = <T>(query: string, variables?: GraphQLVariables) => Promise<T>;
+
+interface GraphQLProxyResponse<T> {
+  data?: T;
+  errors?: Array<{ message?: string }>;
+}
+
+interface TestConnectionResponse {
+  login: string;
+}
+
+async function callGitHubProxy<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  const method = options.method?.toUpperCase() ?? "GET";
+
+  const hasContentTypeHeader = Object.keys(headers).some(
+    (key) => key.toLowerCase() === "content-type"
+  );
+
+  if (!hasContentTypeHeader && method !== "GET" && options.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(`${API_PROXY_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
     throw new Error(
-      "GitHub token not found. Please set VITE_GITHUB_TOKEN in .env.local file.\n" +
-      "Visit https://github.com/settings/tokens to create a Personal Access Token with 'repo' and 'read:org' scopes."
+      `GitHub proxy request failed with status ${response.status}: ${errorBody}`
     );
   }
 
-  return token;
+  return response.json() as Promise<T>;
 }
 
-/**
- * Octokit REST API クライアントのインスタンスを作成
- */
-export function createOctokit(): Octokit {
-  const token = getGitHubToken();
+export function createGraphQLClient(): GraphQLClient {
+  return async function graphQLRequest<T>(
+    query: string,
+    variables: GraphQLVariables = {}
+  ): Promise<T> {
+    const payload = {
+      query,
+      variables,
+    };
 
-  return new Octokit({
-    auth: token,
-    userAgent: "GitHub-Dashboard-MVP/0.1.0",
-    baseUrl: import.meta.env.VITE_GITHUB_API_ENDPOINT || "https://api.github.com",
-  });
+    const result = await callGitHubProxy<GraphQLProxyResponse<T>>(
+      "/github/graphql",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (result.errors && result.errors.length > 0) {
+      const message = result.errors.map((error) => error.message).join(", ") ||
+        "Unknown GraphQL error";
+      throw new Error(`GitHub GraphQL proxy error: ${message}`);
+    }
+
+    if (!result.data) {
+      throw new Error("GitHub GraphQL proxy response is missing data");
+    }
+
+    return result.data;
+  };
 }
 
-/**
- * Octokit GraphQL クライアントを作成
- */
-export function createGraphQLClient() {
-  const token = getGitHubToken();
-
-  return graphql.defaults({
-    headers: {
-      authorization: `token ${token}`,
-    },
-    baseUrl: import.meta.env.VITE_GITHUB_API_ENDPOINT || "https://api.github.com",
-  });
-}
-
-/**
- * GitHub API 接続テスト
- * 認証が正しく設定されているか確認
- */
 export async function testConnection(): Promise<{
   success: boolean;
   user?: string;
   error?: string;
 }> {
   try {
-    const octokit = createOctokit();
-    const { data } = await octokit.rest.users.getAuthenticated();
+    const result = await callGitHubProxy<TestConnectionResponse>(
+      "/github/me",
+      {
+        method: "GET",
+      }
+    );
 
     return {
       success: true,
-      user: data.login,
+      user: result.login,
     };
   } catch (error) {
     console.error("GitHub API connection test failed:", error);
