@@ -3,11 +3,14 @@ const DEFAULT_PROXY_BASE_URL = "/api";
 const API_PROXY_BASE_URL =
   import.meta.env.VITE_API_PROXY_BASE_URL || DEFAULT_PROXY_BASE_URL;
 
+const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
+const USE_DIRECT_API = Boolean(GITHUB_TOKEN);
+
 type GraphQLVariables = Record<string, unknown>;
 
 type GraphQLClient = <T>(query: string, variables?: GraphQLVariables) => Promise<T>;
 
-interface GraphQLProxyResponse<T> {
+interface GraphQLResponse<T> {
   data?: T;
   errors?: Array<{ message?: string }>;
 }
@@ -16,6 +19,57 @@ interface TestConnectionResponse {
   login: string;
 }
 
+/**
+ * Call GitHub API directly using Personal Access Token
+ */
+async function callGitHubDirect<T>(
+  query: string,
+  variables: GraphQLVariables = {}
+): Promise<T> {
+  if (!GITHUB_TOKEN) {
+    throw new Error(
+      "GitHub token not configured. Please set VITE_GITHUB_TOKEN in .env file."
+    );
+  }
+
+  const response = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+    },
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `GitHub API request failed with status ${response.status}: ${errorBody}`
+    );
+  }
+
+  const result = (await response.json()) as GraphQLResponse<T>;
+
+  if (result.errors && result.errors.length > 0) {
+    const message =
+      result.errors.map((error) => error.message).join(", ") ||
+      "Unknown GraphQL error";
+    throw new Error(`GitHub GraphQL error: ${message}`);
+  }
+
+  if (!result.data) {
+    throw new Error("GitHub GraphQL response is missing data");
+  }
+
+  return result.data;
+}
+
+/**
+ * Call GitHub API via proxy server
+ */
 async function callGitHubProxy<T>(
   path: string,
   options: RequestInit = {}
@@ -50,6 +104,12 @@ async function callGitHubProxy<T>(
 }
 
 export function createGraphQLClient(): GraphQLClient {
+  if (USE_DIRECT_API) {
+    console.log("Using direct GitHub API with Personal Access Token");
+    return callGitHubDirect;
+  }
+
+  console.log("Using GitHub API via proxy server");
   return async function graphQLRequest<T>(
     query: string,
     variables: GraphQLVariables = {}
@@ -59,7 +119,7 @@ export function createGraphQLClient(): GraphQLClient {
       variables,
     };
 
-    const result = await callGitHubProxy<GraphQLProxyResponse<T>>(
+    const result = await callGitHubProxy<GraphQLResponse<T>>(
       "/github/graphql",
       {
         method: "POST",
@@ -68,7 +128,8 @@ export function createGraphQLClient(): GraphQLClient {
     );
 
     if (result.errors && result.errors.length > 0) {
-      const message = result.errors.map((error) => error.message).join(", ") ||
+      const message =
+        result.errors.map((error) => error.message).join(", ") ||
         "Unknown GraphQL error";
       throw new Error(`GitHub GraphQL proxy error: ${message}`);
     }
@@ -87,12 +148,24 @@ export async function testConnection(): Promise<{
   error?: string;
 }> {
   try {
-    const result = await callGitHubProxy<TestConnectionResponse>(
-      "/github/me",
-      {
-        method: "GET",
-      }
-    );
+    if (USE_DIRECT_API) {
+      const query = `
+        query {
+          viewer {
+            login
+          }
+        }
+      `;
+      const result = await callGitHubDirect<{ viewer: { login: string } }>(query);
+      return {
+        success: true,
+        user: result.viewer.login,
+      };
+    }
+
+    const result = await callGitHubProxy<TestConnectionResponse>("/github/me", {
+      method: "GET",
+    });
 
     return {
       success: true,
