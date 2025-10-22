@@ -18,11 +18,14 @@ interface GraphQLRepository {
   } | null;
   repositoryTopics?: {
     nodes?:
-      | Array<{
-          topic: {
-            name: string;
-          };
-        }>
+      | Array<
+          | {
+              topic?: {
+                name?: string | null;
+              } | null;
+            }
+          | null
+        >
       | null;
   } | null;
 }
@@ -87,7 +90,9 @@ export function transformRepository(repo: GraphQLRepository): Repo {
     isPrivate: repo.isPrivate,
     description: repo.description || undefined,
     primaryLanguage: repo.primaryLanguage?.name || undefined,
-    topics: (repo.repositoryTopics?.nodes ?? []).map((node) => node.topic.name),
+    topics: (repo.repositoryTopics?.nodes ?? [])
+      .map((node) => node?.topic?.name ?? null)
+      .filter((name): name is string => Boolean(name)),
   };
 }
 

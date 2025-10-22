@@ -48,4 +48,30 @@ describe("transformRepository", () => {
 
     expect(result.topics).toEqual([]);
   });
+
+  it("filters out null topic nodes", () => {
+    const result = transformRepository({
+      ...baseRepository,
+      repositoryTopics: {
+        nodes: [
+          null,
+          {
+            topic: null,
+          },
+          {
+            topic: {
+              name: null,
+            },
+          },
+          {
+            topic: {
+              name: "topic-2",
+            },
+          },
+        ],
+      },
+    });
+
+    expect(result.topics).toEqual(["topic-2"]);
+  });
 });
