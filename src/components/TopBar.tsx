@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SortOrder, SavedView } from '../types';
-import { getSavedViews, saveView, deleteView } from '../storage';
 
 interface TopBarProps {
   searchQuery: string;
@@ -11,6 +10,11 @@ interface TopBarProps {
   filteredCount: number;
   isLoading?: boolean;
   onRefresh?: () => void;
+  savedViews?: SavedView[];
+  currentViewId?: string;
+  onViewSelect?: (viewId: string) => void;
+  onSaveView?: (name: string) => boolean;
+  onDeleteView?: (viewId: string) => boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -22,66 +26,67 @@ export const TopBar: React.FC<TopBarProps> = ({
   filteredCount,
   isLoading = false,
   onRefresh,
+  savedViews = [],
+  currentViewId = '',
+  onViewSelect,
+  onSaveView,
+  onDeleteView,
 }) => {
-  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
-  const [selectedViewId, setSelectedViewId] = useState<string>('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [newViewName, setNewViewName] = useState('');
+  const [viewName, setViewName] = useState('');
   const [saveError, setSaveError] = useState('');
 
-  // Load saved views on mount
-  useEffect(() => {
-    loadSavedViews();
-  }, []);
-
-  const loadSavedViews = () => {
-    const views = getSavedViews();
-    setSavedViews(views);
+  const handleViewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (onViewSelect) {
+      onViewSelect(event.target.value);
+    }
   };
 
-  const handleSaveCurrentView = () => {
+  const handleSaveClick = () => {
+    const trimmedName = viewName.trim();
     setSaveError('');
-    if (!newViewName.trim()) {
+
+    if (!trimmedName) {
       setSaveError('Please enter a view name');
       return;
     }
 
+    if (!onSaveView) {
+      setSaveError('Save functionality is not available');
+      return;
+    }
+
     try {
-      const newView = saveView(newViewName, searchQuery, sortOrder);
-      if (newView) {
-        loadSavedViews();
-        setNewViewName('');
+      const success = onSaveView(trimmedName);
+      if (success) {
+        setViewName('');
         setShowSaveDialog(false);
-        setSelectedViewId(newView.id);
+      } else {
+        setSaveError('Failed to save view. Name may already exist or max limit reached (5 views).');
       }
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Failed to save view');
     }
   };
 
-  const handleSelectView = (viewId: string) => {
-    setSelectedViewId(viewId);
-    if (viewId === '') {
-      // Clear selection - don't change anything
+  const handleDeleteClick = (viewId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!onDeleteView) {
       return;
     }
 
-    const view = savedViews.find((v) => v.id === viewId);
-    if (view) {
-      onSearchChange(view.searchQuery);
-      onSortChange(view.sortOrder);
+    if (window.confirm('Are you sure you want to delete this saved view?')) {
+      const success = onDeleteView(viewId);
+      if (!success) {
+        setSaveError('Failed to delete view.');
+      }
     }
   };
 
-  const handleDeleteView = (viewId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this saved view?')) {
-      deleteView(viewId);
-      loadSavedViews();
-      if (selectedViewId === viewId) {
-        setSelectedViewId('');
-      }
-    }
+  const handleDialogClose = () => {
+    setShowSaveDialog(false);
+    setViewName('');
+    setSaveError('');
   };
 
   return (
@@ -135,7 +140,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
+                onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="Search repositories (name, language, topics, description...)"
                 className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -159,7 +164,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           <div className="sm:w-48">
             <select
               value={sortOrder}
-              onChange={(e) => onSortChange(e.target.value as SortOrder)}
+              onChange={(event) => onSortChange(event.target.value as SortOrder)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="lastUpdated">Sort: Last Updated</option>
@@ -170,8 +175,9 @@ export const TopBar: React.FC<TopBarProps> = ({
           {/* Saved Views Selector */}
           <div className="sm:w-64 flex gap-2">
             <select
-              value={selectedViewId}
-              onChange={(e) => handleSelectView(e.target.value)}
+              value={currentViewId}
+              onChange={handleViewChange}
+              disabled={!onViewSelect}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="">Saved Views ({savedViews.length}/5)</option>
@@ -189,9 +195,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             >
               +
             </button>
-            {selectedViewId && (
+            {currentViewId && onDeleteView && (
               <button
-                onClick={(e) => handleDeleteView(selectedViewId, e)}
+                onClick={(event) => handleDeleteClick(currentViewId, event)}
                 className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 title="Delete selected view"
               >
@@ -227,10 +233,18 @@ export const TopBar: React.FC<TopBarProps> = ({
               <input
                 id="viewName"
                 type="text"
-                value={newViewName}
-                onChange={(e) => {
-                  setNewViewName(e.target.value);
+                value={viewName}
+                onChange={(event) => {
+                  setViewName(event.target.value);
                   setSaveError('');
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleSaveClick();
+                  } else if (event.key === 'Escape') {
+                    handleDialogClose();
+                  }
                 }}
                 placeholder="e.g., Active TypeScript Projects"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -250,17 +264,13 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
             <div className="flex gap-3">
               <button
-                onClick={handleSaveCurrentView}
+                onClick={handleSaveClick}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Save View
               </button>
               <button
-                onClick={() => {
-                  setShowSaveDialog(false);
-                  setNewViewName('');
-                  setSaveError('');
-                }}
+                onClick={handleDialogClose}
                 className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Cancel

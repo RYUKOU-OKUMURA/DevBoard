@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { Repo, ColumnKey, SortOrder, AppConfig } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Repo, ColumnKey, SortOrder, AppConfig, SavedView } from '../types';
 import { classifyRepos, DEFAULT_CONFIG } from '../utils/classify';
 import { searchAndSortRepos } from '../utils/search';
+import { getSavedViews, saveView, deleteView, getViewById } from '../utils/storage';
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
 
@@ -29,6 +30,13 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
+  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [currentViewId, setCurrentViewId] = useState<string>('');
+
+  // Load saved views on mount
+  useEffect(() => {
+    setSavedViews(getSavedViews());
+  }, []);
 
   // Apply search and sort, then classify into columns
   const classifiedRepos = useMemo(() => {
@@ -43,6 +51,45 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     0
   );
 
+  // Handle view selection
+  const handleViewSelect = (viewId: string) => {
+    if (viewId === '') {
+      // Clear view selection
+      setCurrentViewId('');
+      return;
+    }
+
+    const view = getViewById(viewId);
+    if (view) {
+      setSearchQuery(view.searchQuery);
+      setSortOrder(view.sortOrder);
+      setCurrentViewId(viewId);
+    }
+  };
+
+  // Handle save current view
+  const handleSaveView = (name: string) => {
+    const newView = saveView(name, searchQuery, sortOrder);
+    if (newView) {
+      setSavedViews(getSavedViews());
+      setCurrentViewId(newView.id);
+      return true;
+    }
+    return false;
+  };
+
+  // Handle delete view
+  const handleDeleteView = (viewId: string) => {
+    if (deleteView(viewId)) {
+      setSavedViews(getSavedViews());
+      if (currentViewId === viewId) {
+        setCurrentViewId('');
+      }
+      return true;
+    }
+    return false;
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top Bar */}
@@ -55,6 +102,11 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         filteredCount={filteredCount}
         isLoading={isLoading}
         onRefresh={onRefresh}
+        savedViews={savedViews}
+        currentViewId={currentViewId}
+        onViewSelect={handleViewSelect}
+        onSaveView={handleSaveView}
+        onDeleteView={handleDeleteView}
       />
 
       {/* Board Columns */}
