@@ -114,6 +114,10 @@ export function validateRepos(data: unknown): Repo[] {
     );
   }
 
+  if (validRepos.length === 0) {
+    console.warn("Repository validation returned an empty result set.");
+  }
+
   return validRepos;
 }
 
