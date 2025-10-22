@@ -23,21 +23,48 @@ GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更�
 1. **Node.js / パッケージマネージャー**
    - Node.js 18+ を推奨。
    - `npm` をインストール（Node.js に付属）。
+
 2. **リポジトリの取得**
    ```bash
    git clone <this-repo-url>
    cd GitHub_Dashboard
    ```
+
 3. **依存関係のインストール**
    ```bash
    npm install
    ```
+
 4. **GitHub 認証の準備**
-   - Personal Access Token をバックエンドやセキュアストレージに保管
-   - バックエンドで GitHub API を代理実行するエンドポイントを用意
-   - フロントエンドからはプロキシのベース URL を参照
-   - `.env.local` を作成し、プロキシの URL を設定
+
+   **方法1: Personal Access Token を使用（推奨・簡単）**
+
+   a. GitHub で Personal Access Token を作成:
+      - https://github.com/settings/tokens/new にアクセス
+      - Note: "GitHub Dashboard" など任意の名前を入力
+      - Expiration: 任意の期限を選択（90 days など）
+      - スコープ:
+        - `repo` (プライベートリポジトリも含める場合)
+        - または `public_repo` (パブリックリポジトリのみの場合)
+      - "Generate token" をクリックしてトークンをコピー
+
+   b. `.env` ファイルを作成:
+      ```bash
+      cp .env.example .env
+      ```
+
+   c. `.env` ファイルを編集して、トークンを設定:
+      ```
+      VITE_GITHUB_TOKEN=ghp_your_token_here
+      ```
+
+   **方法2: プロキシサーバー経由（高度）**
+
+   セキュリティ上の理由でトークンをフロントエンドに含めたくない場合:
+   - バックエンドプロキシサーバーを実装
+   - `.env` に以下を設定:
      ```
+     # VITE_GITHUB_TOKEN は設定しない
      VITE_API_PROXY_BASE_URL=http://localhost:3000/api
      ```
 
@@ -125,9 +152,47 @@ GitHub_Dashboard/
 - Tauri 実装の場合、外部ブラウザでのリンクオープンに `tauri::shell` などの呼び出しが必要。
 
 ## テスト
-- 単体テスト（`classifyRepo` / `timeAgo` / 検索・ソートロジック）
-- 結合テスト（保存ビュー CRUD + UI 連携）
-- 手動テスト（GitHub 認証、列表示、検索・並び替え、保存ビュー再現）
+
+### 自動テスト（単体テスト）
+```bash
+# 全テストを実行
+npm test
+
+# テスト UI で実行
+npm run test:ui
+
+# 特定のテストのみ実行
+npm test -- src/lib/__tests__/classifyRepo.test.ts
+```
+
+**テストカバレッジ:**
+- リポジトリ分類ロジック（`classifyRepo`）
+- 相対時間表示（`timeAgo`）
+- 検索・フィルタリング・ソート機能
+- 保存ビュー CRUD 操作
+- エラーハンドリング
+
+### 手動テスト（動作確認）
+
+1. **モックデータでの動作確認**
+   ```bash
+   npm run dev
+   ```
+   ブラウザで http://localhost:5173 を開く
+   - 4列のカンバンボードが表示されることを確認
+   - 検索バーにキーワードを入力して、リポジトリがフィルタされることを確認
+   - 並び替え（Last Updated / Name）が動作することを確認
+   - 保存ビューの作成・選択・削除が動作することを確認
+
+2. **実データでの動作確認**（`.env` に `VITE_GITHUB_TOKEN` を設定した場合）
+   - 画面上部の「Load Real Data」ボタンをクリック
+   - 自分のGitHubリポジトリが取得されることを確認
+   - リポジトリカードをクリックして、GitHubページが開くことを確認
+   - 検索・並び替え・保存ビューが実データでも動作することを確認
+
+3. **エラーハンドリングの確認**
+   - 不正なトークンを設定して、エラーメッセージが表示されることを確認
+   - ネットワークを切断して、適切なエラー処理がされることを確認
 
 ## ライセンス
 - ライセンスは未定です。利用ポリシーが決まり次第、本セクションを更新してください。
