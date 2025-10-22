@@ -75,7 +75,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
           </div>
         ) : (
           repos.map((repo) => (
-            <RepoCard key={repo.id} repo={repo} columnKey={columnKey} />
+            <RepoCard key={repo.id} repo={repo} />
           ))
         )}
       </div>

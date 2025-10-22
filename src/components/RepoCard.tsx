@@ -1,17 +1,22 @@
 import React from 'react';
-import { Repo, ColumnKey } from '../types';
+import { Repo } from '../types';
 import { timeAgo } from '../utils/timeAgo';
+import { openExternal } from '../utils/openExternal';
 
 interface RepoCardProps {
   repo: Repo;
-  columnKey: ColumnKey;
 }
 
 export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
   const handleClick = () => {
-    // Open in new tab for web
-    // TODO: For Tauri, use shell.open() instead
-    window.open(repo.htmlUrl, '_blank', 'noopener,noreferrer');
+    openExternal(repo.htmlUrl);
+  };
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
   };
 
   // Extract owner and repo name
@@ -23,7 +28,11 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Open repository ${repo.nameWithOwner}`}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
     >
       {/* Repository Title */}
