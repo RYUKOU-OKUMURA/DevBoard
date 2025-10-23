@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Repo, ColumnKey, SortOrder, AppConfig, SavedView } from '../types';
-import { classifyRepos, DEFAULT_CONFIG } from '../utils/classify';
+import { classifyRepo, DEFAULT_CONFIG } from '../utils/classify';
 import { searchAndSortRepos } from '../utils/search';
 import { getSavedViews, saveView, deleteView, getViewById } from '../utils/storage';
 import { RepoColumn } from './RepoColumn';
@@ -25,6 +25,7 @@ const COLUMN_ORDER: ColumnKey[] = ['Active', 'Stale', 'Dormant', 'Archived'];
 const ORDER_STORAGE_KEY = 'github-dashboard-column-order';
 const DASHBOARD_TITLE = 'GitHubダッシュボード';
 const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
+const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
 
 export const RepoBoard: React.FC<RepoBoardProps> = ({
   repos,
@@ -46,6 +47,15 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     } catch {}
     return { ...COLUMN_TITLES };
   });
+  const [columnAssignments, setColumnAssignments] = useState<Record<string, ColumnKey>>(() => {
+    try {
+      const raw = localStorage.getItem(COLUMN_ASSIGNMENTS_STORAGE_KEY);
+      if (raw) {
+        return JSON.parse(raw) as Record<string, ColumnKey>;
+      }
+    } catch {}
+    return {};
+  });
   const [orderMap, setOrderMap] = useState<Record<ColumnKey, string[]>>({
     Active: [],
     Stale: [],
@@ -66,17 +76,42 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     } catch {}
   }, []);
 
-  // Apply search and sort, then classify into columns
+  const filteredRepos = useMemo(
+    () => searchAndSortRepos(repos, searchQuery, sortOrder),
+    [repos, searchQuery, sortOrder]
+  );
+
+  const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
+
+  // Apply search and sort, then classify into columns with manual overrides
   const classifiedRepos = useMemo(() => {
-    const filtered = searchAndSortRepos(repos, searchQuery, sortOrder);
-    return classifyRepos(filtered, config);
-  }, [repos, searchQuery, sortOrder, config]);
+    const columns: Record<ColumnKey, Repo[]> = {
+      Active: [],
+      Stale: [],
+      Dormant: [],
+      Archived: [],
+    };
+
+    filteredRepos.forEach((repo) => {
+      const override = columnAssignments[repo.id];
+      const column = override ?? classifyRepo(repo, config);
+      columns[column].push(repo);
+    });
+
+    return columns;
+  }, [filteredRepos, columnAssignments, config]);
 
   useEffect(() => {
     try {
       localStorage.setItem(COLUMN_TITLES_STORAGE_KEY, JSON.stringify(columnTitles));
     } catch {}
   }, [columnTitles]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(columnAssignments));
+    } catch {}
+  }, [columnAssignments]);
 
   // Sync order map with current repos per column
   useEffect(() => {
@@ -170,14 +205,22 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return false;
   };
 
-  const handleReorder = (col: ColumnKey, fromId: string, toId: string) => {
+  const handleReorderWithinColumn = (col: ColumnKey, fromId: string, toId?: string) => {
     setOrderMap((prev) => {
       const list = [...(prev[col] || [])];
       const fromIdx = list.indexOf(fromId);
-      const toIdx = list.indexOf(toId);
-      if (fromIdx === -1 || toIdx === -1) return prev;
+      if (fromIdx === -1) return prev;
+
       list.splice(fromIdx, 1);
-      list.splice(toIdx, 0, fromId);
+
+      if (toId) {
+        const toIdx = list.indexOf(toId);
+        const insertIdx = toIdx === -1 ? list.length : toIdx;
+        list.splice(insertIdx, 0, fromId);
+      } else {
+        list.push(fromId);
+      }
+
       return { ...prev, [col]: list };
     });
   };
@@ -188,11 +231,46 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     fromId: string,
     toId?: string
   ) => {
-    // Optional: allow moving across columns visually. Since columns are derived from activity, this is limited to ordering only.
-    // Here we only allow reordering within the same column for consistency with classification rules.
-    if (fromCol === toCol && toId) {
-      handleReorder(fromCol, fromId, toId);
+    if (fromCol === toCol) {
+      handleReorderWithinColumn(fromCol, fromId, toId);
+      return;
     }
+
+    const repo = repoMap.get(fromId);
+    if (!repo) {
+      return;
+    }
+
+    setColumnAssignments((prev) => {
+      const next = { ...prev };
+      const defaultColumn = classifyRepo(repo, config);
+      if (toCol === defaultColumn) {
+        delete next[fromId];
+      } else {
+        next[fromId] = toCol;
+      }
+      return next;
+    });
+
+    setOrderMap((prev) => {
+      const fromList = [...(prev[fromCol] || [])].filter((id) => id !== fromId);
+      const toListRaw = prev[toCol] || [];
+      const toList = toListRaw.filter((id) => id !== fromId);
+
+      if (toId) {
+        const targetIdx = toList.indexOf(toId);
+        const insertIdx = targetIdx === -1 ? toList.length : targetIdx;
+        toList.splice(insertIdx, 0, fromId);
+      } else {
+        toList.push(fromId);
+      }
+
+      return {
+        ...prev,
+        [fromCol]: fromList,
+        [toCol]: toList,
+      };
+    });
   };
 
   return (
@@ -223,7 +301,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
             title={columnTitles[columnKey]}
             repos={getOrderedRepos(columnKey)}
             columnKey={columnKey}
-            onReorder={handleReorder}
+            onReorder={handleReorderWithinColumn}
             onReorderBetween={handleReorderBetween}
             onTitleChange={handleColumnTitleChange}
           />

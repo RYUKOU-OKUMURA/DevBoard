@@ -6,7 +6,7 @@ interface RepoColumnProps {
   title: string;
   repos: Repo[];
   columnKey: ColumnKey;
-  onReorder?: (col: ColumnKey, fromId: string, toId: string) => void;
+  onReorder?: (col: ColumnKey, fromId: string, toId?: string) => void;
   onReorderBetween?: (
     fromCol: ColumnKey,
     toCol: ColumnKey,
@@ -133,7 +133,13 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
 
   const handleDropOnColumnEnd = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    // Currently not handling drop to end explicitly for cross-column.
+    const text = e.dataTransfer.getData('text/plain');
+    try {
+      const payload = JSON.parse(text) as { repoId: string; fromCol: ColumnKey };
+      if (payload && payload.repoId) {
+        onReorderBetween?.(payload.fromCol, columnKey, payload.repoId);
+      }
+    } catch {}
   };
 
   return (
