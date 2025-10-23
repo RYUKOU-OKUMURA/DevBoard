@@ -1,7 +1,6 @@
 import React from 'react';
 import { Repo } from '../types';
 import { timeAgo } from '../utils/timeAgo';
-import { openExternal } from '../utils/openExternal';
 
 interface RepoCardProps {
   repo: Repo;
@@ -9,7 +8,7 @@ interface RepoCardProps {
 
 export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
   const handleClick = () => {
-    openExternal(repo.htmlUrl);
+    window.open(repo.htmlUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {

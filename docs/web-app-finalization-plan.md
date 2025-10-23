@@ -76,18 +76,18 @@
 #### タスクチェックリスト
 
 **1.1 Tauri関連の削除**
-- [ ] `package.json` から `@tauri-apps/cli` 削除
-- [ ] `package.json` から `@tauri-apps/api` 削除
-- [ ] `package.json` から `dev:tauri` スクリプト削除
-- [ ] `package.json` から `build:tauri` スクリプト削除
-- [ ] `tauri.conf.json` ファイル削除
-- [ ] `src/utils/openExternal.ts` ファイル削除
-- [ ] `src/mocks/mockRepos.ts` ファイル削除
-- [ ] `App.tsx` からモックデータのimport削除
-- [ ] `App.tsx` から `dataSource === 'mock'` 分岐削除
-- [ ] `App.tsx` からモックデータバナー削除
-- [ ] 不要なimport文の整理
-- [ ] `npm install` で依存関係を更新
+- [x] `package.json` から `@tauri-apps/cli` 削除
+- [x] `package.json` から `@tauri-apps/api` 削除
+- [x] `package.json` から `dev:tauri` スクリプト削除
+- [x] `package.json` から `build:tauri` スクリプト削除
+- [x] `tauri.conf.json` ファイル削除
+- [x] `src/utils/openExternal.ts` ファイル削除
+- [x] `src/mocks/mockRepos.ts` ファイル削除
+- [x] `App.tsx` からモックデータのimport削除
+- [x] `App.tsx` から `dataSource === 'mock'` 分岐削除
+- [x] `App.tsx` からモックデータバナー削除
+- [x] 不要なimport文の整理
+- [x] `npm install` で依存関係を更新
 
 **1.2 Cloudflare Workers設定ファイル作成**
 - [ ] `wrangler.toml` 作成（KV namespace設定含む）
