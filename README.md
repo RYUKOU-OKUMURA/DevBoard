@@ -1,87 +1,131 @@
 # GitHub Dashboard
 
-GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更新状況を素早く把握するためのデスクトップ／Web 兼用 MVP プロジェクトです。  
+GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更新状況を素早く把握するための Web アプリケーションです。
 リポジトリカードを列ごとに自動分類し、クリックで GitHub の該当ページを開ける最小体験を提供します。
 
 ## 主な特徴
-- Active / Stale / Dormant / Archived の 4 列でリポジトリを分類表示
-- テキスト検索（name / topic / description / primaryLanguage に対応）
-- 最終更新日または名前での並び替え
-- 最大 5 件まで保存できるカスタムビュー（検索語・並び順）
-- バックエンド経由の GitHub API プロキシ（GraphQL 想定）
 
-詳細要件は `requirements.md`、実行計画は `execution_plan.md` を参照してください。
+- **4列の自動分類**: Active / Stale / Dormant / Archived でリポジトリを視覚的に整理
+- **プライベートリポジトリ対応**: GitHub OAuth 認証により、プライベートリポジトリも表示可能
+- **高速検索**: name / topic / description / primaryLanguage に対応したテキスト検索
+- **柔軟な並び替え**: 最終更新日または名前での並び替え
+- **保存ビュー**: 最大 5 件まで保存できるカスタムビュー（検索語・並び順）
+- **セキュアな認証**: Cloudflare Workers + KV による暗号化セッション管理
 
-## 技術スタック（想定）
-- UI: React + TypeScript
-- デスクトップ: Tauri
-- Web 代替案: Next.js (App Router / Pages いずれも可)
-- データ取得: Octokit（OAuth Device Flow または GitHub App を利用）
-- 保存ビュー: `localStorage` もしくは `tauri-plugin-store`
+## 技術スタック
 
-## 開発環境の準備
-1. **Node.js / パッケージマネージャー**
-   - Node.js 18+ を推奨。
-   - `npm` をインストール（Node.js に付属）。
+- **フロントエンド**: React 18 + TypeScript + Vite + Tailwind CSS
+- **デプロイ**: Cloudflare Pages
+- **バックエンド**: Cloudflare Workers Functions
+- **認証**: GitHub OAuth Apps
+- **セッション管理**: Cloudflare KV (AES-256-GCM 暗号化)
+- **データ取得**: GitHub REST API (GraphQL サポート予定)
 
-2. **リポジトリの取得**
+## アーキテクチャ
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Cloudflare Pages (静的ホスティング)                      │
+│  - React フロントエンド                                  │
+│  - GitHub OAuth ログイン画面                            │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────────────────────┐
+│ Cloudflare Workers (Functions)                          │
+│  - /api/auth/* : OAuth認証フロー                        │
+│  - /api/github/* : GitHub API プロキシ                  │
+│  - セッション管理（KV Storage + 暗号化）                │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────────────────────┐
+│ GitHub API                                              │
+│  - 各ユーザーのアクセストークンで呼び出し                │
+└─────────────────────────────────────────────────────────┘
+```
+
+## セキュリティ機能
+
+- **トークン暗号化**: AES-256-GCM でアクセストークンを暗号化してKVに保存
+- **Cookie保護**: HttpOnly, Secure, SameSite=Lax 属性を設定
+- **CSRF対策**: OAuth state パラメータによる検証
+- **セッション有効期限**: 30日間（利便性とセキュリティのバランス）
+- **セキュリティヘッダー**: X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+
+## 開発環境のセットアップ
+
+詳細な手順は [docs/development.md](docs/development.md) を参照してください。
+
+### クイックスタート
+
+1. **リポジトリのクローン**
    ```bash
    git clone <this-repo-url>
    cd GitHub_Dashboard
    ```
 
-3. **依存関係のインストール**
+2. **依存関係のインストール**
    ```bash
    npm install
+   npm install -g wrangler
    ```
 
-4. **GitHub 認証の準備**
+3. **GitHub OAuth App の作成**
 
-   **方法1: Personal Access Token を使用（推奨・簡単）**
+   開発用の OAuth App を作成します：
+   - https://github.com/settings/developers にアクセス
+   - "New OAuth App" をクリック
+   - Application name: `GitHub Dashboard (Dev)`
+   - Homepage URL: `http://localhost:8788`
+   - Authorization callback URL: `http://localhost:8788/api/auth/callback`
 
-   a. GitHub で Personal Access Token を作成:
-      - https://github.com/settings/tokens/new にアクセス
-      - Note: "GitHub Dashboard" など任意の名前を入力
-      - Expiration: 任意の期限を選択（90 days など）
-      - スコープ:
-        - `repo` (プライベートリポジトリも含める場合)
-        - または `public_repo` (パブリックリポジトリのみの場合)
-      - "Generate token" をクリックしてトークンをコピー
+4. **環境変数の設定**
+   ```bash
+   cp .dev.vars.example .dev.vars
+   ```
 
-   b. `.env` ファイルを作成:
-      ```bash
-      cp .env.example .env
-      ```
+   `.dev.vars` を編集して以下を設定：
+   ```bash
+   GITHUB_CLIENT_ID=your_dev_client_id
+   GITHUB_CLIENT_SECRET=your_dev_client_secret
+   SESSION_SECRET=$(openssl rand -hex 32)
+   ENCRYPTION_KEY=$(openssl rand -hex 32)
+   ```
 
-   c. `.env` ファイルを編集して、トークンを設定:
-      ```
-      VITE_GITHUB_TOKEN=ghp_your_token_here
-      ```
+5. **KV Namespace の作成**
+   ```bash
+   wrangler kv:namespace create SESSIONS --preview
+   # 出力された preview_id を wrangler.toml に設定
+   ```
 
-   **方法2: プロキシサーバー経由（高度）**
+6. **開発サーバーの起動**
 
-   セキュリティ上の理由でトークンをフロントエンドに含めたくない場合:
-   - バックエンドプロキシサーバーを実装
-   - `.env` に以下を設定:
-     ```
-     # VITE_GITHUB_TOKEN は設定しない
-     VITE_API_PROXY_BASE_URL=http://localhost:3000/api
-     ```
+   2つのターミナルで以下を実行：
+
+   **ターミナル1:**
+   ```bash
+   npm run build -- --watch
+   ```
+
+   **ターミナル2:**
+   ```bash
+   wrangler pages dev dist --kv=SESSIONS --port=8788
+   ```
+
+7. **ブラウザでアクセス**
+   ```
+   http://localhost:8788
+   ```
 
 ## 開発コマンド
 
 ```bash
-# ローカル開発サーバーを起動（Tauri ウィンドウが開きます）
-npm run dev
-
 # 本番ビルド
 npm run build
 
 # テスト実行
 npm test
-
-# 単一テストを実行
-npm test -- src/utils/classifyRepo.test.ts
 
 # テスト UI を表示
 npm run test:ui
@@ -93,82 +137,89 @@ npm run lint
 npm run lint:fix
 ```
 
+## デプロイ
+
+Cloudflare Pages へのデプロイ手順は [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) を参照してください。
+
+### デプロイ概要
+
+1. Cloudflare Pages プロジェクトを作成
+2. GitHub リポジトリと連携
+3. ビルド設定: `npm run build` / `dist`
+4. 本番用 KV Namespace を作成
+5. 環境変数（Secrets）を設定
+6. GitHub OAuth App の callback URL を更新
+7. デプロイ実行
+
 ## プロジェクト構成
-```text
+
+```
 GitHub_Dashboard/
-├─ README.md                 # 本ドキュメント
-├─ CLAUDE.md                 # Claude Code ガイダンス
-├─ requirements.md           # MVP 要件定義
-├─ execution_plan.md         # 実装タスクとチェックリスト
-├─ package.json              # npm パッケージ設定
-├─ package-lock.json         # npm 依存関係ロック
-├─ tsconfig.json             # TypeScript 設定
-├─ vite.config.ts            # Vite ビルド設定
-├─ tailwind.config.js        # Tailwind CSS 設定
-├─ tauri.conf.json           # Tauri アプリ設定
-├─ .env.example              # 環境変数テンプレート
-├─ .gitignore                # Git 除外ファイル
-├─ .eslintrc.cjs             # ESLint 設定
-└─ src/
-   ├─ main.tsx               # React エントリーポイント
-   ├─ App.tsx                # ルートコンポーネント
-   ├─ App.css                # グローバルスタイル
-   ├─ components/            # React コンポーネント
-   │  ├─ RepoBoard.tsx       # メインボード
-   │  ├─ TopBar.tsx          # トップバー
-   │  ├─ Column.tsx          # 列
-   │  └─ RepoCard.tsx        # リポジトリカード
-   ├─ utils/                 # ユーティリティ関数
-   │  ├─ classifyRepo.ts     # 分類ロジック
-   │  ├─ timeAgo.ts          # 相対時間表示
-   │  ├─ search.ts           # 検索フィルタリング
-   │  └─ storage.ts          # ローカルストレージ
-   ├─ api/                   # API 通信
-   │  ├─ octokit.ts          # Octokit 初期化
-   │  └─ repos.ts            # リポジトリ取得
-   └─ types/
-      └─ index.ts            # TypeScript 型定義
+├── README.md                  # 本ドキュメント
+├── CLAUDE.md                  # Claude Code ガイダンス
+├── requirements.md            # MVP 要件定義
+├── docs/
+│   ├── development.md         # ローカル開発環境セットアップ
+│   ├── DEPLOYMENT.md          # デプロイ手順書
+│   └── PRIVACY.md             # プライバシーポリシー
+├── functions/                 # Cloudflare Workers Functions
+│   ├── _middleware.ts         # CORS、セキュリティヘッダー
+│   ├── api/
+│   │   ├── auth/              # 認証エンドポイント
+│   │   │   ├── login.ts       # OAuth開始
+│   │   │   ├── callback.ts    # OAuth コールバック
+│   │   │   ├── logout.ts      # ログアウト
+│   │   │   └── me.ts          # ユーザー情報取得
+│   │   └── github/
+│   │       └── [[path]].ts    # GitHub APIプロキシ
+│   └── lib/
+│       ├── types.ts           # 型定義
+│       ├── crypto.ts          # トークン暗号化/復号化
+│       └── session.ts         # セッション管理
+├── src/
+│   ├── main.tsx               # React エントリーポイント
+│   ├── App.tsx                # ルートコンポーネント
+│   ├── contexts/
+│   │   └── AuthContext.tsx    # 認証状態管理
+│   ├── components/            # React コンポーネント
+│   │   ├── LoginPage.tsx      # ログイン画面
+│   │   ├── RepoBoard.tsx      # メインボード
+│   │   ├── TopBar.tsx         # トップバー
+│   │   ├── RepoColumn.tsx     # 列
+│   │   └── RepoCard.tsx       # リポジトリカード
+│   ├── lib/                   # ユーティリティ関数
+│   │   ├── classifyRepo.ts    # 分類ロジック
+│   │   ├── timeAgo.ts         # 相対時間表示
+│   │   └── search.ts          # 検索フィルタリング
+│   ├── storage/               # ローカルストレージ
+│   ├── api/                   # API 通信
+│   │   └── octokit.ts         # GitHub API クライアント
+│   └── types/
+│       └── index.ts           # TypeScript 型定義
+├── wrangler.toml              # Cloudflare Workers 設定
+├── .dev.vars.example          # 環境変数テンプレート
+├── vite.config.ts             # Vite ビルド設定
+├── tailwind.config.js         # Tailwind CSS 設定
+└── package.json               # npm パッケージ設定
 ```
 
-## 実装手順のガイド
-1. 環境準備（フェーズ 0）
-   - Node.js / Tauri / Next.js の雛形を作成。
-2. 認証・API 基盤（フェーズ 1）
-   - Octokit で `Repo` に必要なフィールドを取得する GraphQL クエリを実装。
-3. データ管理ユーティリティ（フェーズ 2）
-   - `classifyRepo()` や `timeAgo()` のロジックとテストを追加。
-4. UI 実装（フェーズ 3）
-   - 要件に沿った `RepoBoard` コンポーネントを組み立て。
-5. 保存ビュー機能（フェーズ 4）
-   - 永続ストレージを利用した CRUD を整備。
-6. 結合・検証（フェーズ 5）
-   - 実データでの動作確認とドキュメント更新。
+## リポジトリ分類ロジック
 
-各フェーズの詳細タスクは `execution_plan.md` のチェックリストを利用してください。
+リポジトリは以下のルールで自動分類されます：
 
-## 開発中の注意点
-- GitHub API のレート制限に注意し、必要に応じてキャッシュ（SQLite 等）を導入。
-- 保存ビューのスキーマは将来拡張を考慮し、バージョン管理できる設計が望ましい。
-- Tauri 実装の場合、外部ブラウザでのリンクオープンに `tauri::shell` などの呼び出しが必要。
+```
+if isArchived → Archived
+else if daysSince(pushedAt) ≤ 60 → Active
+else if daysSince(pushedAt) ≤ 180 → Stale
+else → Dormant
+```
 
-## セキュリティ運用ガイド（本番推奨）
-- ソースマップの制御:
-  - Vite: 本番ビルドでソースマップを無効化するには `vite.config.ts` の `build.sourcemap` を `false` に設定。
-  - 必要に応じてサーバ側でソースマップ配信を制限。
-- トークン/機微情報のログ抑止:
-  - ネットワークリクエストやエラー出力で `Authorization` ヘッダやトークンを絶対にコンソール出力しない。
-  - デバッグ時はマスキング（`ghp_****`）を徹底。
-- プロキシ雛形:
-  - 直接フロントにトークンを埋め込まない運用の場合、バックエンドプロキシ経由で GitHub API を呼び出す設計を推奨。
-  - 例: `/api/github` エンドポイントを用意し、フロントは `VITE_API_PROXY_BASE_URL` を参照。
-- 依存関係のアップデート:
-  - `npm audit` と Renovate/Bot の導入で脆弱性の早期検知・修正を行う。
-- CSP/ヘッダ強化（Web配信時）:
-  - `Content-Security-Policy` の設定検討、`X-Frame-Options: DENY`、`Referrer-Policy` などのセキュリティヘッダを適用。
+しきい値（60日/180日）は将来的に設定可能にする予定です。
 
 ## テスト
 
 ### 自動テスト（単体テスト）
+
 ```bash
 # 全テストを実行
 npm test
@@ -189,30 +240,90 @@ npm test -- src/lib/__tests__/classifyRepo.test.ts
 
 ### 手動テスト（動作確認）
 
-1. **モックデータでの動作確認**
-   ```bash
-   npm run dev
-   ```
-   ブラウザで http://localhost:5173 を開く
-   - 4列のカンバンボードが表示されることを確認
+1. **ログイン機能**
+   - ログインボタンをクリックして GitHub OAuth 認証を実行
+   - 認証後、ダッシュボードにリダイレクトされることを確認
+
+2. **リポジトリ表示**
+   - 自分の GitHub リポジトリ（プライベート含む）が表示されることを確認
+   - 4列に正しく分類されていることを確認
+
+3. **検索機能**
    - 検索バーにキーワードを入力して、リポジトリがフィルタされることを確認
-   - 並び替え（Last Updated / Name）が動作することを確認
+
+4. **並び替え**
+   - Last Updated / Name の並び替えが動作することを確認
+
+5. **保存ビュー**
    - 保存ビューの作成・選択・削除が動作することを確認
 
-2. **実データでの動作確認**（`.env` に `VITE_GITHUB_TOKEN` を設定した場合）
-   - 画面上部の「Load Real Data」ボタンをクリック
-   - 自分のGitHubリポジトリが取得されることを確認
-   - リポジトリカードをクリックして、GitHubページが開くことを確認
-   - 検索・並び替え・保存ビューが実データでも動作することを確認
+6. **カスタムリポジトリ入力**
+   - パブリックリポジトリのURL（例: `facebook/react`）を入力して表示されることを確認
 
-3. **エラーハンドリングの確認**
-   - 不正なトークンを設定して、エラーメッセージが表示されることを確認
-   - ネットワークを切断して、適切なエラー処理がされることを確認
+7. **ログアウト**
+   - ログアウトボタンをクリックしてログアウトできることを確認
+
+## プライバシーとデータ管理
+
+- このアプリケーションは、GitHub OAuth を通じて取得したアクセストークンを暗号化して Cloudflare KV に保存します
+- セッションは30日間有効です
+- 収集した情報は第三者に共有されません
+- 詳細は [docs/PRIVACY.md](docs/PRIVACY.md) を参照してください
+
+## トラブルシューティング
+
+詳細なトラブルシューティングガイドは [docs/development.md](docs/development.md) を参照してください。
+
+### よくある問題
+
+**Q: ログインできない**
+- GitHub OAuth App の callback URL が正しく設定されているか確認してください
+- 環境変数（`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`）が正しく設定されているか確認してください
+
+**Q: プライベートリポジトリが表示されない**
+- GitHub OAuth App のスコープに `repo` が含まれているか確認してください（`functions/api/auth/login.ts`）
+
+**Q: セッションが保存されない**
+- KV Namespace が正しく作成・バインディングされているか確認してください
+
+## コスト見積もり
+
+Cloudflare の無料プランで運用可能：
+
+| サービス | 無料枠 | 想定使用量 |
+|---------|--------|-----------|
+| Cloudflare Pages | 月500ビルド、無制限リクエスト | ビルド: 数回/日 |
+| Cloudflare Workers | 日10万リクエスト | 数百〜数千/日 |
+| Cloudflare KV | 日1,000書き込み、10万読み込み | 数十〜数百/日 |
+
+**結論**: 個人利用〜小規模公開なら完全無料で運用可能
+
+## 今後の改善案
+
+- [ ] GraphQL API への完全移行
+- [ ] リフレッシュトークン対応（GitHub Apps移行時）
+- [ ] しきい値のカスタマイズ機能
+- [ ] ドラッグ&ドロップによる列間移動
+- [ ] CI/CD ステータスの表示
+- [ ] Issue/PR 情報の統合
+- [ ] パフォーマンスモニタリング（Sentry等）
 
 ## ライセンス
-- ライセンスは未定です。利用ポリシーが決まり次第、本セクションを更新してください。
+
+ライセンスは未定です。利用ポリシーが決まり次第、本セクションを更新してください。
 
 ## コントリビュート
-- Issue や Pull Request を送る前に、要件定義書と実行計画に目を通して合意済みのスコープを確認してください。
-- コントリビュートガイドラインは今後整備予定です。
 
+Issue や Pull Request を送る前に、要件定義書（`requirements.md`）と実行計画（`execution_plan.md`）に目を通して合意済みのスコープを確認してください。
+
+## 関連リンク
+
+- [Cloudflare Pages Documentation](https://developers.cloudflare.com/pages/)
+- [Cloudflare Workers KV](https://developers.cloudflare.com/workers/runtime-apis/kv/)
+- [GitHub OAuth Apps](https://docs.github.com/en/developers/apps/building-oauth-apps)
+- [React Documentation](https://react.dev/)
+- [Vite Documentation](https://vitejs.dev/)
+
+---
+
+**最終更新**: 2025-10-24
