@@ -11,18 +11,20 @@ export interface GraphQLRepository {
   primaryLanguage: {
     name: string;
   } | null;
-  repositoryTopics: {
-    nodes: Array<{
-      topic: {
-        name: string;
-      };
-    }>;
-  };
+  repositoryTopics?: {
+    nodes?: Array<{
+      topic?: {
+        name?: string | null;
+      } | null;
+    } | null> | null;
+  } | null;
 }
 
 function extractTopics(repository: GraphQLRepository): string[] {
-  return repository.repositoryTopics.nodes
-    .map((node) => node.topic?.name)
+  const nodes = repository.repositoryTopics?.nodes ?? [];
+  return nodes
+    .filter((node): node is { topic?: { name?: string | null } | null } => node != null)
+    .map((node) => node?.topic?.name)
     .filter((name): name is string => typeof name === "string" && name.length > 0);
 }
 
@@ -43,6 +45,10 @@ export function transformRepository(repository: GraphQLRepository): Repo {
   };
 }
 
-export function transformRepositories(repositories: GraphQLRepository[]): Repo[] {
-  return repositories.map(transformRepository);
+export function transformRepositories(
+  repositories: Array<GraphQLRepository | null | undefined>
+): Repo[] {
+  return (repositories ?? [])
+    .filter((repo): repo is GraphQLRepository => repo != null)
+    .map(transformRepository);
 }

@@ -30,7 +30,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
     <div
       role="button"
       tabIndex={0}
-      aria-label={`Open repository ${repo.nameWithOwner}`}
+      aria-label={`リポジトリを開く ${repo.nameWithOwner}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
@@ -47,11 +47,11 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
         {/* Privacy Badge */}
         {repo.isPrivate ? (
           <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-            🔒 Private
+            🔒 非公開
           </span>
         ) : (
           <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-            🌐 Public
+            🌐 公開
           </span>
         )}
       </div>

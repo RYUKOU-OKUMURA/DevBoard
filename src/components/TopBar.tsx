@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SortOrder, SavedView } from '../types';
 
 interface TopBarProps {
+  title: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   sortOrder: SortOrder;
@@ -18,6 +19,7 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
+  title,
   searchQuery,
   onSearchChange,
   sortOrder,
@@ -47,12 +49,12 @@ export const TopBar: React.FC<TopBarProps> = ({
     setSaveError('');
 
     if (!trimmedName) {
-      setSaveError('Please enter a view name');
+      setSaveError('ビュー名を入力してください');
       return;
     }
 
     if (!onSaveView) {
-      setSaveError('Save functionality is not available');
+      setSaveError('保存機能が利用できません');
       return;
     }
 
@@ -62,10 +64,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         setViewName('');
         setShowSaveDialog(false);
       } else {
-        setSaveError('Failed to save view. Name may already exist or max limit reached (5 views).');
+        setSaveError('保存に失敗しました。名前が重複しているか、上限（5件）に達しています。');
       }
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Failed to save view');
+      setSaveError(error instanceof Error ? error.message : '保存に失敗しました');
     }
   };
 
@@ -75,10 +77,10 @@ export const TopBar: React.FC<TopBarProps> = ({
       return;
     }
 
-    if (window.confirm('Are you sure you want to delete this saved view?')) {
+    if (window.confirm('この保存済みビューを削除してもよろしいですか？')) {
       const success = onDeleteView(viewId);
       if (!success) {
-        setSaveError('Failed to delete view.');
+        setSaveError('削除に失敗しました。');
       }
     }
   };
@@ -93,9 +95,9 @@ export const TopBar: React.FC<TopBarProps> = ({
     <div className="bg-white border-b border-gray-200 shadow-sm">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            GitHub Dashboard
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          </div>
           {onRefresh && (
             <button
               onClick={onRefresh}
@@ -124,10 +126,10 @@ export const TopBar: React.FC<TopBarProps> = ({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Loading...
+                  読み込み中...
                 </span>
               ) : (
-                '↻ Refresh'
+                '↻ 更新'
               )}
             </button>
           )}
@@ -141,7 +143,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search repositories (name, language, topics, description...)"
+                placeholder="リポジトリを検索（名前、言語、トピック、説明...）"
                 className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <svg
@@ -167,8 +169,8 @@ export const TopBar: React.FC<TopBarProps> = ({
               onChange={(event) => onSortChange(event.target.value as SortOrder)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
-              <option value="lastUpdated">Sort: Last Updated</option>
-              <option value="name">Sort: Name (A-Z)</option>
+              <option value="lastUpdated">並び替え: 最終更新日</option>
+              <option value="name">並び替え: 名前 (A-Z)</option>
             </select>
           </div>
 
@@ -180,7 +182,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               disabled={!onViewSelect}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
-              <option value="">Saved Views ({savedViews.length}/5)</option>
+              <option value="">保存済みビュー ({savedViews.length}/5)</option>
               {savedViews.map((view) => (
                 <option key={view.id} value={view.id}>
                   {view.name}
@@ -191,7 +193,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               onClick={() => setShowSaveDialog(true)}
               disabled={savedViews.length >= 5}
               className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              title="Save current view"
+              title="現在のビューを保存"
             >
               +
             </button>
@@ -199,7 +201,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 onClick={(event) => handleDeleteClick(currentViewId, event)}
                 className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                title="Delete selected view"
+                title="選択中のビューを削除"
               >
                 ×
               </button>
@@ -209,10 +211,10 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         {/* Stats */}
         <div className="mt-3 text-sm text-gray-600">
-          Showing {filteredCount} of {totalRepos} repositories
+          合計 {totalRepos} 件中 {filteredCount} 件を表示
           {searchQuery && (
             <span className="ml-2 text-blue-600">
-              (filtered by "{searchQuery}")
+              （フィルター: "{searchQuery}"）
             </span>
           )}
         </div>
@@ -222,13 +224,13 @@ export const TopBar: React.FC<TopBarProps> = ({
       {showSaveDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Save Current View</h2>
+            <h2 className="text-xl font-bold mb-4">現在のビューを保存</h2>
             <p className="text-gray-600 mb-4">
-              This will save your current search query and sort order.
+              現在の検索キーワードと並び順を保存します。
             </p>
             <div className="mb-4">
               <label htmlFor="viewName" className="block text-sm font-medium text-gray-700 mb-2">
-                View Name
+                ビュー名
               </label>
               <input
                 id="viewName"
@@ -246,7 +248,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     handleDialogClose();
                   }
                 }}
-                placeholder="e.g., Active TypeScript Projects"
+                placeholder="例: アクティブなTypeScriptプロジェクト"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 autoFocus
               />
@@ -256,10 +258,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             </div>
             <div className="bg-gray-50 p-3 rounded-lg mb-4">
               <p className="text-sm text-gray-600">
-                <strong>Search:</strong> {searchQuery || '(none)'}
+                <strong>検索:</strong> {searchQuery || '（なし）'}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Sort:</strong> {sortOrder === 'lastUpdated' ? 'Last Updated' : 'Name (A-Z)'}
+                <strong>並び順:</strong> {sortOrder === 'lastUpdated' ? '最終更新日' : '名前 (A-Z)'}
               </p>
             </div>
             <div className="flex gap-3">
@@ -267,13 +269,13 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onClick={handleSaveClick}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Save View
+                保存
               </button>
               <button
                 onClick={handleDialogClose}
                 className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                Cancel
+                キャンセル
               </button>
             </div>
           </div>
