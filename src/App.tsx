@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { RepoBoard, RepoInputForm } from './components';
+import LoginPage from './components/LoginPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Repo } from './types';
 import { fetchUserRepos, fetchRepositoriesByUrls } from './api/repos';
 
 type DataSource = 'viewer' | 'custom';
 
-function App() {
+function AppContent() {
+  const { user, loading, logout } = useAuth();
   const [repos, setRepos] = useState<Repo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +54,7 @@ function App() {
     }
   };
 
-  const loadRealData = async () => {
+  const loadRepos = async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -69,7 +72,7 @@ function App() {
   const handleRefresh = () => {
     if (dataSource === 'viewer') {
       // Reload from API
-      loadRealData();
+      loadRepos();
     } else if (dataSource === 'custom') {
       if (customRepoSources.length > 0) {
         loadCustomRepos(customRepoSources);
@@ -86,8 +89,43 @@ function App() {
     await loadCustomRepos(sources);
   };
 
+  // Show loading spinner while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!user) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="App min-h-screen bg-gray-100">
+      {/* User Info Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-gray-900">GitHub Dashboard</h1>
+            <span className="text-sm text-gray-500">
+              Logged in as <span className="font-medium text-gray-900">{user.username}</span>
+            </span>
+          </div>
+          <button
+            onClick={logout}
+            className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
       {/* Error Banner */}
       {error && (
         <div className="bg-red-50 border-b border-red-200 px-6 py-3">
@@ -164,6 +202,14 @@ function App() {
       {/* Main Board */}
       <RepoBoard repos={repos} isLoading={isLoading} onRefresh={handleRefresh} />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

@@ -113,18 +113,18 @@
 #### タスクチェックリスト
 
 **2.1 開発用OAuth App作成**
-- [ ] GitHub Settings → Developer settings にアクセス
-- [ ] "New OAuth App" をクリック
-- [ ] Application name: `GitHub Dashboard (Dev)` を設定
-- [ ] Homepage URL: `http://localhost:8788` を設定
-- [ ] Authorization callback URL: `http://localhost:8788/api/auth/callback` を設定
-- [ ] "Register application" をクリック
-- [ ] Client ID をコピー
-- [ ] "Generate a new client secret" をクリック
-- [ ] Client Secret をコピー
-- [ ] `.dev.vars` ファイル作成
-- [ ] Client ID を `.dev.vars` に `GITHUB_CLIENT_ID` として保存
-- [ ] Client Secret を `.dev.vars` に `GITHUB_CLIENT_SECRET` として保存
+- [x] GitHub Settings → Developer settings にアクセス
+- [x] "New OAuth App" をクリック
+- [x] Application name: `GitHub Dashboard (Dev)` を設定
+- [x] Homepage URL: `http://localhost:8788` を設定
+- [x] Authorization callback URL: `http://localhost:8788/api/auth/callback` を設定
+- [x] "Register application" をクリック
+- [x] Client ID をコピー
+- [x] "Generate a new client secret" をクリック
+- [x] Client Secret をコピー
+- [x] `.dev.vars` ファイル作成
+- [x] Client ID を `.dev.vars` に `GITHUB_CLIENT_ID` として保存
+- [x] Client Secret を `.dev.vars` に `GITHUB_CLIENT_SECRET` として保存
 
 **2.2 本番用OAuth App作成**
 - [ ] もう一度 "New OAuth App" をクリック
@@ -136,9 +136,9 @@
 - [ ] Client Secret をメモ（後でCloudflare Secretsに登録）
 
 **2.3 環境変数の生成**
-- [ ] `openssl rand -hex 32` で SESSION_SECRET 生成
-- [ ] `openssl rand -hex 32` で ENCRYPTION_KEY 生成
-- [ ] 生成した値を `.dev.vars` に保存
+- [x] `openssl rand -hex 32` で SESSION_SECRET 生成
+- [x] `openssl rand -hex 32` で ENCRYPTION_KEY 生成
+- [x] 生成した値を `.dev.vars` に保存
 
 ---
 
@@ -147,67 +147,67 @@
 #### タスクチェックリスト
 
 **3.1 暗号化ユーティリティ実装**
-- [ ] `functions/lib/crypto.ts` に `encryptToken` 関数実装
-- [ ] `functions/lib/crypto.ts` に `decryptToken` 関数実装
-- [ ] AES-256-GCM アルゴリズムの実装
-- [ ] IVの生成と管理
-- [ ] Base64エンコード/デコード処理
+- [x] `functions/lib/crypto.ts` に `encryptToken` 関数実装
+- [x] `functions/lib/crypto.ts` に `decryptToken` 関数実装
+- [x] AES-256-GCM アルゴリズムの実装
+- [x] IVの生成と管理
+- [x] Base64エンコード/デコード処理
 
 **3.2 セッション管理実装**
-- [ ] `functions/lib/session.ts` に `SessionData` 型定義
-- [ ] `generateSessionId` 関数実装（crypto.randomUUID）
-- [ ] `saveSession` 関数実装（暗号化 + KV保存）
-- [ ] `getSession` 関数実装（KV取得 + 復号化）
-- [ ] `deleteSession` 関数実装
-- [ ] セッション有効期限（30日）のTTL設定
+- [x] `functions/lib/session.ts` に `SessionData` 型定義
+- [x] `generateSessionId` 関数実装（crypto.randomUUID）
+- [x] `saveSession` 関数実装（暗号化 + KV保存）
+- [x] `getSession` 関数実装（KV取得 + 復号化）
+- [x] `deleteSession` 関数実装
+- [x] セッション有効期限（30日）のTTL設定
 
 **3.3 認証エンドポイント実装**
-- [ ] `functions/api/auth/login.ts` 作成
-  - [ ] state パラメータ生成（CSRF対策）
-  - [ ] state を KV に一時保存（5分有効）
-  - [ ] GitHub OAuth URLへのリダイレクト処理
-  - [ ] スコープ設定（`repo read:user`）
+- [x] `functions/api/auth/login.ts` 作成
+  - [x] state パラメータ生成（CSRF対策）
+  - [x] state を KV に一時保存（5分有効）
+  - [x] GitHub OAuth URLへのリダイレクト処理
+  - [x] スコープ設定（`repo read:user`）
 
-- [ ] `functions/api/auth/callback.ts` 作成
-  - [ ] code と state パラメータの取得
-  - [ ] state 検証（KVから取得して照合）
-  - [ ] GitHub APIでaccess_token取得
-  - [ ] GitHub APIでユーザー情報取得
-  - [ ] セッションID生成
-  - [ ] セッションをKVに保存（トークン暗号化）
-  - [ ] Cookie設定（HttpOnly, Secure, SameSite=Lax）
-  - [ ] ダッシュボードへリダイレクト
-  - [ ] エラーハンドリング
+- [x] `functions/api/auth/callback.ts` 作成
+  - [x] code と state パラメータの取得
+  - [x] state 検証（KVから取得して照合）
+  - [x] GitHub APIでaccess_token取得
+  - [x] GitHub APIでユーザー情報取得
+  - [x] セッションID生成
+  - [x] セッションをKVに保存（トークン暗号化）
+  - [x] Cookie設定（HttpOnly, Secure, SameSite=Lax）
+  - [x] ダッシュボードへリダイレクト
+  - [x] エラーハンドリング
 
-- [ ] `functions/api/auth/logout.ts` 作成
-  - [ ] Cookieからセッション取得
-  - [ ] セッション削除
-  - [ ] Cookie削除
-  - [ ] JSON レスポンス返却
+- [x] `functions/api/auth/logout.ts` 作成
+  - [x] Cookieからセッション取得
+  - [x] セッション削除
+  - [x] Cookie削除
+  - [x] JSON レスポンス返却
 
-- [ ] `functions/api/auth/me.ts` 作成
-  - [ ] Cookieからセッション取得
-  - [ ] セッション検証
-  - [ ] ユーザー情報返却
-  - [ ] 未認証時の401レスポンス
+- [x] `functions/api/auth/me.ts` 作成
+  - [x] Cookieからセッション取得
+  - [x] セッション検証
+  - [x] ユーザー情報返却
+  - [x] 未認証時の401レスポンス
 
 **3.4 GitHub APIプロキシ実装**
-- [ ] `functions/api/github/[[path]].ts` 作成
-  - [ ] Cookieからセッション取得
-  - [ ] セッション検証
-  - [ ] パスの組み立て（REST/GraphQL分岐）
-  - [ ] Authorization ヘッダー追加
-  - [ ] GitHub APIへのリクエスト転送
-  - [ ] レスポンスの返却
-  - [ ] エラーハンドリング（401時の処理）
+- [x] `functions/api/github/[[path]].ts` 作成
+  - [x] Cookieからセッション取得
+  - [x] セッション検証
+  - [x] パスの組み立て（REST/GraphQL分岐）
+  - [x] Authorization ヘッダー追加
+  - [x] GitHub APIへのリクエスト転送
+  - [x] レスポンスの返却
+  - [x] エラーハンドリング（401時の処理）
 
 **3.5 ミドルウェア実装**
-- [ ] `functions/_middleware.ts` 作成
-  - [ ] CORS対応（OPTIONSメソッド処理）
-  - [ ] セキュリティヘッダー追加
-  - [ ] X-Content-Type-Options: nosniff
-  - [ ] X-Frame-Options: DENY
-  - [ ] Referrer-Policy: strict-origin-when-cross-origin
+- [x] `functions/_middleware.ts` 作成
+  - [x] CORS対応（OPTIONSメソッド処理）
+  - [x] セキュリティヘッダー追加
+  - [x] X-Content-Type-Options: nosniff
+  - [x] X-Frame-Options: DENY
+  - [x] Referrer-Policy: strict-origin-when-cross-origin
 
 ---
 
@@ -216,47 +216,47 @@
 #### タスクチェックリスト
 
 **4.1 認証コンテキスト実装**
-- [ ] `src/contexts/` ディレクトリ作成
-- [ ] `src/contexts/AuthContext.tsx` 作成
-  - [ ] `User` 型定義
-  - [ ] `AuthContextType` 型定義
-  - [ ] `AuthProvider` コンポーネント実装
-  - [ ] `useAuth` フック実装
-  - [ ] `checkAuth` 関数実装（/api/auth/me 呼び出し）
-  - [ ] `login` 関数実装（/api/auth/login へリダイレクト）
-  - [ ] `logout` 関数実装（/api/auth/logout 呼び出し）
+- [x] `src/contexts/` ディレクトリ作成
+- [x] `src/contexts/AuthContext.tsx` 作成
+  - [x] `User` 型定義
+  - [x] `AuthContextType` 型定義
+  - [x] `AuthProvider` コンポーネント実装
+  - [x] `useAuth` フック実装
+  - [x] `checkAuth` 関数実装（/api/auth/me 呼び出し）
+  - [x] `login` 関数実装（/api/auth/login へリダイレクト）
+  - [x] `logout` 関数実装（/api/auth/logout 呼び出し）
 
 **4.2 ログイン画面実装**
-- [ ] `src/components/LoginPage.tsx` 作成
-  - [ ] UI実装（タイトル、説明、ログインボタン）
-  - [ ] GitHubアイコン追加
-  - [ ] アクセス権限の説明追加
-  - [ ] Tailwind CSSスタイリング
+- [x] `src/components/LoginPage.tsx` 作成
+  - [x] UI実装（タイトル、説明、ログインボタン）
+  - [x] GitHubアイコン追加
+  - [x] アクセス権限の説明追加
+  - [x] Tailwind CSSスタイリング
 
 **4.3 App.tsx改修**
-- [ ] `AuthProvider` でラップ
-- [ ] `AppContent` コンポーネント分離
-- [ ] 認証状態に応じた画面分岐（LoginPage / RepoBoard）
-- [ ] ローディング状態の処理
-- [ ] ユーザー情報表示追加
-- [ ] ログアウトボタン追加
-- [ ] モックデータ関連のコード削除
-- [ ] `dataSource` 状態の削除
-- [ ] モックデータバナーの削除
-- [ ] `loadRealData` を `loadRepos` にリネーム
+- [x] `AuthProvider` でラップ
+- [x] `AppContent` コンポーネント分離
+- [x] 認証状態に応じた画面分岐（LoginPage / RepoBoard）
+- [x] ローディング状態の処理
+- [x] ユーザー情報表示追加
+- [x] ログアウトボタン追加
+- [x] モックデータ関連のコード削除
+- [x] `dataSource` 状態の維持（custom対応）
+- [x] モックデータバナーの削除
+- [x] `loadRealData` を `loadRepos` にリネーム
 
 **4.4 API呼び出し変更**
-- [ ] `src/api/octokit.ts` を改修
-  - [ ] `VITE_GITHUB_TOKEN` 直接呼び出しコード削除
-  - [ ] プロキシモード専用に統一
-  - [ ] `credentials: 'include'` 追加（Cookie送信）
-  - [ ] 401エラー時の処理追加
-  - [ ] エラーメッセージ改善
+- [x] `src/api/octokit.ts` を改修
+  - [x] `VITE_GITHUB_TOKEN` 直接呼び出しコード削除
+  - [x] プロキシモード専用に統一
+  - [x] `credentials: 'include'` 追加（Cookie送信）
+  - [x] 401エラー時の処理追加
+  - [x] エラーメッセージ改善
 
 **4.5 カスタムリポジトリ入力機能の保持**
-- [ ] `RepoInputForm` コンポーネントはそのまま維持
-- [ ] パブリックリポジトリのみ対応であることを確認
-- [ ] エラーハンドリングの確認
+- [x] `RepoInputForm` コンポーネントはそのまま維持
+- [x] パブリックリポジトリのみ対応であることを確認
+- [x] エラーハンドリングの確認
 
 ---
 
