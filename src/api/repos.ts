@@ -1,7 +1,11 @@
 import { createGraphQLClient } from "./octokit";
 import type { Repo } from "../types";
 import { validateRepos, getErrorMessage } from "../utils/validators";
-import { transformRepositories, type GraphQLRepository } from "../lib/transformRepository";
+import {
+  transformRepository,
+  transformRepositories,
+  type GraphQLRepository,
+} from "../lib/transformRepository";
 import { sortRepositories } from "../lib/repoSearch";
 
 /**
@@ -53,6 +57,34 @@ const REPOSITORIES_QUERY = `
     }
   }
 `;
+
+const SINGLE_REPOSITORY_QUERY = `
+  query GetRepository($owner: String!, $name: String!) {
+    repository(owner: $owner, name: $name) {
+      id
+      nameWithOwner
+      url
+      pushedAt
+      isArchived
+      isPrivate
+      description
+      primaryLanguage {
+        name
+      }
+      repositoryTopics(first: 10) {
+        nodes {
+          topic {
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+interface SingleRepositoryResponse {
+  repository: GraphQLRepository | null;
+}
 
 /**
  * すべてのリポジトリを取得（ページネーション対応）
@@ -115,6 +147,113 @@ export async function fetchAllRepositories(retryAttempt = false): Promise<Repo[]
  * ユーザーのリポジトリを取得（エイリアス）
  */
 export const fetchUserRepos = fetchAllRepositories;
+
+type RepositoryIdentifier = {
+  owner: string;
+  name: string;
+  raw: string;
+};
+
+function parseRepositoryIdentifier(input: string): RepositoryIdentifier | null {
+  const raw = input.trim();
+  if (!raw) return null;
+
+  let stripped = raw;
+
+  if (stripped.startsWith("git@github.com:")) {
+    stripped = stripped.replace("git@github.com:", "");
+  } else if (stripped.startsWith("https://github.com/")) {
+    stripped = stripped.replace("https://github.com/", "");
+  } else if (stripped.startsWith("http://github.com/")) {
+    stripped = stripped.replace("http://github.com/", "");
+  } else if (stripped.startsWith("github.com/")) {
+    stripped = stripped.replace("github.com/", "");
+  }
+
+  stripped = stripped.replace(/\.git$/i, "");
+
+  const segments = stripped.split("/").filter(Boolean);
+  if (segments.length < 2) {
+    return null;
+  }
+
+  const [owner, name] = segments;
+  if (!owner || !name) {
+    return null;
+  }
+
+  return { owner, name, raw };
+}
+
+export async function fetchRepositoriesByUrls(
+  inputs: string[]
+): Promise<{ repos: Repo[]; failed: string[] }> {
+  const graphqlClient = createGraphQLClient();
+  const identifiers: RepositoryIdentifier[] = [];
+  const seen = new Set<string>();
+  const invalidInputs: string[] = [];
+
+  inputs.forEach((input) => {
+    const parsed = parseRepositoryIdentifier(input);
+    if (!parsed) {
+      if (input.trim().length > 0) {
+        invalidInputs.push(input);
+      }
+      return;
+    }
+    const slug = `${parsed.owner}/${parsed.name}`;
+    if (seen.has(slug)) {
+      return;
+    }
+    seen.add(slug);
+    identifiers.push(parsed);
+  });
+
+  if (identifiers.length === 0) {
+    return {
+      repos: [],
+      failed: invalidInputs.length
+        ? invalidInputs
+        : inputs.filter((value) => value.trim().length > 0),
+    };
+  }
+
+  const repos: Repo[] = [];
+  const failed: string[] = [...invalidInputs];
+
+  for (const identifier of identifiers) {
+    try {
+      const data = await graphqlClient<SingleRepositoryResponse>(SINGLE_REPOSITORY_QUERY, {
+        owner: identifier.owner,
+        name: identifier.name,
+      });
+
+      if (!data.repository) {
+        failed.push(identifier.raw);
+        continue;
+      }
+
+      const repo = transformRepository(data.repository);
+      const validated = validateRepos([repo]);
+      if (validated.length === 0) {
+        failed.push(identifier.raw);
+        continue;
+      }
+      repos.push(validated[0]);
+    } catch (error) {
+      console.error(
+        `Failed to fetch repository ${identifier.owner}/${identifier.name}:`,
+        error
+      );
+      failed.push(identifier.raw);
+    }
+  }
+
+  return {
+    repos: sortRepositories(repos, "lastUpdated"),
+    failed,
+  };
+}
 
 /**
  * モックデータを生成（開発・テスト用）
