@@ -33,7 +33,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
       aria-label={`リポジトリを開く ${repo.nameWithOwner}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md motion-safe:transition-shadow motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
       {/* Repository Title */}
       <div className="flex items-start justify-between mb-2">

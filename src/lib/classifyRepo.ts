@@ -1,4 +1,5 @@
 import type { Repo, ColumnKey } from "../types";
+import { differenceInDays, isValidDate } from "../utils/date";
 
 export type ClassifyOptions = {
   /** Active threshold in days (inclusive). Defaults to 60 days. */
@@ -11,21 +12,12 @@ export type ClassifyOptions = {
 
 const DEFAULT_ACTIVE_THRESHOLD = 60;
 const DEFAULT_STALE_THRESHOLD = 180;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function getThresholdValue(value: number | undefined, fallback: number): number {
   if (typeof value !== "number" || Number.isNaN(value) || !Number.isFinite(value)) {
     return fallback;
   }
   return value;
-}
-
-function differenceInDays(from: Date, to: Date): number {
-  const diffMs = from.getTime() - to.getTime();
-  if (!Number.isFinite(diffMs)) {
-    return Number.NaN;
-  }
-  return diffMs / MS_PER_DAY;
 }
 
 /**
@@ -38,14 +30,14 @@ export function classifyRepo(repo: Repo, options: ClassifyOptions = {}): ColumnK
 
   const activeThreshold = getThresholdValue(options.activeThreshold, DEFAULT_ACTIVE_THRESHOLD);
   const staleThreshold = getThresholdValue(options.staleThreshold, DEFAULT_STALE_THRESHOLD);
-  const referenceDate = options.now instanceof Date && !Number.isNaN(options.now.getTime()) ? options.now : new Date();
+  const referenceDate = options.now && isValidDate(options.now) ? options.now : new Date();
 
   if (staleThreshold < activeThreshold) {
     throw new Error("staleThreshold must be greater than or equal to activeThreshold");
   }
 
   const pushedDate = new Date(repo.pushedAt);
-  if (Number.isNaN(pushedDate.getTime())) {
+  if (!isValidDate(pushedDate)) {
     return "Dormant";
   }
 

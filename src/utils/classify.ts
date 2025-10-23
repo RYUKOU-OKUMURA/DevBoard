@@ -1,4 +1,6 @@
 import { Repo, ColumnKey, AppConfig } from '../types';
+import { differenceInDays } from './date';
+import { classifyRepo as classifyRepoCore } from '../lib/classifyRepo';
 
 /**
  * Default configuration for repository classification
@@ -10,43 +12,28 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 /**
- * Calculate the number of days between two dates
+ * Calculate the number of days since the given date (rounded up),
+ * clamping future dates to 0.
  */
 export function daysSince(dateString: string): number {
   const date = new Date(dateString);
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+  const diff = differenceInDays(now, date, { clampToZero: true });
+  // Round up to align with historical expectations in utils tests
+  return Math.ceil(Math.abs(diff));
 }
 
 /**
- * Classify a repository into one of the four columns based on push date
- * 
- * Classification rules:
- * - if isArchived → Archived
- * - else if daysSince(pushedAt) ≤ activeThreshold → Active
- * - else if daysSince(pushedAt) ≤ staleThreshold → Stale
- * - else → Dormant
+ * Adapter to the core classification logic to preserve the utils API surface.
  */
 export function classifyRepo(
   repo: Repo,
   config: AppConfig = DEFAULT_CONFIG
 ): ColumnKey {
-  // Archived repositories go to Archived column regardless of push date
-  if (repo.isArchived) {
-    return "Archived";
-  }
-
-  const days = daysSince(repo.pushedAt);
-
-  if (days <= config.activeThreshold) {
-    return "Active";
-  } else if (days <= config.staleThreshold) {
-    return "Stale";
-  } else {
-    return "Dormant";
-  }
+  return classifyRepoCore(repo, {
+    activeThreshold: config.activeThreshold,
+    staleThreshold: config.staleThreshold,
+  });
 }
 
 /**
