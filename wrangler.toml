@@ -1,0 +1,16 @@
+name = "github-dashboard"
+compatibility_date = "2024-01-01"
+
+pages_build_output_dir = "dist"
+
+# Production environment
+[env.production]
+kv_namespaces = [
+  { binding = "SESSIONS", id = "YOUR_PRODUCTION_KV_NAMESPACE_ID" }
+]
+
+# Development/Preview environment
+[env.development]
+kv_namespaces = [
+  { binding = "SESSIONS", preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID" }
+]

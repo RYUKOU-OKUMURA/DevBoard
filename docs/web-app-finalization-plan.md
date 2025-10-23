@@ -90,21 +90,21 @@
 - [x] `npm install` で依存関係を更新
 
 **1.2 Cloudflare Workers設定ファイル作成**
-- [ ] `wrangler.toml` 作成（KV namespace設定含む）
-- [ ] `.dev.vars.example` 作成（環境変数テンプレート）
-- [ ] `.gitignore` に `.dev.vars` 追加確認
+- [x] `wrangler.toml` 作成（KV namespace設定含む）
+- [x] `.dev.vars.example` 作成（環境変数テンプレート）
+- [x] `.gitignore` に `.dev.vars` 追加確認
 
 **1.3 プロジェクト構造の作成**
-- [ ] `functions/` ディレクトリ作成
-- [ ] `functions/api/` ディレクトリ作成
-- [ ] `functions/api/auth/` ディレクトリ作成
-- [ ] `functions/api/github/` ディレクトリ作成
-- [ ] `functions/lib/` ディレクトリ作成
+- [x] `functions/` ディレクトリ作成
+- [x] `functions/api/` ディレクトリ作成
+- [x] `functions/api/auth/` ディレクトリ作成
+- [x] `functions/api/github/` ディレクトリ作成
+- [x] `functions/lib/` ディレクトリ作成
 
 **1.4 共通ライブラリの実装**
-- [ ] `functions/lib/types.ts` 作成（型定義）
-- [ ] `functions/lib/crypto.ts` 作成（暗号化/復号化）
-- [ ] `functions/lib/session.ts` 作成（セッション管理）
+- [x] `functions/lib/types.ts` 作成（型定義）
+- [x] `functions/lib/crypto.ts` 作成（暗号化/復号化）
+- [x] `functions/lib/session.ts` 作成（セッション管理）
 
 ---
 
