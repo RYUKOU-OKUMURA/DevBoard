@@ -1,15 +1,14 @@
-name = "github-dashboard"
-compatibility_date = "2024-01-01"
-
-# Cloudflare Pages build output directory
-pages_build_output_dir = "dist"
-
-# Note about bindings:
-# - Cloudflare Pages ignores resource IDs (KV, D1, R2, etc.) defined in wrangler.toml during CI builds.
-# - Configure KV bindings and secrets in the Cloudflare Pages Dashboard instead:
-#   Settings → Functions → KV namespace bindings: bind your KV namespace as "SESSIONS".
-#   Settings → Environment variables (Secrets): GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, SESSION_SECRET, ENCRYPTION_KEY.
-# - For local development, use:
-#     npm run build -- --watch
-#     wrangler pages dev dist --kv=SESSIONS --port=8788
-#   The --kv flag provides a local binding named "SESSIONS" without needing an ID here.
+# This project is managed via the Cloudflare Dashboard (UI).
+# Intentionally leaving wrangler.toml without any active configuration to avoid
+# managing resources and settings in this file.
+#
+# How to work locally without relying on wrangler.toml:
+#   1) Build the static site (watch mode):
+#        npm run build -- --watch
+#   2) Run Cloudflare Pages local dev against the dist folder:
+#        wrangler pages dev dist --kv=SESSIONS --port=8788
+#
+# Notes:
+# - Bindings (e.g., KV, D1, R2) and environment variables should be configured
+#   in the Cloudflare Dashboard (UI) under your Pages project settings.
+# - This keeps deployment configuration centralized in the UI as requested.
