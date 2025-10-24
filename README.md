@@ -274,6 +274,10 @@ npm test -- src/lib/__tests__/classifyRepo.test.ts
 
 詳細なトラブルシューティングガイドは [docs/development.md](docs/development.md) を参照してください。
 
+詳しい結果（ログと診断）の見方は [docs/detailed-results.md](docs/detailed-results.md) を参照してください。実行環境の準備状況は /api/auth/status で確認できます。
+
+Cloudflare Pages の設定画面がロックされて編集できない場合（「このプロジェクトのバインディングは wrangler.toml を通じて管理されています」と表示される）は、[docs/pages-config-modes.md](docs/pages-config-modes.md) を参照して、ダッシュボード管理モードへの切り替え手順（推奨）または Wrangler 管理モードでの設定方法を確認してください。
+
 ### よくある問題
 
 **Q: ログインできない**
