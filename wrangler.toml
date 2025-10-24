@@ -11,6 +11,6 @@ kv_namespaces = [
 
 # Development/Preview environment
 [env.preview]
-kv_namespaces = [
+kv_namespaces = [github-dashboard
   { binding = "SESSIONS", preview_id = "6b1deebb926d4ed2922efc691b442eea" }
 ]
