@@ -12,5 +12,5 @@ kv_namespaces = [
 # Development/Preview environment
 [env.preview]
 kv_namespaces = [
-  { binding = "SESSIONS", preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID" }
+  { binding = "SESSIONS", preview_id = "6b1deebb926d4ed2922efc691b442eea" }
 ]
