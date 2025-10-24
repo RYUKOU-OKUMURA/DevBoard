@@ -98,35 +98,24 @@ kv_namespaces = [
 
 ---
 
-### ステップ5: `wrangler.toml` の更新
+### ステップ5: Cloudflare Pages で KV バインディングと環境変数を設定
 
-`wrangler.toml` の `env.production` セクションに、上記で取得した KV Namespace ID を設定します。
+Cloudflare Pages の CI では、wrangler.toml 内のリソース ID（KV の id など）は参照されません。wrangler.toml に KV の ID を記載する必要はありません（記載すると混乱の元になります）。
 
-**編集前:**
+代わりに、Cloudflare Pages のダッシュボードで設定します。
 
-```toml
-[env.production]
-kv_namespaces = [
-  { binding = "SESSIONS", id = "YOUR_PRODUCTION_KV_NAMESPACE_ID" }
-]
-```
+1. プロジェクトの Settings タブを開く
+2. 左メニューから Functions を開く
+3. KV namespace bindings で「Add binding」をクリックし、以下を設定する
+   - Variable name: `SESSIONS`
+   - Namespace: 先ほど作成した KV（例: `github-dashboard-SESSIONS`）
+4. 左メニューから Environment variables を開き、本番（Production）に以下を追加する
+   - `GITHUB_CLIENT_ID`
+   - `GITHUB_CLIENT_SECRET`
+   - `SESSION_SECRET`
+   - `ENCRYPTION_KEY`
 
-**編集後:**
-
-```toml
-[env.production]
-kv_namespaces = [
-  { binding = "SESSIONS", id = "abc123def456..." }  # 上で取得したIDを設定
-]
-```
-
-変更をコミットしてプッシュします：
-
-```bash
-git add wrangler.toml
-git commit -m "chore: Update production KV namespace ID"
-git push
-```
+これらの設定を保存したら、再デプロイするか「Retry deployment」を実行してください。
 
 ---
 
