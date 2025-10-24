@@ -63,6 +63,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/vnd.github.v3+json',
+        // GitHub API requires a User-Agent header even for OAuth calls.
+        'User-Agent': 'github-dashboard-app',
       },
     });
 
