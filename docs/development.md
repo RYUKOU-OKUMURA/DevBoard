@@ -95,36 +95,16 @@ openssl rand -hex 32
 openssl rand -hex 32
 ```
 
-生成された値を `.dev.vars` にコピーしてください。
+生成された値を `.dev.vars` にコピーしてください。`SESSION_SECRET` は現在の実装では未使用ですが、将来的な署名付き Cookie 対応のためにランダム文字列を設定しておきます。
 
-### 7. KV Namespace の作成（ローカル開発用）
+### 7. KV バインディング（ローカル開発）
 
-セッションデータを保存するための KV Namespace を作成します。
+`wrangler pages dev` は `--kv=SESSIONS` のようにバインディング名を渡すと自動でローカル用 KV（インメモリ）を割り当てるため、追加設定は不要です。`wrangler.toml` に preview ID を書き込む必要もありません（本番のバインディングは Cloudflare Pages ダッシュボードで管理します）。
+
+Cloudflare アカウント上の KV Namespace に対して動作確認をしたい場合のみ、以下を実行して preview namespace を作成し、得られた ID を `wrangler pages dev dist --kv=SESSIONS=<preview_id> ...` の形式で指定してください。
 
 ```bash
 wrangler kv:namespace create SESSIONS --preview
-```
-
-出力例：
-
-```
-🌀 Creating namespace with title "github-dashboard-SESSIONS_preview"
-✨ Success!
-Add the following to your wrangler.toml:
-kv_namespaces = [
-  { binding = "SESSIONS", preview_id = "abc123..." }
-]
-```
-
-出力された `preview_id` を `wrangler.toml` の `env.development` セクションに設定します。
-
-**wrangler.toml の編集例：**
-
-```toml
-[env.development]
-kv_namespaces = [
-  { binding = "SESSIONS", preview_id = "abc123..." }  # 上で生成されたIDを設定
-]
 ```
 
 ---

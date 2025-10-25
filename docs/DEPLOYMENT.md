@@ -63,7 +63,7 @@ openssl rand -hex 32
 openssl rand -hex 32
 ```
 
-生成された2つの値をメモしてください。後で Cloudflare Pages の環境変数に設定します。
+生成された2つの値をメモしてください。後で Cloudflare Pages の環境変数に設定します。`SESSION_SECRET` は現行コードでは直接参照していませんが、署名付き Cookie 対応を見据えた予約値として登録します（空にせずランダム文字列を設定してください）。
 
 ---
 

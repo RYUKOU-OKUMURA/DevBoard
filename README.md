@@ -19,7 +19,7 @@ GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更�
 - **バックエンド**: Cloudflare Workers Functions
 - **認証**: GitHub OAuth Apps
 - **セッション管理**: Cloudflare KV (AES-256-GCM 暗号化)
-- **データ取得**: GitHub REST API (GraphQL サポート予定)
+- **データ取得**: GitHub GraphQL API（Octokit クライアント + Cloudflare プロキシ）
 
 ## アーキテクチャ
 
@@ -92,12 +92,11 @@ GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更�
    SESSION_SECRET=$(openssl rand -hex 32)
    ENCRYPTION_KEY=$(openssl rand -hex 32)
    ```
+   ※ `SESSION_SECRET` は将来的な署名付き Cookie 対応向けの予約キーです（現在のビルドでもランダム文字列を設定しておく運用としています）。
 
-5. **KV Namespace の作成**
-   ```bash
-   wrangler kv:namespace create SESSIONS --preview
-   # 出力された preview_id を wrangler.toml に設定
-   ```
+5. **KV バインディングについて**
+
+   本番環境のバインディングは Cloudflare Pages ダッシュボードで管理し、`wrangler.toml` には ID を記載しません（`wrangler.toml` にも注記済み）。ローカル開発では `wrangler pages dev` が指定した名前で一時的な KV を用意するため、追加設定は不要です。
 
 6. **開発サーバーの起動**
 

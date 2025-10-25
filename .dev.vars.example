@@ -4,6 +4,8 @@ GITHUB_CLIENT_ID=your_dev_client_id_here
 GITHUB_CLIENT_SECRET=your_dev_client_secret_here
 
 # Session Management
+# SESSION_SECRET は現在の実装では未使用（署名付き Cookie 用に予約）ですが
+# 一貫性のためランダムな 32 文字の値を設定してください。
 # Generate with: openssl rand -hex 32
 SESSION_SECRET=your_random_32_character_session_secret_here
 ENCRYPTION_KEY=your_random_32_character_encryption_key_here
