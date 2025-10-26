@@ -5,12 +5,14 @@ import { searchAndSortRepos } from '../utils/search';
 import { getSavedViews, saveView, deleteView, getViewById } from '../utils/storage';
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
+import { CategoryManager } from './CategoryManager';
 
 interface RepoBoardProps {
   repos: Repo[];
   config?: AppConfig;
   isLoading?: boolean;
   onRefresh?: () => void;
+  onStatsUpdate?: (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => void;
 }
 
 const COLUMN_TITLES: Record<ColumnKey, string> = {
@@ -26,17 +28,24 @@ const ORDER_STORAGE_KEY = 'github-dashboard-column-order';
 const DASHBOARD_TITLE = 'GitHubダッシュボード';
 const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
 const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
+const HIDDEN_REPOS_STORAGE_KEY = 'github-dashboard-hidden-repos';
 
 export const RepoBoard: React.FC<RepoBoardProps> = ({
   repos,
   config = DEFAULT_CONFIG,
   isLoading = false,
   onRefresh,
+  onStatsUpdate,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [currentViewId, setCurrentViewId] = useState<string>('');
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+
+  // NOTE: Category profile feature is under development.
+  // Currently not used in classification logic, reserved for future implementation.
+  const [currentProfileId, setCurrentProfileId] = useState('default');
   const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>(() => {
     try {
       const raw = localStorage.getItem(COLUMN_TITLES_STORAGE_KEY);
@@ -62,6 +71,16 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     Dormant: [],
     Archived: [],
   });
+  const [hiddenRepoIds, setHiddenRepoIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(HIDDEN_REPOS_STORAGE_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw) as string[];
+        return new Set(arr);
+      }
+    } catch {}
+    return new Set();
+  });
 
   // Load saved views on mount
   useEffect(() => {
@@ -76,10 +95,11 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     } catch {}
   }, []);
 
-  const filteredRepos = useMemo(
-    () => searchAndSortRepos(repos, searchQuery, sortOrder),
-    [repos, searchQuery, sortOrder]
-  );
+  const filteredRepos = useMemo(() => {
+    const searchResults = searchAndSortRepos(repos, searchQuery, sortOrder);
+    // Filter out hidden repos
+    return searchResults.filter((repo) => !hiddenRepoIds.has(repo.id));
+  }, [repos, searchQuery, sortOrder, hiddenRepoIds]);
 
   const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
 
@@ -101,6 +121,20 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return columns;
   }, [filteredRepos, columnAssignments, config]);
 
+  // Notify parent of stats updates
+  useEffect(() => {
+    if (onStatsUpdate) {
+      const totalVisible = Object.values(classifiedRepos).reduce((sum, repos) => sum + repos.length, 0);
+      const categoryCounts: Record<ColumnKey, number> = {
+        Active: classifiedRepos.Active.length,
+        Stale: classifiedRepos.Stale.length,
+        Dormant: classifiedRepos.Dormant.length,
+        Archived: classifiedRepos.Archived.length,
+      };
+      onStatsUpdate(totalVisible, categoryCounts);
+    }
+  }, [classifiedRepos, onStatsUpdate]);
+
   useEffect(() => {
     try {
       localStorage.setItem(COLUMN_TITLES_STORAGE_KEY, JSON.stringify(columnTitles));
@@ -112,6 +146,13 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       localStorage.setItem(COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(columnAssignments));
     } catch {}
   }, [columnAssignments]);
+
+  // Persist hidden repos
+  useEffect(() => {
+    try {
+      localStorage.setItem(HIDDEN_REPOS_STORAGE_KEY, JSON.stringify(Array.from(hiddenRepoIds)));
+    } catch {}
+  }, [hiddenRepoIds]);
 
   // Sync order map with current repos per column
   useEffect(() => {
@@ -273,6 +314,22 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     });
   };
 
+  const handleHideRepo = (repoId: string) => {
+    setHiddenRepoIds((prev) => new Set([...prev, repoId]));
+  };
+
+  const handleUnhideRepo = (repoId: string) => {
+    setHiddenRepoIds((prev) => {
+      const next = new Set(prev);
+      next.delete(repoId);
+      return next;
+    });
+  };
+
+  const handleUnhideAll = () => {
+    setHiddenRepoIds(new Set());
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top Bar */}
@@ -291,6 +348,17 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         onViewSelect={handleViewSelect}
         onSaveView={handleSaveView}
         onDeleteView={handleDeleteView}
+        hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
+        onUnhideRepo={handleUnhideRepo}
+        onUnhideAll={handleUnhideAll}
+        onCategorySettings={() => setShowCategoryManager(true)}
+      />
+
+      <CategoryManager
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        currentProfileId={currentProfileId}
+        onProfileSelect={setCurrentProfileId}
       />
 
       {/* Board Columns */}
@@ -304,6 +372,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
             onReorder={handleReorderWithinColumn}
             onReorderBetween={handleReorderBetween}
             onTitleChange={handleColumnTitleChange}
+            onHide={handleHideRepo}
           />
         ))}
       </div>

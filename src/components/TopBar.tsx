@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SortOrder, SavedView } from '../types';
+import { SortOrder, SavedView, Repo } from '../types';
 
 interface TopBarProps {
   title: string;
@@ -16,6 +16,10 @@ interface TopBarProps {
   onViewSelect?: (viewId: string) => void;
   onSaveView?: (name: string) => boolean;
   onDeleteView?: (viewId: string) => boolean;
+  hiddenRepos?: Repo[];
+  onUnhideRepo?: (repoId: string) => void;
+  onUnhideAll?: () => void;
+  onCategorySettings?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -33,8 +37,13 @@ export const TopBar: React.FC<TopBarProps> = ({
   onViewSelect,
   onSaveView,
   onDeleteView,
+  hiddenRepos = [],
+  onUnhideRepo,
+  onUnhideAll,
+  onCategorySettings,
 }) => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showHiddenDialog, setShowHiddenDialog] = useState(false);
   const [viewName, setViewName] = useState('');
   const [saveError, setSaveError] = useState('');
 
@@ -98,41 +107,65 @@ export const TopBar: React.FC<TopBarProps> = ({
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
           </div>
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  読み込み中...
+          <div className="flex items-center gap-2">
+            {onCategorySettings && (
+              <button
+                onClick={onCategorySettings}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1"
+                title="カテゴリプロファイル設定 (開発中)"
+              >
+                カテゴリ設定
+                <span className="text-xs bg-purple-500 px-1.5 py-0.5 rounded">開発中</span>
+              </button>
+            )}
+            {hiddenRepos.length > 0 && (
+              <button
+                onClick={() => setShowHiddenDialog(true)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors relative"
+                title="非表示のリポジトリを管理"
+              >
+                非表示を管理
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                  {hiddenRepos.length}
                 </span>
-              ) : (
-                '↻ 更新'
-              )}
-            </button>
-          )}
+              </button>
+            )}
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? (
+                  <span className="flex items-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    読み込み中...
+                  </span>
+                ) : (
+                  '↻ 更新'
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
@@ -171,6 +204,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             >
               <option value="lastUpdated">並び替え: 最終更新日</option>
               <option value="name">並び替え: 名前 (A-Z)</option>
+              <option value="stars">並び替え: スター数</option>
+              <option value="language">並び替え: 言語</option>
             </select>
           </div>
 
@@ -261,7 +296,11 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <strong>検索:</strong> {searchQuery || '（なし）'}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>並び順:</strong> {sortOrder === 'lastUpdated' ? '最終更新日' : '名前 (A-Z)'}
+                <strong>並び順:</strong>{' '}
+                {sortOrder === 'lastUpdated' && '最終更新日'}
+                {sortOrder === 'name' && '名前 (A-Z)'}
+                {sortOrder === 'stars' && 'スター数'}
+                {sortOrder === 'language' && '言語'}
               </p>
             </div>
             <div className="flex gap-3">
@@ -278,6 +317,72 @@ export const TopBar: React.FC<TopBarProps> = ({
                 キャンセル
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Repos Dialog */}
+      {showHiddenDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">非表示のリポジトリ ({hiddenRepos.length})</h2>
+              <button
+                onClick={() => setShowHiddenDialog(false)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="閉じる"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {hiddenRepos.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">非表示のリポジトリはありません</p>
+            ) : (
+              <>
+                <div className="flex-1 overflow-y-auto mb-4 space-y-2">
+                  {hiddenRepos.map((repo) => (
+                    <div
+                      key={repo.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{repo.nameWithOwner}</p>
+                        {repo.description && (
+                          <p className="text-sm text-gray-600 truncate">{repo.description}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => onUnhideRepo?.(repo.id)}
+                        className="ml-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                      >
+                        表示
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3 border-t pt-4">
+                  <button
+                    onClick={() => {
+                      onUnhideAll?.();
+                      setShowHiddenDialog(false);
+                    }}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    すべて表示
+                  </button>
+                  <button
+                    onClick={() => setShowHiddenDialog(false)}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -75,6 +75,30 @@ export function sortRepos(repos: Repo[], sortOrder: SortOrder): Repo[] {
       });
       break;
 
+    case 'stars':
+      // Sort by stargazers_count descending (most stars first)
+      sorted.sort((a, b) => {
+        const starsA = a.stargazers_count ?? 0;
+        const starsB = b.stargazers_count ?? 0;
+        return starsB - starsA;
+      });
+      break;
+
+    case 'language':
+      // Sort by primaryLanguage ascending (alphabetical)
+      // Repos without language come last
+      sorted.sort((a, b) => {
+        const langA = a.primaryLanguage ?? '';
+        const langB = b.primaryLanguage ?? '';
+
+        if (langA === '' && langB === '') return 0;
+        if (langA === '') return 1;
+        if (langB === '') return -1;
+
+        return langA.localeCompare(langB);
+      });
+      break;
+
     default:
       // Default to lastUpdated
       sorted.sort((a, b) => {

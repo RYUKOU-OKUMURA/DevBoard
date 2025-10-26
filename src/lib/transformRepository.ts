@@ -8,6 +8,7 @@ export interface GraphQLRepository {
   isArchived: boolean;
   isPrivate: boolean;
   description: string | null;
+  stargazerCount?: number | null;
   primaryLanguage: {
     name: string;
   } | null;
@@ -42,6 +43,7 @@ export function transformRepository(repository: GraphQLRepository): Repo {
     description: repository.description ?? undefined,
     primaryLanguage: repository.primaryLanguage?.name ?? undefined,
     topics: extractTopics(repository),
+    stargazers_count: repository.stargazerCount ?? undefined,
   };
 }
 

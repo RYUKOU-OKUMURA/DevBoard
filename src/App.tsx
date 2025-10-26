@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { RepoBoard, RepoInputForm } from './components';
+import { useState, useEffect } from 'react';
+import { RepoBoard, RepoInputForm, DashboardStats } from './components';
 import LoginPage from './components/LoginPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Repo } from './types';
-import { fetchUserRepos, fetchRepositoriesByUrls } from './api/repos';
+import { Repo, ColumnKey } from './types';
+import { fetchUserRepos, fetchRepositoriesByUrls, fetchRecentActivities, RecentActivity } from './api/repos';
 
 type DataSource = 'viewer' | 'custom';
 
@@ -15,6 +15,16 @@ function AppContent() {
   const [dataSource, setDataSource] = useState<DataSource>('viewer');
   const [customInput, setCustomInput] = useState('');
   const [customRepoSources, setCustomRepoSources] = useState<string[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [displayedRepoCount, setDisplayedRepoCount] = useState<number | null>(null);
+  const [displayedCategoryCounts, setDisplayedCategoryCounts] = useState<Record<ColumnKey, number>>({
+    Active: 0,
+    Stale: 0,
+    Dormant: 0,
+    Archived: 0,
+  });
+  const [activityRefreshToken, setActivityRefreshToken] = useState(0);
 
   const parseCustomInput = (value: string): string[] => {
     return value
@@ -78,6 +88,8 @@ function AppContent() {
         loadCustomRepos(customRepoSources);
       }
     }
+    // Trigger activity refresh
+    setActivityRefreshToken((prev) => prev + 1);
   };
 
   const handleCustomSubmit = async () => {
@@ -87,6 +99,31 @@ function AppContent() {
       return;
     }
     await loadCustomRepos(sources);
+  };
+
+  // Load recent activities when user is authenticated
+  useEffect(() => {
+    if (user && repos.length > 0) {
+      setIsLoadingActivities(true);
+      fetchRecentActivities()
+        .then(setRecentActivities)
+        .catch((err) => {
+          console.error('Failed to fetch recent activities:', err);
+          setRecentActivities([]); // Explicitly set empty array on error
+        })
+        .finally(() => {
+          setIsLoadingActivities(false);
+        });
+    } else if (repos.length === 0) {
+      // Clear activities when no repos
+      setRecentActivities([]);
+    }
+  }, [user, repos.length, dataSource, activityRefreshToken]);
+
+  // Handle stats update from RepoBoard
+  const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
+    setDisplayedRepoCount(totalVisible);
+    setDisplayedCategoryCounts(categoryCounts);
   };
 
   // Show loading spinner while checking auth
@@ -188,7 +225,7 @@ function AppContent() {
         </div>
       )}
 
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-2 border-b border-gray-200">
         <div className="max-w-5xl mx-auto">
           <RepoInputForm
             value={customInput}
@@ -199,8 +236,23 @@ function AppContent() {
         </div>
       </div>
 
+      {/* Dashboard Stats */}
+      {repos.length > 0 && (
+        <DashboardStats
+          totalRepos={displayedRepoCount !== null ? displayedRepoCount : repos.length}
+          categoryCounts={displayedCategoryCounts}
+          recentActivities={recentActivities}
+          isLoadingActivities={isLoadingActivities}
+        />
+      )}
+
       {/* Main Board */}
-      <RepoBoard repos={repos} isLoading={isLoading} onRefresh={handleRefresh} />
+      <RepoBoard
+        repos={repos}
+        isLoading={isLoading}
+        onRefresh={handleRefresh}
+        onStatsUpdate={handleStatsUpdate}
+      />
     </div>
   );
 }

@@ -3,3 +3,5 @@ export { RepoColumn } from './RepoColumn';
 export { RepoCard } from './RepoCard';
 export { TopBar } from './TopBar';
 export { RepoInputForm } from './RepoInputForm';
+export { DashboardStats } from './DashboardStats';
+export { CategoryManager } from './CategoryManager';

@@ -21,33 +21,31 @@ export const RepoInputForm: React.FC<RepoInputFormProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-3"
+      className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 space-y-2"
     >
       <div>
-        <label htmlFor="repo-input" className="block text-sm font-medium text-gray-700">
-          リポジトリ URL または `owner/repo`
+        <label htmlFor="repo-input" className="block text-xs font-medium text-gray-700 mb-1">
+          リポジトリ URL または owner/repo
         </label>
         <textarea
           id="repo-input"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder={
-            '例: https://github.com/facebook/react\nまたは: facebook/react\n複数入力する場合は改行してください'
-          }
-          rows={4}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="例: facebook/react (複数の場合は改行)"
+          rows={2}
+          className="block w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-500">
-          最大 10 件程度を推奨。重複や無効な入力は自動的にスキップされます。
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-gray-500 flex-1">
+          複数入力可。無効な入力は自動スキップされます。
         </p>
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400 whitespace-nowrap"
         >
-          {isLoading ? '読み込み中...' : '指定リポジトリを読み込む'}
+          {isLoading ? '読み込み中...' : 'リポジトリを読み込む'}
         </button>
       </div>
     </form>

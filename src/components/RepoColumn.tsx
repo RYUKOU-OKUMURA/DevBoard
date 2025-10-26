@@ -14,6 +14,7 @@ interface RepoColumnProps {
     toId?: string
   ) => void;
   onTitleChange?: (column: ColumnKey, newTitle: string) => void;
+  onHide?: (repoId: string) => void;
 }
 
 const COLUMN_COLORS: Record<ColumnKey, { bg: string; border: string; header: string }> = {
@@ -46,6 +47,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
   onReorder,
   onReorderBetween,
   onTitleChange,
+  onHide,
 }) => {
   const colors = COLUMN_COLORS[columnKey];
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -213,7 +215,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropOnCard(e, repo.id)}
             >
-              <RepoCard repo={repo} />
+              <RepoCard repo={repo} onHide={onHide} />
             </div>
           ))
         )}

@@ -38,6 +38,7 @@ const REPOSITORIES_QUERY = `
           isArchived
           isPrivate
           description
+          stargazerCount
           primaryLanguage {
             name
           }
@@ -68,6 +69,7 @@ const SINGLE_REPOSITORY_QUERY = `
       isArchived
       isPrivate
       description
+      stargazerCount
       primaryLanguage {
         name
       }
@@ -253,6 +255,103 @@ export async function fetchRepositoriesByUrls(
     repos: sortRepositories(repos, "lastUpdated"),
     failed,
   };
+}
+
+/**
+ * Recent activity type
+ */
+export interface RecentActivity {
+  repo: {
+    nameWithOwner: string;
+    htmlUrl: string;
+  };
+  lastActivity: string;
+}
+
+/**
+ * Fetch recent repository activities (last 7 days) from GitHub events
+ */
+export async function fetchRecentActivities(): Promise<RecentActivity[]> {
+  const graphqlClient = createGraphQLClient();
+
+  const RECENT_EVENTS_QUERY = `
+    query GetRecentEvents {
+      viewer {
+        contributionsCollection(from: "${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}") {
+          commitContributionsByRepository(maxRepositories: 3) {
+            repository {
+              nameWithOwner
+              url
+            }
+            contributions(first: 1, orderBy: {direction: DESC}) {
+              nodes {
+                occurredAt
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await graphqlClient<{
+      viewer: {
+        contributionsCollection: {
+          commitContributionsByRepository: Array<{
+            repository: {
+              nameWithOwner: string;
+              url: string;
+            };
+            contributions: {
+              nodes: Array<{
+                occurredAt: string;
+              }>;
+            };
+          }>;
+        };
+      };
+    }>(RECENT_EVENTS_QUERY);
+
+    const activities: RecentActivity[] = response.viewer.contributionsCollection.commitContributionsByRepository
+      .map((item) => {
+        const latestContribution = item.contributions.nodes[0];
+        if (!latestContribution) return null;
+
+        const date = new Date(latestContribution.occurredAt);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+        let lastActivity: string;
+        if (diffDays === 0) {
+          if (diffHours === 0) {
+            lastActivity = '1時間以内';
+          } else {
+            lastActivity = `${diffHours}時間前`;
+          }
+        } else if (diffDays === 1) {
+          lastActivity = '1日前';
+        } else {
+          lastActivity = `${diffDays}日前`;
+        }
+
+        return {
+          repo: {
+            nameWithOwner: item.repository.nameWithOwner,
+            htmlUrl: item.repository.url,
+          },
+          lastActivity,
+        };
+      })
+      .filter((activity): activity is RecentActivity => activity !== null);
+
+    return activities;
+  } catch (error) {
+    console.error('Failed to fetch recent activities:', error);
+    return [];
+  }
 }
 
 /**

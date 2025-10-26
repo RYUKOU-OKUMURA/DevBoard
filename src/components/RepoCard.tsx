@@ -4,9 +4,10 @@ import { timeAgo } from '../utils/timeAgo';
 
 interface RepoCardProps {
   repo: Repo;
+  onHide?: (repoId: string) => void;
 }
 
-export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
+export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
   const handleClick = () => {
     window.open(repo.htmlUrl, '_blank', 'noopener,noreferrer');
   };
@@ -15,6 +16,13 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleClick();
+    }
+  };
+
+  const handleHideClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onHide) {
+      onHide(repo.id);
     }
   };
 
@@ -34,7 +42,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
       onKeyDown={handleKeyDown}
       className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md motion-safe:transition-shadow motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
-      {/* Repository Title */}
+      {/* Repository Title and Actions */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-gray-900 truncate">
@@ -42,17 +50,33 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo }) => {
             <span className="text-blue-600">{repoName}</span>
           </h3>
         </div>
-        
-        {/* Privacy Badge */}
-        {repo.isPrivate ? (
-          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-            🔒 非公開
-          </span>
-        ) : (
-          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-            🌐 公開
-          </span>
-        )}
+
+        <div className="flex items-center gap-1 ml-2">
+          {/* Privacy Badge */}
+          {repo.isPrivate ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+              🔒 非公開
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+              🌐 公開
+            </span>
+          )}
+
+          {/* Hide Button */}
+          {onHide && (
+            <button
+              onClick={handleHideClick}
+              className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+              title="非表示にする"
+              aria-label="このカードを非表示にする"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Description */}
