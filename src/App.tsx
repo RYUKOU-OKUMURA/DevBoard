@@ -3,7 +3,7 @@ import { RepoBoard, RepoInputForm, DashboardStats } from './components';
 import LoginPage from './components/LoginPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Repo, ColumnKey } from './types';
-import { fetchUserRepos, fetchRepositoriesByUrls, fetchRecentActivities, RecentActivity } from './api/repos';
+import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
 
 type DataSource = 'viewer' | 'custom';
 
@@ -15,7 +15,8 @@ function AppContent() {
   const [dataSource, setDataSource] = useState<DataSource>('viewer');
   const [customInput, setCustomInput] = useState('');
   const [customRepoSources, setCustomRepoSources] = useState<string[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [activityType, setActivityType] = useState<'issues' | 'pulls'>('issues');
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [displayedRepoCount, setDisplayedRepoCount] = useState<number | null>(null);
   const [displayedCategoryCounts, setDisplayedCategoryCounts] = useState<Record<ColumnKey, number>>({
@@ -101,24 +102,30 @@ function AppContent() {
     await loadCustomRepos(sources);
   };
 
-  // Load recent activities when user is authenticated
+  // Load latest Issues/PRs when user is authenticated
   useEffect(() => {
-    if (user && repos.length > 0) {
-      setIsLoadingActivities(true);
-      fetchRecentActivities()
-        .then(setRecentActivities)
-        .catch((err) => {
-          console.error('Failed to fetch recent activities:', err);
-          setRecentActivities([]); // Explicitly set empty array on error
-        })
-        .finally(() => {
-          setIsLoadingActivities(false);
-        });
-    } else if (repos.length === 0) {
-      // Clear activities when no repos
-      setRecentActivities([]);
+    let cancelled = false;
+    async function load() {
+      if (user) {
+        setIsLoadingActivities(true);
+        try {
+          const items = activityType === 'issues' ?
+            await fetchLatestIssues() :
+            await fetchLatestPullRequests();
+          if (!cancelled) setRecentItems(items);
+        } catch (err) {
+          console.error('Failed to fetch latest items:', err);
+          if (!cancelled) setRecentItems([]);
+        } finally {
+          if (!cancelled) setIsLoadingActivities(false);
+        }
+      } else {
+        setRecentItems([]);
+      }
     }
-  }, [user, repos.length, dataSource, activityRefreshToken]);
+    load();
+    return () => { cancelled = true; };
+  }, [user, dataSource, activityRefreshToken, activityType]);
 
   // Handle stats update from RepoBoard
   const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
@@ -241,7 +248,9 @@ function AppContent() {
         <DashboardStats
           totalRepos={displayedRepoCount !== null ? displayedRepoCount : repos.length}
           categoryCounts={displayedCategoryCounts}
-          recentActivities={recentActivities}
+          activityType={activityType}
+          onActivityTypeChange={setActivityType}
+          recentItems={recentItems}
           isLoadingActivities={isLoadingActivities}
         />
       )}

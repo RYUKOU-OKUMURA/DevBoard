@@ -1,25 +1,24 @@
 import React from 'react';
 import { ColumnKey } from '../types';
+import type { RecentItem } from '../api/repos';
 
-interface RecentActivity {
-  repo: {
-    nameWithOwner: string;
-    htmlUrl: string;
-  };
-  lastActivity: string;
-}
+type ActivityType = 'issues' | 'pulls';
 
 interface DashboardStatsProps {
   totalRepos: number;
   categoryCounts: Record<ColumnKey, number>;
-  recentActivities: RecentActivity[];
+  activityType: ActivityType;
+  onActivityTypeChange: (type: ActivityType) => void;
+  recentItems: RecentItem[];
   isLoadingActivities?: boolean;
 }
 
 export const DashboardStats: React.FC<DashboardStatsProps> = ({
   totalRepos,
   categoryCounts,
-  recentActivities,
+  activityType,
+  onActivityTypeChange,
+  recentItems,
   isLoadingActivities = false,
 }) => {
   return (
@@ -53,42 +52,53 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({
         </div>
       </div>
 
-      {/* Recent Activity Card */}
+      {/* Latest Issues/PRs Card */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">最近のアクティビティ (7日間)</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-700">最新の項目 (7日間)</h3>
+          <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Activity type toggle">
+            <button
+              type="button"
+              onClick={() => onActivityTypeChange('issues')}
+              className={`px-3 py-1 text-xs font-medium border border-gray-300 ${activityType === 'issues' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} rounded-l-md`}
+              aria-pressed={activityType === 'issues'}
+            >
+              Issue
+            </button>
+            <button
+              type="button"
+              onClick={() => onActivityTypeChange('pulls')}
+              className={`px-3 py-1 text-xs font-medium border-t border-b border-r border-gray-300 ${activityType === 'pulls' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} rounded-r-md`}
+              aria-pressed={activityType === 'pulls'}
+            >
+              PullRequest
+            </button>
+          </div>
+        </div>
         {isLoadingActivities ? (
-          <p className="text-sm text-gray-500 text-center py-4">アクティビティデータを取得中...</p>
-        ) : recentActivities.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">直近7日間のアクティビティはありません</p>
+          <p className="text-sm text-gray-500 text-center py-4">データを取得中...</p>
+        ) : recentItems.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-4">直近7日間の{activityType === 'issues' ? 'Issue' : 'PullRequest'}はありません</p>
         ) : (
           <div className="space-y-2">
-            {recentActivities.map((activity, index) => (
+            {recentItems.map((item, index) => (
               <a
                 key={index}
-                href={activity.repo.htmlUrl}
+                href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors group"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-blue-600 group-hover:text-blue-700 truncate">
-                    {activity.repo.nameWithOwner}
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {item.title}
+                    <span className="ml-2 text-gray-500">#{item.number}</span>
                   </p>
-                  <p className="text-xs text-gray-500">{activity.lastActivity}</p>
+                  <p className="text-xs text-gray-500 truncate">{item.repo.nameWithOwner} ・ {item.relativeTime}</p>
                 </div>
-                <svg
-                  className="w-4 h-4 text-gray-400 group-hover:text-blue-600 ml-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
+                <span className={`ml-2 text-xs font-semibold ${item.type === 'Issue' ? 'text-emerald-700' : 'text-indigo-700'}`}>
+                  {item.type === 'Issue' ? 'Issue' : 'PR'}
+                </span>
               </a>
             ))}
           </div>

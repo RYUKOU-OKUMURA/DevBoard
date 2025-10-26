@@ -7,6 +7,7 @@ import {
   type GraphQLRepository,
 } from "../lib/transformRepository";
 import { sortRepositories } from "../lib/repoSearch";
+import { timeAgo } from "../lib/timeAgo";
 
 /**
  * GitHub GraphQL API レスポンスの型定義
@@ -268,6 +269,19 @@ export interface RecentActivity {
   lastActivity: string;
 }
 
+export interface RecentItem {
+  type: 'Issue' | 'PullRequest';
+  repo: {
+    nameWithOwner: string;
+    htmlUrl: string;
+  };
+  title: string;
+  number: number;
+  url: string;
+  occurredAt: string;
+  relativeTime: string;
+}
+
 /**
  * Fetch recent repository activities (last 7 days) from GitHub events
  */
@@ -318,31 +332,14 @@ export async function fetchRecentActivities(): Promise<RecentActivity[]> {
         const latestContribution = item.contributions.nodes[0];
         if (!latestContribution) return null;
 
-        const date = new Date(latestContribution.occurredAt);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-        let lastActivity: string;
-        if (diffDays === 0) {
-          if (diffHours === 0) {
-            lastActivity = '1時間以内';
-          } else {
-            lastActivity = `${diffHours}時間前`;
-          }
-        } else if (diffDays === 1) {
-          lastActivity = '1日前';
-        } else {
-          lastActivity = `${diffDays}日前`;
-        }
+        const relative = timeAgo(latestContribution.occurredAt);
 
         return {
           repo: {
             nameWithOwner: item.repository.nameWithOwner,
             htmlUrl: item.repository.url,
           },
-          lastActivity,
+          lastActivity: relative,
         };
       })
       .filter((activity): activity is RecentActivity => activity !== null);
@@ -350,6 +347,132 @@ export async function fetchRecentActivities(): Promise<RecentActivity[]> {
     return activities;
   } catch (error) {
     console.error('Failed to fetch recent activities:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch latest Issues contributed by the viewer within last 7 days
+ */
+export async function fetchLatestIssues(): Promise<RecentItem[]> {
+  const graphqlClient = createGraphQLClient();
+  const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const QUERY = `
+    query GetRecentIssues($from: DateTime!) {
+      viewer {
+        contributionsCollection(from: $from) {
+          issueContributionsByRepository(maxRepositories: 10) {
+            repository { nameWithOwner url }
+            contributions(first: 5, orderBy: { direction: DESC }) {
+              nodes {
+                occurredAt
+                issue { title number url repository { nameWithOwner url } }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await graphqlClient<{
+      viewer: {
+        contributionsCollection: {
+          issueContributionsByRepository: Array<{
+            repository: { nameWithOwner: string; url: string };
+            contributions: { nodes: Array<{ occurredAt: string; issue: { title: string; number: number; url: string; repository: { nameWithOwner: string; url: string } } }> };
+          }>;
+        };
+      };
+    }>(QUERY, { from: FROM });
+
+    const items: RecentItem[] = data.viewer.contributionsCollection.issueContributionsByRepository
+      .flatMap((repoBlock) =>
+        repoBlock.contributions.nodes.map((node) => {
+          const occurredAt = node.occurredAt;
+          const repo = node.issue.repository;
+          return {
+            type: 'Issue' as const,
+            repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
+            title: node.issue.title,
+            number: node.issue.number,
+            url: node.issue.url,
+            occurredAt,
+            relativeTime: timeAgo(occurredAt),
+          };
+        })
+      )
+      .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1))
+      .slice(0, 10);
+
+    return items;
+  } catch (error) {
+    console.error('Failed to fetch latest issues:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch latest Pull Requests contributed by the viewer within last 7 days
+ */
+export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
+  const graphqlClient = createGraphQLClient();
+  const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const QUERY = `
+    query GetRecentPRs($from: DateTime!) {
+      viewer {
+        contributionsCollection(from: $from) {
+          pullRequestContributionsByRepository(maxRepositories: 10) {
+            repository { nameWithOwner url }
+            contributions(first: 5, orderBy: { direction: DESC }) {
+              nodes {
+                occurredAt
+                pullRequest { title number url repository { nameWithOwner url } }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await graphqlClient<{
+      viewer: {
+        contributionsCollection: {
+          pullRequestContributionsByRepository: Array<{
+            repository: { nameWithOwner: string; url: string };
+            contributions: { nodes: Array<{ occurredAt: string; pullRequest: { title: string; number: number; url: string; repository: { nameWithOwner: string; url: string } } }> };
+          }>;
+        };
+      };
+    }>(QUERY, { from: FROM });
+
+    const items: RecentItem[] = data.viewer.contributionsCollection.pullRequestContributionsByRepository
+      .flatMap((repoBlock) =>
+        repoBlock.contributions.nodes.map((node) => {
+          const occurredAt = node.occurredAt;
+          const repo = node.pullRequest.repository;
+          return {
+            type: 'PullRequest' as const,
+            repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
+            title: node.pullRequest.title,
+            number: node.pullRequest.number,
+            url: node.pullRequest.url,
+            occurredAt,
+            relativeTime: timeAgo(occurredAt),
+          };
+        })
+      )
+      .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1))
+      .slice(0, 10);
+
+    return items;
+  } catch (error) {
+    console.error('Failed to fetch latest pull requests:', error);
     return [];
   }
 }
