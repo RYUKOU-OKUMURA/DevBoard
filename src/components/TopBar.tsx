@@ -384,10 +384,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   setSaveError('');
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    handleSaveClick();
-                  } else if (event.key === 'Escape') {
+                  if (event.key === 'Escape') {
                     handleDialogClose();
                   }
                 }}
@@ -450,10 +447,12 @@ export const TopBar: React.FC<TopBarProps> = ({
                   setPresetError('');
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
+                  // Do not allow Enter to trigger save implicitly; require explicit click on the 保存 button
+                  if (event.key === 'Enter' && !event.isComposing) {
                     event.preventDefault();
-                    handleSavePresetClick();
-                  } else if (event.key === 'Escape') {
+                    return;
+                  }
+                  if (event.key === 'Escape') {
                     handlePresetDialogClose();
                   }
                 }}
