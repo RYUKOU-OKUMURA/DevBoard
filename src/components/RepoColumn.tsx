@@ -15,6 +15,8 @@ interface RepoColumnProps {
   ) => void;
   onTitleChange?: (column: ColumnKey, newTitle: string) => void;
   onHide?: (repoId: string) => void;
+  isVisible?: boolean;
+  onToggleVisibility?: (columnKey: ColumnKey) => void;
 }
 
 const COLUMN_COLORS: Record<ColumnKey, { bg: string; border: string; header: string }> = {
@@ -48,6 +50,8 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
   onReorderBetween,
   onTitleChange,
   onHide,
+  isVisible = true,
+  onToggleVisibility,
 }) => {
   const colors = COLUMN_COLORS[columnKey];
   const [isEditingTitle, setIsEditingTitle] = useState(false);

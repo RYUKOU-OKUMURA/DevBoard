@@ -1,6 +1,6 @@
 import React from 'react';
 import { Repo } from '../types';
-import { timeAgo } from '../utils/timeAgo';
+import { timeAgo } from '../lib/timeAgo';
 
 interface RepoCardProps {
   repo: Repo;

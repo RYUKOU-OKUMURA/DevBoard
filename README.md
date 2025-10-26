@@ -152,6 +152,12 @@ Cloudflare Pages へのデプロイ手順は [docs/DEPLOYMENT.md](docs/DEPLOYMEN
 
 ## プロジェクト構成
 
+### lib と utils の役割指針
+- lib/: アプリに依存しない純粋なドメインロジック（副作用なし）。例: `src/lib/classifyRepo.ts`, `src/lib/timeAgo.ts`
+- utils/: UI/アプリ向けの薄いアダプタや再エクスポート。将来的に `lib` へ一本化を進めるため、新規コードは極力 `lib/` を直接参照してください。
+
+この方針に基づき、UI コンポーネントは `timeAgo` を `src/lib/timeAgo` から直接 import するよう統一しました。`src/utils/timeAgo.ts` は後方互換（テスト等）目的で残しています。
+
 ```
 GitHub_Dashboard/
 ├── README.md                  # 本ドキュメント

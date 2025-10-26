@@ -23,6 +23,29 @@ export type SavedView = {
 
 export type SortOrder = "lastUpdated" | "name" | "stars" | "language";
 
+// Enhanced preset type that includes all dashboard state
+export type ViewPreset = {
+  id: string;
+  name: string;
+  // Search and sort (from SavedView)
+  searchQuery: string;
+  sortOrder: SortOrder;
+  // Column customization
+  columnTitles: Record<ColumnKey, string>;
+  columnOrder: Record<ColumnKey, string[]>; // Drag-and-drop order
+  columnVisibility: Record<ColumnKey, boolean>; // Show/hide columns
+  // Classification thresholds
+  thresholds: {
+    activeThreshold: number; // days
+    staleThreshold: number; // days
+  };
+  // Manual column assignments
+  columnAssignments: Record<string, ColumnKey>;
+  // Hidden repositories
+  hiddenRepoIds: string[];
+  createdAt: string;
+};
+
 export type AppConfig = {
   activeThreshold: number; // days
   staleThreshold: number; // days

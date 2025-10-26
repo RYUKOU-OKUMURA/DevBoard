@@ -3,6 +3,12 @@ import { differenceInDays } from './date';
 import { classifyRepo as classifyRepoCore } from '../lib/classifyRepo';
 
 /**
+ * NOTE: Adapter layer for UI code
+ * - Source of truth for classification is `src/lib/classifyRepo.ts` (pure/domain logic)
+ * - This utils module preserves the previous utils API surface and can be
+ *   gradually phased out. New application code should prefer importing
+ *   from `src/lib/classifyRepo` directly.
+ *
  * Default configuration for repository classification
  */
 export const DEFAULT_CONFIG: AppConfig = {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SortOrder, SavedView, Repo } from '../types';
+import { SortOrder, SavedView, Repo, ViewPreset, ColumnKey } from '../types';
 
 interface TopBarProps {
   title: string;
@@ -16,6 +16,16 @@ interface TopBarProps {
   onViewSelect?: (viewId: string) => void;
   onSaveView?: (name: string) => boolean;
   onDeleteView?: (viewId: string) => boolean;
+  // Preset props
+  presets?: ViewPreset[];
+  currentPresetId?: string;
+  onPresetSelect?: (presetId: string) => void;
+  onSavePreset?: (name: string) => boolean;
+  onDeletePreset?: (presetId: string) => boolean;
+  columnTitles?: Record<ColumnKey, string>;
+  columnVisibility?: Record<ColumnKey, boolean>;
+  thresholds?: { activeThreshold: number; staleThreshold: number };
+  // Other props
   hiddenRepos?: Repo[];
   onUnhideRepo?: (repoId: string) => void;
   onUnhideAll?: () => void;
@@ -37,15 +47,26 @@ export const TopBar: React.FC<TopBarProps> = ({
   onViewSelect,
   onSaveView,
   onDeleteView,
+  presets = [],
+  currentPresetId = '',
+  onPresetSelect,
+  onSavePreset,
+  onDeletePreset,
+  columnTitles,
+  columnVisibility,
+  thresholds,
   hiddenRepos = [],
   onUnhideRepo,
   onUnhideAll,
   onCategorySettings,
 }) => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showPresetDialog, setShowPresetDialog] = useState(false);
   const [showHiddenDialog, setShowHiddenDialog] = useState(false);
   const [viewName, setViewName] = useState('');
+  const [presetName, setPresetName] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [presetError, setPresetError] = useState('');
 
   const handleViewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     if (onViewSelect) {
@@ -98,6 +119,59 @@ export const TopBar: React.FC<TopBarProps> = ({
     setShowSaveDialog(false);
     setViewName('');
     setSaveError('');
+  };
+
+  const handlePresetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (onPresetSelect) {
+      onPresetSelect(event.target.value);
+    }
+  };
+
+  const handleSavePresetClick = () => {
+    const trimmedName = presetName.trim();
+    setPresetError('');
+
+    if (!trimmedName) {
+      setPresetError('プリセット名を入力してください');
+      return;
+    }
+
+    if (!onSavePreset) {
+      setPresetError('保存機能が利用できません');
+      return;
+    }
+
+    try {
+      const success = onSavePreset(trimmedName);
+      if (success) {
+        setPresetName('');
+        setShowPresetDialog(false);
+      } else {
+        setPresetError('保存に失敗しました。名前が重複しているか、上限（5件）に達しています。');
+      }
+    } catch (error) {
+      setPresetError(error instanceof Error ? error.message : '保存に失敗しました');
+    }
+  };
+
+  const handleDeletePresetClick = (presetId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!onDeletePreset) {
+      return;
+    }
+
+    if (window.confirm('このプリセットを削除してもよろしいですか？')) {
+      const success = onDeletePreset(presetId);
+      if (!success) {
+        setPresetError('削除に失敗しました。');
+      }
+    }
+  };
+
+  const handlePresetDialogClose = () => {
+    setShowPresetDialog(false);
+    setPresetName('');
+    setPresetError('');
   };
 
   return (
@@ -242,6 +316,40 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
             )}
           </div>
+
+          {/* Preset Selector */}
+          <div className="sm:w-64 flex gap-2">
+            <select
+              value={currentPresetId}
+              onChange={handlePresetChange}
+              disabled={!onPresetSelect}
+              className="flex-1 px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-purple-50"
+            >
+              <option value="">プリセット ({presets.length}/5)</option>
+              {presets.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowPresetDialog(true)}
+              disabled={presets.length >= 5}
+              className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              title="現在の状態をプリセットとして保存"
+            >
+              +
+            </button>
+            {currentPresetId && onDeletePreset && (
+              <button
+                onClick={(event) => handleDeletePresetClick(currentPresetId, event)}
+                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                title="選択中のプリセットを削除"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
@@ -312,6 +420,117 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
               <button
                 onClick={handleDialogClose}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Preset Dialog */}
+      {showPresetDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">プリセットとして保存</h2>
+            <p className="text-gray-600 mb-4">
+              現在のダッシュボードの状態（検索、並び順、カラム配置、カラム名、しきい値など）を保存します。
+            </p>
+            <div className="mb-4">
+              <label htmlFor="presetName" className="block text-sm font-medium text-gray-700 mb-2">
+                プリセット名
+              </label>
+              <input
+                id="presetName"
+                type="text"
+                value={presetName}
+                onChange={(event) => {
+                  setPresetName(event.target.value);
+                  setPresetError('');
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleSavePresetClick();
+                  } else if (event.key === 'Escape') {
+                    handlePresetDialogClose();
+                  }
+                }}
+                placeholder="例: 開発中プロジェクト"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                autoFocus
+              />
+              {presetError && (
+                <p className="mt-2 text-sm text-red-600">{presetError}</p>
+              )}
+            </div>
+
+            <div className="bg-purple-50 p-4 rounded-lg mb-4 space-y-2">
+              <h3 className="font-semibold text-purple-900 mb-2">保存される内容:</h3>
+
+              <div className="text-sm text-gray-700">
+                <strong>検索:</strong> {searchQuery || '（なし）'}
+              </div>
+
+              <div className="text-sm text-gray-700">
+                <strong>並び順:</strong>{' '}
+                {sortOrder === 'lastUpdated' && '最終更新日'}
+                {sortOrder === 'name' && '名前 (A-Z)'}
+                {sortOrder === 'stars' && 'スター数'}
+                {sortOrder === 'language' && '言語'}
+              </div>
+
+              {columnTitles && (
+                <div className="text-sm text-gray-700">
+                  <strong>カラム名:</strong>
+                  <ul className="ml-4 mt-1 space-y-1">
+                    {Object.entries(columnTitles).map(([key, title]) => (
+                      <li key={key}>
+                        {key}: {title}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {columnVisibility && (
+                <div className="text-sm text-gray-700">
+                  <strong>表示中のカラム:</strong>{' '}
+                  {Object.entries(columnVisibility)
+                    .filter(([, visible]) => visible)
+                    .map(([key]) => key)
+                    .join(', ')}
+                </div>
+              )}
+
+              {thresholds && (
+                <div className="text-sm text-gray-700">
+                  <strong>しきい値:</strong> アクティブ={thresholds.activeThreshold}日,
+                  停滞={thresholds.staleThreshold}日
+                </div>
+              )}
+
+              <div className="text-sm text-gray-700">
+                <strong>カードの並び順:</strong> 現在の配置を保存
+              </div>
+
+              {hiddenRepos && hiddenRepos.length > 0 && (
+                <div className="text-sm text-gray-700">
+                  <strong>非表示リポジトリ:</strong> {hiddenRepos.length}件
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleSavePresetClick}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                保存
+              </button>
+              <button
+                onClick={handlePresetDialogClose}
                 className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 キャンセル

@@ -1,6 +1,10 @@
 /**
- * Convert a date to relative time display
- * Examples: "3d ago", "2h ago", "just now"
+ * DEPRECATED (UI should use lib/timeAgo):
+ * This utils/timeAgo implementation exists for backward compatibility and tests.
+ * Prefer importing `timeAgo` from `src/lib/timeAgo` for application code.
+ *
+ * Convert a date to relative time display.
+ * Examples: "3d ago", "2h ago", "just now", "2w ago" (weeks supported here only)
  */
 export function timeAgo(dateString: string): string {
   const date = new Date(dateString);

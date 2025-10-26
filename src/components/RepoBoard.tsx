@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Repo, ColumnKey, SortOrder, AppConfig, SavedView } from '../types';
+import { Repo, ColumnKey, SortOrder, AppConfig, SavedView, ViewPreset } from '../types';
 import { classifyRepo, DEFAULT_CONFIG } from '../utils/classify';
 import { searchAndSortRepos } from '../utils/search';
 import { getSavedViews, saveView, deleteView, getViewById } from '../utils/storage';
+import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapshot } from '../utils/presetStorage';
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
 import { CategoryManager } from './CategoryManager';
@@ -43,6 +44,24 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   const [currentViewId, setCurrentViewId] = useState<string>('');
   const [showCategoryManager, setShowCategoryManager] = useState(false);
 
+  // Preset management
+  const [presets, setPresets] = useState<ViewPreset[]>([]);
+  const [currentPresetId, setCurrentPresetId] = useState<string>('');
+
+  // Column visibility state
+  const [columnVisibility, setColumnVisibility] = useState<Record<ColumnKey, boolean>>({
+    Active: true,
+    Stale: true,
+    Dormant: true,
+    Archived: true,
+  });
+
+  // Dynamic thresholds
+  const [thresholds, setThresholds] = useState({
+    activeThreshold: DEFAULT_CONFIG.activeThreshold,
+    staleThreshold: DEFAULT_CONFIG.staleThreshold,
+  });
+
   // NOTE: Category profile feature is under development.
   // Currently not used in classification logic, reserved for future implementation.
   const [currentProfileId, setCurrentProfileId] = useState('default');
@@ -82,9 +101,10 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return new Set();
   });
 
-  // Load saved views on mount
+  // Load saved views and presets on mount
   useEffect(() => {
     setSavedViews(getSavedViews());
+    setPresets(getPresets());
     // Load order map
     try {
       const raw = localStorage.getItem(ORDER_STORAGE_KEY);
@@ -112,14 +132,21 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       Archived: [],
     };
 
+    // Use dynamic thresholds for classification
+    const dynamicConfig = {
+      ...config,
+      activeThreshold: thresholds.activeThreshold,
+      staleThreshold: thresholds.staleThreshold,
+    };
+
     filteredRepos.forEach((repo) => {
       const override = columnAssignments[repo.id];
-      const column = override ?? classifyRepo(repo, config);
+      const column = override ?? classifyRepo(repo, dynamicConfig);
       columns[column].push(repo);
     });
 
     return columns;
-  }, [filteredRepos, columnAssignments, config]);
+  }, [filteredRepos, columnAssignments, config, thresholds]);
 
   // Notify parent of stats updates
   useEffect(() => {
@@ -330,6 +357,69 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     setHiddenRepoIds(new Set());
   };
 
+  // Preset handlers
+  const handlePresetSelect = (presetId: string) => {
+    if (presetId === '') {
+      // Clear preset selection
+      setCurrentPresetId('');
+      return;
+    }
+
+    const preset = getPresetById(presetId);
+    if (preset) {
+      // Load all state from preset
+      setSearchQuery(preset.searchQuery);
+      setSortOrder(preset.sortOrder);
+      setColumnTitles(preset.columnTitles);
+      setOrderMap(preset.columnOrder);
+      setColumnVisibility(preset.columnVisibility);
+      setThresholds(preset.thresholds);
+      setColumnAssignments(preset.columnAssignments);
+      setHiddenRepoIds(new Set(preset.hiddenRepoIds));
+      setCurrentPresetId(presetId);
+    }
+  };
+
+  const handleSavePreset = (name: string) => {
+    const presetSnapshot = createPresetSnapshot({
+      name,
+      searchQuery,
+      sortOrder,
+      columnTitles,
+      columnOrder: orderMap,
+      columnVisibility,
+      thresholds,
+      columnAssignments,
+      hiddenRepoIds: Array.from(hiddenRepoIds),
+    });
+
+    const newPreset = savePreset(presetSnapshot);
+    if (newPreset) {
+      setPresets(getPresets());
+      setCurrentPresetId(newPreset.id);
+      return true;
+    }
+    return false;
+  };
+
+  const handleDeletePreset = (presetId: string) => {
+    if (deletePreset(presetId)) {
+      setPresets(getPresets());
+      if (currentPresetId === presetId) {
+        setCurrentPresetId('');
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const handleToggleColumnVisibility = (columnKey: ColumnKey) => {
+    setColumnVisibility((prev) => ({
+      ...prev,
+      [columnKey]: !prev[columnKey],
+    }));
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top Bar */}
@@ -348,6 +438,14 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         onViewSelect={handleViewSelect}
         onSaveView={handleSaveView}
         onDeleteView={handleDeleteView}
+        presets={presets}
+        currentPresetId={currentPresetId}
+        onPresetSelect={handlePresetSelect}
+        onSavePreset={handleSavePreset}
+        onDeletePreset={handleDeletePreset}
+        columnTitles={columnTitles}
+        columnVisibility={columnVisibility}
+        thresholds={thresholds}
         hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
@@ -363,18 +461,22 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
       {/* Board Columns */}
       <div className="flex-1 flex gap-4 p-4 overflow-x-auto">
-        {COLUMN_ORDER.map((columnKey) => (
-          <RepoColumn
-            key={columnKey}
-            title={columnTitles[columnKey]}
-            repos={getOrderedRepos(columnKey)}
-            columnKey={columnKey}
-            onReorder={handleReorderWithinColumn}
-            onReorderBetween={handleReorderBetween}
-            onTitleChange={handleColumnTitleChange}
-            onHide={handleHideRepo}
-          />
-        ))}
+        {COLUMN_ORDER.map((columnKey) =>
+          columnVisibility[columnKey] ? (
+            <RepoColumn
+              key={columnKey}
+              title={columnTitles[columnKey]}
+              repos={getOrderedRepos(columnKey)}
+              columnKey={columnKey}
+              onReorder={handleReorderWithinColumn}
+              onReorderBetween={handleReorderBetween}
+              onTitleChange={handleColumnTitleChange}
+              onHide={handleHideRepo}
+              isVisible={columnVisibility[columnKey]}
+              onToggleVisibility={handleToggleColumnVisibility}
+            />
+          ) : null
+        )}
       </div>
     </div>
   );
