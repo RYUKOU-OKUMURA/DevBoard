@@ -46,8 +46,8 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-semibold text-gray-900 truncate">
-            <span className="text-gray-600">{owner}/</span>
             <span className="text-green-600">{repoName}</span>
+            <span className="text-gray-600"> / {owner}</span>
           </h3>
         </div>
 
