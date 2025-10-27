@@ -1,5 +1,5 @@
 import React from 'react';
-import type { RecentItem } from '../api/repos';
+import type { RecentItem } from '../types';
 
 type ActivityType = 'issues' | 'pulls';
 
@@ -18,11 +18,11 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
 }) => {
   // ステータスアイコンとバッジを返す関数
   const getStatusDisplay = (item: RecentItem) => {
-    // TODO: API側で state を取得できるようになったら、それを使用する
-    // 現時点では仮のロジック（ランダムに未対応/対応済みを表示）
-    const isOpen = Math.random() > 0.5; // 仮の実装
+    // 実際のstateを使用（なければOPENとして扱う）
+    const state = item.state || 'OPEN';
 
     if (item.type === 'Issue') {
+      const isOpen = state === 'OPEN';
       return {
         icon: isOpen ? (
           <svg
@@ -68,9 +68,12 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
       };
     } else {
       // Pull Request
-      const isMerged = Math.random() > 0.5; // 仮の実装
+      const isMerged = state === 'MERGED';
+      const isClosed = state === 'CLOSED';
+      const isOpen = state === 'OPEN';
+
       return {
-        icon: isOpen && !isMerged ? (
+        icon: isOpen ? (
           <svg
             className="update-icon flex-shrink-0 text-green-600"
             width="18"
@@ -105,7 +108,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
             <line x1="6" y1="9" x2="6" y2="21" />
           </svg>
         ),
-        badge: isOpen && !isMerged ? (
+        badge: isOpen ? (
           <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-700 border border-green-200 rounded-lg">
             未対応
           </span>

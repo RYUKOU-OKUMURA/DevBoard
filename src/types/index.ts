@@ -79,3 +79,22 @@ export type CategoryProfile = {
   createdAt: string;
   isDefault?: boolean;
 };
+
+// Recent Activity Types
+export type IssueState = 'OPEN' | 'CLOSED';
+export type PullRequestState = 'OPEN' | 'CLOSED' | 'MERGED';
+
+export interface RecentItem {
+  type: 'Issue' | 'PullRequest';
+  repo: {
+    nameWithOwner: string;
+    htmlUrl: string;
+  };
+  title: string;
+  number: number;
+  url: string;
+  occurredAt: string;
+  relativeTime: string;
+  // Actual state from GitHub API
+  state?: IssueState | PullRequestState;
+}

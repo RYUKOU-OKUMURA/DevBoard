@@ -144,6 +144,13 @@ function AppContent() {
     return () => { cancelled = true; };
   }, [user, dataSource, activityRefreshToken, activityType]);
 
+  // Auto-load repos when user logs in
+  useEffect(() => {
+    if (user && repos.length === 0 && !isLoading) {
+      loadRepos();
+    }
+  }, [user]);
+
   // Handle stats update from RepoBoard
   const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
     setDisplayedRepoCount(totalVisible);

@@ -1,5 +1,5 @@
 import { createGraphQLClient } from "./octokit";
-import type { Repo } from "../types";
+import type { Repo, RecentItem, IssueState, PullRequestState } from "../types";
 import { validateRepos, getErrorMessage } from "../utils/validators";
 import {
   transformRepository,
@@ -269,19 +269,6 @@ export interface RecentActivity {
   lastActivity: string;
 }
 
-export interface RecentItem {
-  type: 'Issue' | 'PullRequest';
-  repo: {
-    nameWithOwner: string;
-    htmlUrl: string;
-  };
-  title: string;
-  number: number;
-  url: string;
-  occurredAt: string;
-  relativeTime: string;
-}
-
 /**
  * Fetch recent repository activities (last 7 days) from GitHub events
  */
@@ -367,7 +354,7 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
             contributions(first: 5, orderBy: { direction: DESC }) {
               nodes {
                 occurredAt
-                issue { title number url repository { nameWithOwner url } }
+                issue { title number url state repository { nameWithOwner url } }
               }
             }
           }
@@ -382,7 +369,7 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
         contributionsCollection: {
           issueContributionsByRepository: Array<{
             repository: { nameWithOwner: string; url: string };
-            contributions: { nodes: Array<{ occurredAt: string; issue: { title: string; number: number; url: string; repository: { nameWithOwner: string; url: string } } }> };
+            contributions: { nodes: Array<{ occurredAt: string; issue: { title: string; number: number; url: string; state: IssueState; repository: { nameWithOwner: string; url: string } } }> };
           }>;
         };
       };
@@ -401,6 +388,7 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
             url: node.issue.url,
             occurredAt,
             relativeTime: timeAgo(occurredAt),
+            state: node.issue.state,
           };
         })
       )
@@ -430,7 +418,7 @@ export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
             contributions(first: 5, orderBy: { direction: DESC }) {
               nodes {
                 occurredAt
-                pullRequest { title number url repository { nameWithOwner url } }
+                pullRequest { title number url state repository { nameWithOwner url } }
               }
             }
           }
@@ -445,7 +433,7 @@ export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
         contributionsCollection: {
           pullRequestContributionsByRepository: Array<{
             repository: { nameWithOwner: string; url: string };
-            contributions: { nodes: Array<{ occurredAt: string; pullRequest: { title: string; number: number; url: string; repository: { nameWithOwner: string; url: string } } }> };
+            contributions: { nodes: Array<{ occurredAt: string; pullRequest: { title: string; number: number; url: string; state: PullRequestState; repository: { nameWithOwner: string; url: string } } }> };
           }>;
         };
       };
@@ -464,6 +452,7 @@ export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
             url: node.pullRequest.url,
             occurredAt,
             relativeTime: timeAgo(occurredAt),
+            state: node.pullRequest.state,
           };
         })
       )
