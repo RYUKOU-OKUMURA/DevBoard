@@ -169,7 +169,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
     <div className="flex-1 min-w-[320px] flex flex-col transition-colors">
       {/* Column Header */}
       <div
-        className={`px-4 py-3 rounded-t-lg font-semibold flex items-center justify-between shadow-sm bg-[var(${colors.headerBg})] text-[var(${colors.headerText})]`}
+        className={`px-4 py-3 rounded-t-lg font-semibold flex items-center justify-between shadow-sm bg-[var(${colors.headerBg})] text-[var(${colors.headerText})] border border-b-0 border-[var(${colors.border})]`}
       >
         <div className="flex-1 pr-3">
           {canEditTitle ? (
