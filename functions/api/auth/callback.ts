@@ -104,11 +104,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // Set session cookie and redirect to dashboard
     const origin = url.origin;
+    const sessionCookie = await createSessionCookie(masterSessionId, env);
     return new Response(null, {
       status: 302,
       headers: {
         Location: origin,
-        'Set-Cookie': createSessionCookie(masterSessionId),
+        'Set-Cookie': sessionCookie,
       },
     });
   } catch (error) {

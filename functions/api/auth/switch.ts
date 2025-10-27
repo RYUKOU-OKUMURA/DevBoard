@@ -13,7 +13,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   try {
     // Get master session ID from cookie
-    const masterSessionId = getSessionIdFromCookie(request);
+    const masterSessionId = await getSessionIdFromCookie(request, env);
 
     if (!masterSessionId) {
       return new Response(
