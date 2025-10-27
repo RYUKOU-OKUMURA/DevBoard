@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GitHub Dashboard MVP - A Kanban-style dashboard for visualizing and organizing GitHub repositories. Displays repositories in 4 columns (Active/Stale/Dormant/Archived) based on last push date, with search, sorting, and saved view functionality.
+DevBoard MVP - A Kanban-style dashboard for visualizing and organizing repositories. Displays repositories in 4 columns (Active/Stale/Dormant/Archived) based on last push date, with search, sorting, and saved view functionality.
 
-**Target Platform**: Desktop (Tauri + React + TypeScript + Octokit) or Web (Next.js + Node/TypeScript)
+**Target Platform**: Web (React + TypeScript + Cloudflare Pages)
 
 ## Core Data Model
 

@@ -1,8 +1,8 @@
 {
-  "name": "github-dashboard",
+  "name": "devboard",
   "version": "0.1.0",
   "type": "module",
-  "description": "GitHub のリポジトリをボード（かんばん）形式で俯瞰し、更新状況を素早く把握するためのデスクトップ／Web 兼用 MVP プロジェクトです。",
+  "description": "リポジトリをカンバン形式で視覚化し、開発プロジェクトの状況を素早く把握するための Web アプリケーションです。",
   "private": true,
   "main": "src/main.ts",
   "packageManager": "npm@10.9.0",
