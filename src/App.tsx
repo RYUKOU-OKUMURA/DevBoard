@@ -26,6 +26,7 @@ function AppContent() {
     Archived: 0,
   });
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
+  const totalReposDisplayed = displayedRepoCount ?? repos.length;
 
   const parseCustomInput = (value: string): string[] => {
     return value
@@ -153,20 +154,58 @@ function AppContent() {
   return (
     <div className="App min-h-screen bg-gray-100">
       {/* User Info Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-gray-900">GitHub Dashboard</h1>
-            <span className="text-sm text-gray-500">
-              Logged in as <span className="font-medium text-gray-900">{user.username}</span>
-            </span>
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl font-bold text-gray-900">GitHub Dashboard</h1>
+              <span className="text-sm text-gray-500">
+                Logged in as <span className="font-medium text-gray-900">{user.username}</span>
+              </span>
+            </div>
+            <button
+              onClick={logout}
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium w-fit"
+            >
+              Logout
+            </button>
           </div>
-          <button
-            onClick={logout}
-            className="text-sm text-gray-600 hover:text-gray-900 font-medium"
-          >
-            Logout
-          </button>
+          {repos.length > 0 && (
+            <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <span className="uppercase tracking-wide text-gray-500 text-[11px] sm:text-xs">
+                  総数
+                </span>
+                <span className="text-base font-semibold text-gray-900">
+                  {totalReposDisplayed}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">アクティブ</span>
+                <span className="text-sm font-semibold text-green-700">
+                  {displayedCategoryCounts.Active}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">停滞</span>
+                <span className="text-sm font-semibold text-yellow-700">
+                  {displayedCategoryCounts.Stale}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">休眠</span>
+                <span className="text-sm font-semibold text-orange-700">
+                  {displayedCategoryCounts.Dormant}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">アーカイブ</span>
+                <span className="text-sm font-semibold text-gray-700">
+                  {displayedCategoryCounts.Archived}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -246,8 +285,6 @@ function AppContent() {
       {/* Dashboard Stats */}
       {repos.length > 0 && (
         <DashboardStats
-          totalRepos={displayedRepoCount !== null ? displayedRepoCount : repos.length}
-          categoryCounts={displayedCategoryCounts}
           activityType={activityType}
           onActivityTypeChange={setActivityType}
           recentItems={recentItems}
