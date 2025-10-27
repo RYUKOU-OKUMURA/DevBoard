@@ -77,7 +77,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const user: GitHubUser = await userResponse.json();
 
     // Get or create master session ID
-    let masterSessionId = getSessionIdFromCookie(request);
+    let masterSessionId = await getSessionIdFromCookie(request, env);
 
     if (!masterSessionId) {
       // Create new master session ID for first login

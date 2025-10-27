@@ -15,6 +15,69 @@ export function generateSessionId(): string {
 }
 
 /**
+ * Base64url encode helper
+ */
+function base64url(bytes: ArrayBuffer | Uint8Array): string {
+  const b = typeof bytes === 'string' ? bytes : btoa(String.fromCharCode(...new Uint8Array(bytes as ArrayBuffer)));
+  // If bytes is ArrayBuffer, we already converted to base64 above; but ensure safe URL variant
+  const s = typeof bytes === 'string' ? bytes : b;
+  return s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+/**
+ * Compute HMAC-SHA-256 over input using SESSION_SECRET
+ */
+// small helper (duplicated to avoid cross-module export changes)
+function hexToBytes(hex: string): Uint8Array {
+  if (!hex || hex.length % 2 !== 0) {
+    throw new Error('Invalid hex string length for SESSION_SECRET');
+  }
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) out[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+  return out;
+}
+
+async function hmacSha256(data: string, secretHex: string): Promise<string> {
+  // SESSION_SECRET assumed as hex string
+  const keyBytes = hexToBytes(secretHex);
+  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const enc = new TextEncoder();
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(data));
+  // return base64url
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+/**
+ * Sign a session ID with HMAC and return token as `${uuid}.${sig}`
+ */
+export async function signSessionId(uuid: string, env: Env): Promise<string> {
+  const sig = await hmacSha256(uuid, env.SESSION_SECRET);
+  return `${uuid}.${sig}`;
+}
+
+/**
+ * Verify signed session id (`uuid.sig`). Returns uuid if valid, else null.
+ */
+export async function verifySignedSessionId(token: string, env: Env): Promise<string | null> {
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [uuid, sig] = parts;
+  try {
+    const expected = await hmacSha256(uuid, env.SESSION_SECRET);
+    // constant-time like compare
+    if (expected.length !== sig.length) return null;
+    let ok = 0;
+    for (let i = 0; i < expected.length; i++) {
+      ok |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
+    }
+    return ok === 0 ? uuid : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
  * Saves a session to KV storage with encrypted access token
  * @param sessionId - Unique session identifier
  * @param sessionData - Session data to save
@@ -101,7 +164,7 @@ export async function deleteSession(
  * @param request - The incoming request
  * @returns Session ID if found, null otherwise
  */
-export function getSessionIdFromCookie(request: Request): string | null {
+export async function getSessionIdFromCookie(request: Request, env: Env): Promise<string | null> {
   const cookieHeader = request.headers.get('Cookie');
   if (!cookieHeader) {
     return null;
@@ -114,7 +177,11 @@ export function getSessionIdFromCookie(request: Request): string | null {
     return null;
   }
 
-  return sessionCookie.split('=')[1];
+  const raw = sessionCookie.split('=')[1];
+  // decode in case of URL encoding
+  const val = decodeURIComponent(raw || '');
+  // verify signature and return uuid when valid
+  return await verifySignedSessionId(val, env);
 }
 
 /**
@@ -123,11 +190,13 @@ export function getSessionIdFromCookie(request: Request): string | null {
  * @param maxAge - Cookie max age in seconds (default: 30 days)
  * @returns Set-Cookie header value
  */
-export function createSessionCookie(
+export async function createSessionCookie(
   sessionId: string,
+  env: Env,
   maxAge: number = SESSION_TTL
-): string {
-  return `session_id=${sessionId}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+): Promise<string> {
+  const signed = await signSessionId(sessionId, env);
+  return `session_id=${encodeURIComponent(signed)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
 }
 
 /**
@@ -135,7 +204,7 @@ export function createSessionCookie(
  * @returns Set-Cookie header value that expires the cookie
  */
 export function deleteSessionCookie(): string {
-  return 'session_id=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0';
+  return 'session_id=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
 }
 
 /**

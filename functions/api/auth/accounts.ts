@@ -8,14 +8,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   try {
     // Get master session ID from cookie
-    const masterSessionId = getSessionIdFromCookie(request);
+    const masterSessionId = await getSessionIdFromCookie(request, env);
 
     if (!masterSessionId) {
       return new Response(
         JSON.stringify({ accounts: [], activeUserId: null }),
         {
           status: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
         }
       );
     }
@@ -28,7 +28,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         JSON.stringify({ accounts: [], activeUserId: null }),
         {
           status: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
         }
       );
     }
@@ -41,7 +41,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       }
     );
   } catch (error) {
