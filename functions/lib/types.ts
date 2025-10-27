@@ -1,5 +1,8 @@
 // Type definitions for Cloudflare Workers Functions
 
+// Maximum number of accounts that can be logged in simultaneously
+export const MAX_ACCOUNTS = 5;
+
 export interface Env {
   SESSIONS: KVNamespace;
   GITHUB_CLIENT_ID: string;
@@ -13,6 +16,20 @@ export interface SessionData {
   username: string;
   accessToken: string;
   createdAt: number;
+}
+
+// Account metadata stored for multi-account support
+export interface AccountMetadata {
+  userId: string;
+  username: string;
+  createdAt: number;
+}
+
+// Multi-account session container
+export interface MultiAccountSession {
+  accounts: AccountMetadata[];
+  activeUserId: string;
+  lastUpdated: number;
 }
 
 export interface GitHubUser {

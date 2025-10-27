@@ -3,8 +3,9 @@
 import type { Env, GitHubTokenResponse, GitHubUser } from '../../lib/types';
 import {
   generateSessionId,
-  saveSession,
   createSessionCookie,
+  getSessionIdFromCookie,
+  addAccountToSession,
 } from '../../lib/session';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
@@ -75,10 +76,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     const user: GitHubUser = await userResponse.json();
 
-    // Create session
-    const sessionId = generateSessionId();
-    await saveSession(
-      sessionId,
+    // Get or create master session ID
+    let masterSessionId = getSessionIdFromCookie(request);
+
+    if (!masterSessionId) {
+      // Create new master session ID for first login
+      masterSessionId = generateSessionId();
+    }
+
+    // Add account to multi-account session
+    const multiSession = await addAccountToSession(
+      masterSessionId,
       {
         userId: user.id.toString(),
         username: user.login,
@@ -88,13 +96,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       env
     );
 
+    if (!multiSession) {
+      return new Response('Account limit reached. Maximum 5 accounts allowed.', {
+        status: 400
+      });
+    }
+
     // Set session cookie and redirect to dashboard
     const origin = url.origin;
     return new Response(null, {
       status: 302,
       headers: {
         Location: origin,
-        'Set-Cookie': createSessionCookie(sessionId),
+        'Set-Cookie': createSessionCookie(masterSessionId),
       },
     });
   } catch (error) {

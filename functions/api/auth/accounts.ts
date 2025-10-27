@@ -1,7 +1,7 @@
-// User info endpoint - returns current authenticated user
+// Get all logged-in accounts
 
 import type { Env } from '../../lib/types';
-import { getSessionIdFromCookie, getActiveAccountSession, getMultiAccountSession } from '../../lib/session';
+import { getSessionIdFromCookie, getMultiAccountSession } from '../../lib/session';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
@@ -12,45 +12,32 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (!masterSessionId) {
       return new Response(
-        JSON.stringify({ error: 'Not authenticated' }),
+        JSON.stringify({ accounts: [], activeUserId: null }),
         {
-          status: 401,
+          status: 200,
           headers: { 'Content-Type': 'application/json' },
         }
       );
     }
 
-    // Get multi-account session
+    // Get multi-account session from KV
     const multiSession = await getMultiAccountSession(masterSessionId, env);
 
     if (!multiSession) {
       return new Response(
-        JSON.stringify({ error: 'Session expired or invalid' }),
+        JSON.stringify({ accounts: [], activeUserId: null }),
         {
-          status: 401,
+          status: 200,
           headers: { 'Content-Type': 'application/json' },
         }
       );
     }
 
-    // Get active account session
-    const session = await getActiveAccountSession(masterSessionId, env);
-
-    if (!session) {
-      return new Response(
-        JSON.stringify({ error: 'No active account' }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Return user information (without access token)
+    // Return accounts and active user ID
     return new Response(
       JSON.stringify({
-        userId: session.userId,
-        username: session.username,
+        accounts: multiSession.accounts,
+        activeUserId: multiSession.activeUserId,
       }),
       {
         status: 200,
@@ -58,7 +45,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
     );
   } catch (error) {
-    console.error('Me endpoint error:', error);
+    console.error('Accounts endpoint error:', error);
     return new Response('Internal server error', { status: 500 });
   }
 };

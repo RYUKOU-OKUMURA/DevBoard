@@ -7,6 +7,7 @@ import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapsh
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
 import { CategoryManager } from './CategoryManager';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RepoBoardProps {
   repos: Repo[];
@@ -38,6 +39,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   onRefresh,
   onStatsUpdate,
 }) => {
+  const { user } = useAuth(); // Get current user for account-scoped presets
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
@@ -101,10 +103,10 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return new Set();
   });
 
-  // Load saved views and presets on mount
+  // Load saved views and presets on mount and when user changes
   useEffect(() => {
     setSavedViews(getSavedViews());
-    setPresets(getPresets());
+    setPresets(getPresets(user?.userId));
     // Load order map
     try {
       const raw = localStorage.getItem(ORDER_STORAGE_KEY);
@@ -113,7 +115,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         setOrderMap((prev) => ({ ...prev, ...parsed }));
       }
     } catch {}
-  }, []);
+  }, [user?.userId]);
 
   const filteredRepos = useMemo(() => {
     const searchResults = searchAndSortRepos(repos, searchQuery, sortOrder);
@@ -365,7 +367,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       return;
     }
 
-    const preset = getPresetById(presetId);
+    const preset = getPresetById(presetId, user?.userId);
     if (preset) {
       // Load all state from preset
       setSearchQuery(preset.searchQuery);
@@ -393,9 +395,9 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       hiddenRepoIds: Array.from(hiddenRepoIds),
     });
 
-    const newPreset = savePreset(presetSnapshot);
+    const newPreset = savePreset(presetSnapshot, user?.userId);
     if (newPreset) {
-      setPresets(getPresets());
+      setPresets(getPresets(user?.userId));
       setCurrentPresetId(newPreset.id);
       return true;
     }
@@ -403,8 +405,8 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   };
 
   const handleDeletePreset = (presetId: string) => {
-    if (deletePreset(presetId)) {
-      setPresets(getPresets());
+    if (deletePreset(presetId, user?.userId)) {
+      setPresets(getPresets(user?.userId));
       if (currentPresetId === presetId) {
         setCurrentPresetId('');
       }

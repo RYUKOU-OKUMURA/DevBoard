@@ -1,10 +1,15 @@
-// User info endpoint - returns current authenticated user
+// Switch active account
 
 import type { Env } from '../../lib/types';
-import { getSessionIdFromCookie, getActiveAccountSession, getMultiAccountSession } from '../../lib/session';
+import { getSessionIdFromCookie, switchActiveAccount } from '../../lib/session';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
+
+  // Only accept POST requests
+  if (request.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
 
   try {
     // Get master session ID from cookie
@@ -20,37 +25,41 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Get multi-account session
-    const multiSession = await getMultiAccountSession(masterSessionId, env);
+    // Parse request body
+    const body = await request.json() as { userId: string };
+
+    if (!body.userId) {
+      return new Response(
+        JSON.stringify({ error: 'userId is required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Switch active account
+    const multiSession = await switchActiveAccount(
+      masterSessionId,
+      body.userId,
+      env
+    );
 
     if (!multiSession) {
       return new Response(
-        JSON.stringify({ error: 'Session expired or invalid' }),
+        JSON.stringify({ error: 'Account not found' }),
         {
-          status: 401,
+          status: 404,
           headers: { 'Content-Type': 'application/json' },
         }
       );
     }
 
-    // Get active account session
-    const session = await getActiveAccountSession(masterSessionId, env);
-
-    if (!session) {
-      return new Response(
-        JSON.stringify({ error: 'No active account' }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Return user information (without access token)
+    // Return updated session
     return new Response(
       JSON.stringify({
-        userId: session.userId,
-        username: session.username,
+        accounts: multiSession.accounts,
+        activeUserId: multiSession.activeUserId,
       }),
       {
         status: 200,
@@ -58,7 +67,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
     );
   } catch (error) {
-    console.error('Me endpoint error:', error);
+    console.error('Switch account endpoint error:', error);
     return new Response('Internal server error', { status: 500 });
   }
 };

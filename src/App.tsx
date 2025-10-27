@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RepoBoard, RepoInputForm, DashboardStats } from './components';
 import LoginPage from './components/LoginPage';
+import AccountSwitcher from './components/AccountSwitcher';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Repo, ColumnKey } from './types';
 import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
@@ -159,16 +160,8 @@ function AppContent() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-xl font-bold text-gray-900">GitHub Dashboard</h1>
-              <span className="text-sm text-gray-500">
-                Logged in as <span className="font-medium text-gray-900">{user.username}</span>
-              </span>
             </div>
-            <button
-              onClick={logout}
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium w-fit"
-            >
-              Logout
-            </button>
+            <AccountSwitcher />
           </div>
           {repos.length > 0 && (
             <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-600">

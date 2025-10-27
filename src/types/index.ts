@@ -27,6 +27,8 @@ export type SortOrder = "lastUpdated" | "name" | "stars" | "language";
 export type ViewPreset = {
   id: string;
   name: string;
+  // Account association for multi-account support
+  accountId?: string; // GitHub user ID who owns this preset
   // Search and sort (from SavedView)
   searchQuery: string;
   sortOrder: SortOrder;

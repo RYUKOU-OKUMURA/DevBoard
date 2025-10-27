@@ -1,10 +1,15 @@
-// User info endpoint - returns current authenticated user
+// Remove account from session
 
 import type { Env } from '../../lib/types';
-import { getSessionIdFromCookie, getActiveAccountSession, getMultiAccountSession } from '../../lib/session';
+import { getSessionIdFromCookie, removeAccountFromSession } from '../../lib/session';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
+
+  // Only accept POST requests
+  if (request.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
 
   try {
     // Get master session ID from cookie
@@ -20,37 +25,42 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Get multi-account session
-    const multiSession = await getMultiAccountSession(masterSessionId, env);
+    // Parse request body
+    const body = await request.json() as { userId: string };
+
+    if (!body.userId) {
+      return new Response(
+        JSON.stringify({ error: 'userId is required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Remove account
+    const multiSession = await removeAccountFromSession(
+      masterSessionId,
+      body.userId,
+      env
+    );
 
     if (!multiSession) {
+      // All accounts removed - return empty response
       return new Response(
-        JSON.stringify({ error: 'Session expired or invalid' }),
+        JSON.stringify({ accounts: [], activeUserId: null }),
         {
-          status: 401,
+          status: 200,
           headers: { 'Content-Type': 'application/json' },
         }
       );
     }
 
-    // Get active account session
-    const session = await getActiveAccountSession(masterSessionId, env);
-
-    if (!session) {
-      return new Response(
-        JSON.stringify({ error: 'No active account' }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Return user information (without access token)
+    // Return updated session
     return new Response(
       JSON.stringify({
-        userId: session.userId,
-        username: session.username,
+        accounts: multiSession.accounts,
+        activeUserId: multiSession.activeUserId,
       }),
       {
         status: 200,
@@ -58,7 +68,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }
     );
   } catch (error) {
-    console.error('Me endpoint error:', error);
+    console.error('Remove account endpoint error:', error);
     return new Response('Internal server error', { status: 500 });
   }
 };

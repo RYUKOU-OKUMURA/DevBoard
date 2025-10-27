@@ -1,16 +1,16 @@
 // GitHub API proxy - forwards requests to GitHub API with user's access token
 
 import type { Env } from '../../lib/types';
-import { getSessionIdFromCookie, getSession } from '../../lib/session';
+import { getSessionIdFromCookie, getActiveAccountSession } from '../../lib/session';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request, params } = context;
 
   try {
-    // Get session ID from cookie
-    const sessionId = getSessionIdFromCookie(request);
+    // Get master session ID from cookie
+    const masterSessionId = getSessionIdFromCookie(request);
 
-    if (!sessionId) {
+    if (!masterSessionId) {
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
         {
@@ -20,12 +20,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Get session from KV
-    const session = await getSession(sessionId, env);
+    // Get active account session from multi-account session
+    const session = await getActiveAccountSession(masterSessionId, env);
 
     if (!session) {
       return new Response(
-        JSON.stringify({ error: 'Session expired or invalid' }),
+        JSON.stringify({ error: 'No active account or session expired' }),
         {
           status: 401,
           headers: { 'Content-Type': 'application/json' },
