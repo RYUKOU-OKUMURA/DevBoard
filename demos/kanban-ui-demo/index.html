@@ -136,7 +136,7 @@
             <main class="kanban-board">
                 <!-- Active Column -->
                 <div class="kanban-column">
-                    <div class="column-header">
+                    <div class="column-header" data-status="active">
                         <div class="column-title">
                             <svg class="column-icon active" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -251,7 +251,7 @@
 
                 <!-- Stale Column -->
                 <div class="kanban-column">
-                    <div class="column-header">
+                    <div class="column-header" data-status="stale">
                         <div class="column-title">
                             <svg class="column-icon stale" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"/>
@@ -332,7 +332,7 @@
 
                 <!-- Dormant Column -->
                 <div class="kanban-column">
-                    <div class="column-header">
+                    <div class="column-header" data-status="dormant">
                         <div class="column-title">
                             <svg class="column-icon dormant" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 2a10 10 0 1 0 10 10H12V2Z"/>
@@ -412,7 +412,7 @@
 
                 <!-- Archived Column -->
                 <div class="kanban-column">
-                    <div class="column-header">
+                    <div class="column-header" data-status="archived">
                         <div class="column-title">
                             <svg class="column-icon archived" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="21 8 21 21 3 21 3 8"/>
