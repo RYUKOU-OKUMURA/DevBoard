@@ -26,7 +26,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
       return {
         icon: isOpen ? (
           <svg
-            className="update-icon flex-shrink-0 text-[color:var(--accent-green)]"
+            className="update-icon flex-shrink-0 text-[var(--accent-green)]"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -42,7 +42,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ) : (
           <svg
-            className="update-icon flex-shrink-0 text-[color:var(--accent-purple)]"
+            className="update-icon flex-shrink-0 text-[var(--accent-purple)]"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -57,11 +57,11 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ),
         badge: isOpen ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[color:var(--accent-green-muted)] text-[color:var(--accent-green-emphasis)] border border-[color:var(--accent-green-border)] rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] rounded-lg">
             未対応
           </span>
         ) : (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[color:var(--accent-purple-muted)] text-[color:var(--accent-purple-emphasis)] border border-[color:var(--accent-purple-border)] rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-purple-muted)] text-[var(--accent-purple-emphasis)] border border-[var(--accent-purple-border)] rounded-lg">
             対応済み
           </span>
         ),
@@ -75,7 +75,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
       return {
         icon: isOpen ? (
           <svg
-            className="update-icon flex-shrink-0 text-[color:var(--accent-green)]"
+            className="update-icon flex-shrink-0 text-[var(--accent-green)]"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -92,7 +92,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ) : (
           <svg
-            className="update-icon flex-shrink-0 text-[color:var(--accent-purple)]"
+            className="update-icon flex-shrink-0 text-[var(--accent-purple)]"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -109,15 +109,15 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ),
         badge: isOpen ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[color:var(--accent-green-muted)] text-[color:var(--accent-green-emphasis)] border border-[color:var(--accent-green-border)] rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] rounded-lg">
             未対応
           </span>
         ) : isMerged ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[color:var(--accent-purple-muted)] text-[color:var(--accent-purple-emphasis)] border border-[color:var(--accent-purple-border)] rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-purple-muted)] text-[var(--accent-purple-emphasis)] border border-[var(--accent-purple-border)] rounded-lg">
             マージ済み
           </span>
         ) : (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[color:var(--accent-red-muted)] text-[color:var(--accent-red-emphasis)] border border-[color:var(--accent-red-border)] rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] border border-[var(--accent-red-border)] rounded-lg">
             却下
           </span>
         ),
@@ -128,15 +128,15 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
   return (
     <div className="flex-1 flex flex-col bg-surface-app transition-colors">
       {/* Sub-tab Navigation */}
-      <div className="flex gap-4 px-8 py-6 bg-surface-primary border-b border-[color:var(--border-subtle)] transition-colors">
+      <div className="flex gap-4 px-8 py-6 bg-surface-primary border-b border-[var(--border-subtle)] transition-colors">
         <button
           onClick={() => onActivityTypeChange('issues')}
           className={`
             flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-medium
             ${
               activityType === 'issues'
-                ? 'bg-accent-green text-text-inverse border-[color:var(--accent-green)] shadow-sm'
-                : 'bg-surface-secondary text-[color:var(--text-muted)] border-[color:var(--border-subtle)] hover:bg-surface-hover'
+                ? 'bg-accent-green text-text-inverse border-[var(--accent-green)] shadow-sm'
+                : 'bg-surface-secondary text-[var(--text-muted)] border-[var(--border-subtle)] hover:bg-surface-hover'
             }
           `}
         >
@@ -146,8 +146,8 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
               px-2 py-0.5 text-xs font-semibold rounded-full
               ${
                 activityType === 'issues'
-                  ? 'bg-[color:rgba(255,255,255,0.22)] text-text-inverse'
-                  : 'bg-surface-tertiary text-[color:var(--text-secondary)]'
+                  ? 'bg-[rgba(255,255,255,0.22)] text-text-inverse'
+                  : 'bg-surface-tertiary text-[var(--text-secondary)]'
               }
             `}
           >
@@ -161,8 +161,8 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
             flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-medium
             ${
               activityType === 'pulls'
-                ? 'bg-accent-green text-text-inverse border-[color:var(--accent-green)] shadow-sm'
-                : 'bg-surface-secondary text-[color:var(--text-muted)] border-[color:var(--border-subtle)] hover:bg-surface-hover'
+                ? 'bg-accent-green text-text-inverse border-[var(--accent-green)] shadow-sm'
+                : 'bg-surface-secondary text-[var(--text-muted)] border-[var(--border-subtle)] hover:bg-surface-hover'
             }
           `}
         >
@@ -172,8 +172,8 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
               px-2 py-0.5 text-xs font-semibold rounded-full
               ${
                 activityType === 'pulls'
-                  ? 'bg-[color:rgba(255,255,255,0.22)] text-text-inverse'
-                  : 'bg-surface-tertiary text-[color:var(--text-secondary)]'
+                  ? 'bg-[rgba(255,255,255,0.22)] text-text-inverse'
+                  : 'bg-surface-tertiary text-[var(--text-secondary)]'
               }
             `}
           >
@@ -188,14 +188,14 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           {isLoadingActivities ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--accent-green)] mx-auto mb-4"></div>
-                <p className="text-[color:var(--text-muted)]">データを取得中...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-green)] mx-auto mb-4"></div>
+                <p className="text-[var(--text-muted)]">データを取得中...</p>
               </div>
             </div>
           ) : recentItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 bg-surface-primary rounded-2xl border-2 border-dashed border-[color:var(--border-subtle)]">
+            <div className="flex flex-col items-center justify-center py-12 bg-surface-primary rounded-2xl border-2 border-dashed border-[var(--border-subtle)]">
               <svg
-                className="w-16 h-16 text-[color:var(--text-muted)] mb-4"
+                className="w-16 h-16 text-[var(--text-muted)] mb-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -207,7 +207,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
                   d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                 />
               </svg>
-              <p className="text-[color:var(--text-muted)] font-medium">
+              <p className="text-[var(--text-muted)] font-medium">
                 直近7日間の{activityType === 'issues' ? 'Issue' : 'Pull Request'}はありません
               </p>
             </div>
@@ -221,17 +221,17 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block bg-surface-primary border border-[color:var(--border-subtle)] rounded-xl p-6 hover:shadow-lg hover:border-[color:var(--accent-green)] transition-all group"
+                    className="block bg-surface-primary border border-[var(--border-subtle)] rounded-xl p-6 hover:shadow-lg hover:border-[var(--accent-green)] transition-all group"
                   >
                     <div className="flex items-start gap-3 mb-3">
                       {icon}
-                      <h3 className="flex-1 text-base font-semibold text-[color:var(--text-primary)] group-hover:text-[color:var(--accent-green)] transition-colors">
+                      <h3 className="flex-1 text-base font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-green)] transition-colors">
                         {item.title}
                       </h3>
                       {badge}
                     </div>
 
-                    <div className="flex items-center gap-3 text-sm text-[color:var(--text-muted)] ml-9">
+                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] ml-9">
                       <span className="font-medium">{item.repo.nameWithOwner}</span>
                       <span>#{item.number}</span>
                       <span>{item.relativeTime}</span>

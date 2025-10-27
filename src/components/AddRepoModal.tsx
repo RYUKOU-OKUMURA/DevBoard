@@ -54,13 +54,13 @@ export const AddRepoModal: React.FC<AddRepoModalProps> = ({
       />
 
       {/* Modal Content */}
-      <div className="relative bg-surface-primary rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-lg animate-modal-slide-in border border-[color:var(--border-subtle)] transition-colors">
+      <div className="relative bg-surface-primary rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-lg animate-modal-slide-in border border-[var(--border-subtle)] transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[color:var(--border-subtle)]">
-          <h2 className="text-xl font-semibold text-[color:var(--text-primary)]">リポジトリを追加</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">リポジトリを追加</h2>
           <button
             onClick={onClose}
-            className="p-2 text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-surface-hover rounded-lg transition-colors"
+            className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover rounded-lg transition-colors"
             aria-label="閉じる"
           >
             <svg
@@ -81,7 +81,7 @@ export const AddRepoModal: React.FC<AddRepoModalProps> = ({
 
         {/* Body */}
         <div className="px-6 py-6">
-          <p className="text-[color:var(--text-muted)] mb-4">
+          <p className="text-[var(--text-muted)] mb-4">
             GitHub リポジトリの URL または owner/repo 形式で指定してください（最大25件）
           </p>
           <RepoInputForm

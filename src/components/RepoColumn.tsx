@@ -169,7 +169,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
     <div className="flex-1 min-w-[320px] flex flex-col transition-colors">
       {/* Column Header */}
       <div
-        className={`px-4 py-3 rounded-t-lg font-semibold flex items-center justify-between shadow-sm bg-[color:var(${colors.headerBg})] text-[color:var(${colors.headerText})]`}
+        className={`px-4 py-3 rounded-t-lg font-semibold flex items-center justify-between shadow-sm bg-[var(${colors.headerBg})] text-[var(${colors.headerText})]`}
       >
         <div className="flex-1 pr-3">
           {canEditTitle ? (
@@ -179,7 +179,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
                 onChange={(event) => setDraftTitle(event.target.value)}
                 onBlur={handleTitleBlur}
                 onKeyDown={handleTitleKeyDown}
-                className="w-full bg-[color:var(--bg-primary)] px-2 py-1 rounded text-base font-semibold text-[color:var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-blue)]"
+                className="w-full bg-[var(--bg-primary)] px-2 py-1 rounded text-base font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
                 aria-label="カテゴリタイトル"
                 autoFocus
               />
@@ -187,7 +187,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
               <button
                 type="button"
                 onClick={handleStartEditing}
-                className="text-left w-full font-semibold text-inherit focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-blue)] focus:ring-offset-1 focus:ring-offset-[color:var(--bg-secondary)] rounded"
+                className="text-left w-full font-semibold text-inherit focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:ring-offset-1 focus:ring-offset-[var(--bg-secondary)] rounded"
                 title="クリックしてタイトルを編集"
               >
                 {title}
@@ -197,19 +197,19 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
             <span>{title}</span>
           )}
         </div>
-        <span className={`px-2 py-1 rounded text-sm border border-[color:var(${colors.border})] bg-[color:var(${colors.badgeBg})] text-[color:var(${colors.badgeText})]`}>
+        <span className={`px-2 py-1 rounded text-sm border border-[var(${colors.border})] bg-[var(${colors.badgeBg})] text-[var(${colors.badgeText})]`}>
           {repos.length}
         </span>
       </div>
 
       {/* Column Content */}
       <div
-        className={`bg-surface-secondary border-2 border-t-0 rounded-b-lg flex-1 overflow-y-auto p-3 space-y-3 border-[color:var(${colors.border})] shadow-md`}
+        className={`bg-surface-secondary border-2 border-t-0 rounded-b-lg flex-1 overflow-y-auto p-3 space-y-3 border-[var(${colors.border})] shadow-md`}
         onDragOver={handleDragOver}
         onDrop={handleDropOnColumnEnd}
       >
         {repos.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-[color:var(--text-muted)] text-sm">
+          <div className="flex items-center justify-center h-32 text-[var(--text-muted)] text-sm">
             <div className="text-center">
               <svg
                 className="mx-auto h-12 w-12 mb-2 opacity-50"

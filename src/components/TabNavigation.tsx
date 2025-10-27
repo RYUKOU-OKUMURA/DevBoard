@@ -14,15 +14,15 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   updateCount = 0,
 }) => {
   return (
-    <nav className="flex gap-2 px-8 bg-surface-primary border-b border-[color:var(--border-subtle)]">
+    <nav className="flex gap-2 px-8 bg-surface-primary border-b border-[var(--border-subtle)]">
       <button
         onClick={() => onTabChange('board')}
         className={`
           flex items-center gap-2 px-6 py-4 border-b-2 transition-all
           ${
             activeTab === 'board'
-              ? 'border-[color:var(--accent-green)] text-[color:var(--accent-green)] font-medium'
-              : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-surface-hover'
+              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
         `}
       >
@@ -50,8 +50,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           flex items-center gap-2 px-6 py-4 border-b-2 transition-all relative
           ${
             activeTab === 'updates'
-              ? 'border-[color:var(--accent-green)] text-[color:var(--accent-green)] font-medium'
-              : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-surface-hover'
+              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
         `}
       >

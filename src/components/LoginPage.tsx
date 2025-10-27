@@ -4,23 +4,23 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[color:var(--bg-app)] via-[color:var(--bg-secondary)] to-[color:var(--bg-app)] flex items-center justify-center p-4 transition-colors">
-      <div className="max-w-md w-full bg-surface-primary rounded-lg shadow-lg p-8 border border-[color:var(--border-subtle)] transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--bg-app)] via-[var(--bg-secondary)] to-[var(--bg-app)] flex items-center justify-center p-4 transition-colors">
+      <div className="max-w-md w-full bg-surface-primary rounded-lg shadow-lg p-8 border border-[var(--border-subtle)] transition-colors">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[color:var(--text-primary)] mb-2">
+          <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-2">
             DevBoard
           </h1>
-          <p className="text-[color:var(--text-muted)] text-sm">
+          <p className="text-[var(--text-muted)] text-sm">
             Visualize and organize your GitHub repositories
           </p>
         </div>
 
         <div className="mb-6">
-          <div className="bg-surface-secondary rounded-lg p-4 mb-6 border border-[color:var(--border-subtle)] transition-colors">
-            <h3 className="text-[color:var(--text-primary)] font-semibold mb-2 text-sm">
+          <div className="bg-surface-secondary rounded-lg p-4 mb-6 border border-[var(--border-subtle)] transition-colors">
+            <h3 className="text-[var(--text-primary)] font-semibold mb-2 text-sm">
               This app will request:
             </h3>
-            <ul className="text-[color:var(--text-secondary)] text-sm space-y-1">
+            <ul className="text-[var(--text-secondary)] text-sm space-y-1">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
                 <span>Access to your repositories (including private)</span>
@@ -34,7 +34,7 @@ export default function LoginPage() {
 
           <button
             onClick={login}
-            className="w-full bg-[color:var(--accent-blue)] hover:bg-[color:var(--accent-blue-emphasis)] text-text-inverse font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-3 shadow-sm"
+            className="w-full bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-emphasis)] text-text-inverse font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-3 shadow-sm"
           >
             <svg
               className="w-6 h-6"
@@ -52,7 +52,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div className="text-center text-[color:var(--text-muted)] text-xs">
+        <div className="text-center text-[var(--text-muted)] text-xs">
           <p>
             By signing in, you agree to allow this app to access your GitHub
             data.
