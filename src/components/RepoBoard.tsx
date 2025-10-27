@@ -422,7 +422,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-surface-app transition-colors">
       {/* Top Bar */}
       <TopBar
         title={user?.username ? `${user.username} の DevBoard` : 'DevBoard'}

@@ -37,18 +37,18 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-surface-primary border border-[color:var(--border-subtle)] rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col shadow-lg transition-colors">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold">カテゴリプロファイル管理</h2>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+            <h2 className="text-xl font-bold text-[color:var(--text-primary)]">カテゴリプロファイル管理</h2>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[color:var(--accent-yellow-muted)] text-[color:var(--accent-yellow-emphasis)] border border-[color:var(--accent-yellow-border)]">
               開発中
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] transition-colors"
             aria-label="閉じる"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +58,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-[color:var(--text-muted)] mb-4">
             カテゴリプロファイルを選択または管理できます。現在は{profiles.length}/6個のプロファイルがあります。
           </p>
 
@@ -67,13 +67,13 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
               key={profile.id}
               className={`flex items-center justify-between p-4 rounded-lg border-2 ${
                 currentProfileId === profile.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white'
+                  ? 'border-[color:var(--accent-blue)] bg-[color:var(--accent-blue-muted)]'
+                  : 'border-[color:var(--border-subtle)] bg-surface-secondary'
               }`}
             >
               <div className="flex-1">
-                <h3 className="font-medium text-gray-900">{profile.name}</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-medium text-[color:var(--text-primary)]">{profile.name}</h3>
+                <p className="text-sm text-[color:var(--text-muted)]">
                   {profile.categories.length} カテゴリ
                   {profile.isDefault && ' (デフォルト)'}
                 </p>
@@ -81,7 +81,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                   {profile.categories.map((cat) => (
                     <span
                       key={cat.key}
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-tertiary text-[color:var(--text-secondary)]"
                     >
                       {cat.title}
                     </span>
@@ -99,10 +99,10 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                       }
                     }}
                     disabled={!profile.isDefault}
-                    className={`px-3 py-1 text-white text-sm rounded transition-colors ${
+                    className={`px-3 py-1 text-sm rounded transition-colors ${
                       profile.isDefault
-                        ? 'bg-blue-600 hover:bg-blue-700'
-                        : 'bg-gray-400 cursor-not-allowed'
+                        ? 'bg-[color:var(--accent-blue)] text-text-inverse hover:bg-[color:var(--accent-blue-emphasis)]'
+                        : 'bg-surface-muted text-[color:var(--text-muted)] cursor-not-allowed'
                     }`}
                     title={!profile.isDefault ? 'カスタムプロファイル機能は開発中です' : ''}
                   >
@@ -112,7 +112,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                 {!profile.isDefault && (
                   <button
                     onClick={() => handleDelete(profile.id)}
-                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                    className="px-3 py-1 bg-[color:var(--accent-red)] text-text-inverse text-sm rounded hover:bg-[color:var(--accent-red-emphasis)] transition-colors"
                   >
                     削除
                   </button>
@@ -122,18 +122,18 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
           ))}
         </div>
 
-        <div className="border-t pt-4">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
-            <p className="text-sm text-yellow-800 font-medium mb-1">
+        <div className="border-t border-[color:var(--border-subtle)] pt-4">
+          <div className="bg-[color:var(--accent-yellow-muted)] border border-[color:var(--accent-yellow-border)] rounded-lg p-3 mb-3">
+            <p className="text-sm text-[color:var(--accent-yellow-emphasis)] font-medium mb-1">
               ⚠️ 開発中の機能について
             </p>
-            <p className="text-sm text-yellow-700">
+            <p className="text-sm text-[color:var(--text-secondary)]">
               カスタムプロファイルの作成・編集機能は現在開発中です。現時点ではデフォルトプロファイル（Active/Stale/Dormant/Archived）のみ利用可能です。
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            className="w-full px-4 py-2 bg-surface-tertiary text-[color:var(--text-secondary)] rounded-lg hover:bg-surface-hover transition-colors"
           >
             閉じる
           </button>

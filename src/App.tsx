@@ -162,10 +162,10 @@ function AppContent() {
   // Show loading spinner while checking auth
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-surface-app flex items-center justify-center transition-colors">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--accent-blue)] mx-auto"></div>
+          <p className="mt-4 text-[color:var(--text-muted)]">Loading...</p>
         </div>
       </div>
     );
@@ -177,13 +177,13 @@ function AppContent() {
   }
 
   return (
-    <div className="App min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
+    <div className="App min-h-screen bg-surface-app flex flex-col transition-colors">
       {/* User Info Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-8 py-4">
+      <div className="bg-surface-primary border-b border-[color:var(--border-subtle)] px-8 py-4 shadow-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <svg
-              className="w-8 h-8 text-gray-900 dark:text-gray-100"
+              className="w-8 h-8 text-[color:var(--text-primary)]"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -206,12 +206,12 @@ function AppContent() {
               <line x1="12.5" y1="10" x2="15.5" y2="10"/>
               <line x1="17.5" y1="7" x2="20.5" y2="7"/>
             </svg>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">DevBoard</h1>
+            <h1 className="text-xl font-semibold text-[color:var(--text-primary)]">DevBoard</h1>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsAddRepoModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors font-medium shadow-sm"
             >
               <svg
                 width="20"
@@ -230,7 +230,7 @@ function AppContent() {
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
               aria-label="Toggle theme"
               title={isDark ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
             >
@@ -256,36 +256,36 @@ function AppContent() {
           </div>
         </div>
         {repos.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs sm:text-sm text-[color:var(--text-muted)]">
             <div className="flex items-center gap-2">
-              <span className="uppercase tracking-wide text-gray-500 dark:text-gray-400 text-[11px] sm:text-xs">
+              <span className="uppercase tracking-wide text-[color:var(--text-muted)] text-[11px] sm:text-xs">
                 総数
               </span>
-              <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              <span className="text-base font-semibold text-[color:var(--text-primary)]">
                 {totalReposDisplayed}
               </span>
             </div>
               <div className="flex items-center gap-1">
-                <span className="text-gray-500 dark:text-gray-400">アクティブ</span>
-                <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+                <span className="text-[color:var(--text-muted)]">アクティブ</span>
+                <span className="text-sm font-semibold text-[color:var(--accent-green-emphasis)]">
                   {displayedCategoryCounts.Active}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-gray-500 dark:text-gray-400">停滞</span>
-                <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">
+                <span className="text-[color:var(--text-muted)]">停滞</span>
+                <span className="text-sm font-semibold text-[color:var(--accent-yellow-emphasis)]">
                   {displayedCategoryCounts.Stale}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-gray-500 dark:text-gray-400">休眠</span>
-                <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+                <span className="text-[color:var(--text-muted)]">休眠</span>
+                <span className="text-sm font-semibold text-[color:var(--accent-orange-emphasis)]">
                   {displayedCategoryCounts.Dormant}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-gray-500 dark:text-gray-400">アーカイブ</span>
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-400">
+                <span className="text-[color:var(--text-muted)]">アーカイブ</span>
+                <span className="text-sm font-semibold text-[color:var(--text-secondary)]">
                   {displayedCategoryCounts.Archived}
                 </span>
               </div>
@@ -295,10 +295,10 @@ function AppContent() {
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 px-6 py-3">
+        <div className="bg-[color:var(--accent-red-muted)] border-b border-[color:var(--accent-red-border)] px-6 py-3 text-[color:var(--text-primary)]">
           <div className="flex items-center">
             <svg
-              className="h-5 w-5 text-red-400 mr-2"
+              className="h-5 w-5 text-[color:var(--accent-red)] mr-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -310,10 +310,10 @@ function AppContent() {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="text-sm text-red-800 dark:text-red-200">{error}</span>
+            <span className="text-sm text-[color:var(--accent-red-emphasis)]">{error}</span>
             <button
               onClick={() => setError(null)}
-              className="ml-auto text-red-400 hover:text-red-600"
+              className="ml-auto text-[color:var(--accent-red)] hover:text-[color:var(--accent-red-emphasis)] transition-colors"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -331,11 +331,11 @@ function AppContent() {
 
       {/* Custom Data Banner */}
       {dataSource === 'custom' && (
-        <div className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800 px-6 py-3">
+        <div className="bg-[color:var(--accent-green-muted)] border-b border-[color:var(--accent-green-border)] px-6 py-3 text-[color:var(--text-primary)]">
           <div className="flex items-center">
             <div className="flex items-center gap-2">
               <svg
-                className="h-5 w-5 text-green-500"
+                className="h-5 w-5 text-[color:var(--accent-green)]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -347,7 +347,7 @@ function AppContent() {
                   d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-sm text-green-900 dark:text-green-200">
+              <span className="text-sm text-[color:var(--accent-green-emphasis)]">
                 指定したリポジトリ ({customRepoSources.length} 件) を表示中です。
               </span>
             </div>

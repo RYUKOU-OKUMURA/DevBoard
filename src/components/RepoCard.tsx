@@ -40,25 +40,25 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
       aria-label={`リポジトリを開く ${repo.nameWithOwner}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-lg dark:hover:shadow-gray-900/50 hover:-translate-y-0.5 hover:border-green-600 dark:hover:border-green-500 motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+      className="bg-surface-primary border border-[color:var(--border-subtle)] rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-[color:var(--accent-green)] motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-secondary)]"
     >
       {/* Repository Title and Actions */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
-            <span className="text-green-600 dark:text-green-400">{repoName}</span>
-            <span className="text-gray-600 dark:text-gray-400"> / {owner}</span>
+          <h3 className="text-base font-semibold text-[color:var(--text-primary)] truncate">
+            <span className="text-[color:var(--accent-green)]">{repoName}</span>
+            <span className="text-[color:var(--text-muted)]"> / {owner}</span>
           </h3>
         </div>
 
         <div className="flex items-center gap-1 ml-2">
           {/* Privacy Badge */}
           {repo.isPrivate ? (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[color:var(--accent-yellow-muted)] text-[color:var(--accent-yellow-emphasis)] border border-[color:var(--accent-yellow-border)] shadow-sm">
               Private
             </span>
           ) : (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[color:var(--accent-green-muted)] text-[color:var(--accent-green-emphasis)] border border-[color:var(--accent-green-border)] shadow-sm">
               Public
             </span>
           )}
@@ -67,7 +67,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
           {onHide && (
             <button
               onClick={handleHideClick}
-              className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-surface-hover text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] transition-colors"
               title="非表示にする"
               aria-label="このカードを非表示にする"
             >
@@ -81,26 +81,26 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
 
       {/* Description */}
       {repo.description && (
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+        <p className="text-sm text-[color:var(--text-muted)] mb-3 line-clamp-2">
           {repo.description}
         </p>
       )}
 
       {/* Metadata */}
-      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2 flex-wrap">
+      <div className="flex items-center gap-3 text-sm text-[color:var(--text-muted)] mb-2 flex-wrap">
         {/* Primary Language */}
         {repo.primaryLanguage && (
           <div className="flex items-center gap-1.5 font-medium">
-            <span className="w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400"></span>
+            <span className="w-3 h-3 rounded-full bg-[color:var(--accent-blue)]"></span>
             <span>{repo.primaryLanguage}</span>
           </div>
         )}
 
         {/* Stars */}
         {repo.stargazers_count !== undefined && repo.stargazers_count > 0 && (
-          <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1.5">
             <svg
-              className="w-3.5 h-3.5 text-yellow-500 dark:text-yellow-400"
+              className="w-3.5 h-3.5 text-[color:var(--accent-yellow)]"
               fill="currentColor"
               stroke="currentColor"
               strokeWidth="1"
@@ -113,7 +113,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
         )}
 
         {/* Last Updated */}
-        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs">
+        <div className="flex items-center gap-1.5 text-[color:var(--text-muted)] text-xs">
           <span>{timeAgo(repo.pushedAt)}</span>
         </div>
       </div>
@@ -124,13 +124,13 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
           {displayTopics.map((topic) => (
             <span
               key={topic}
-              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[color:var(--accent-blue-muted)] text-[color:var(--accent-blue-emphasis)] border border-[color:var(--accent-blue-border)] shadow-sm"
             >
               #{topic}
             </span>
           ))}
           {hasMoreTopics && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-surface-tertiary text-[color:var(--text-muted)] border border-[color:var(--border-subtle)]">
               +{repo.topics.length - 3}
             </span>
           )}

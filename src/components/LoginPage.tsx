@@ -4,23 +4,23 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-2xl p-8 border border-gray-700">
+    <div className="min-h-screen bg-gradient-to-br from-[color:var(--bg-app)] via-[color:var(--bg-secondary)] to-[color:var(--bg-app)] flex items-center justify-center p-4 transition-colors">
+      <div className="max-w-md w-full bg-surface-primary rounded-lg shadow-lg p-8 border border-[color:var(--border-subtle)] transition-colors">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="text-4xl font-bold text-[color:var(--text-primary)] mb-2">
             DevBoard
           </h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-[color:var(--text-muted)] text-sm">
             Visualize and organize your GitHub repositories
           </p>
         </div>
 
         <div className="mb-6">
-          <div className="bg-gray-700 rounded-lg p-4 mb-6">
-            <h3 className="text-white font-semibold mb-2 text-sm">
+          <div className="bg-surface-secondary rounded-lg p-4 mb-6 border border-[color:var(--border-subtle)] transition-colors">
+            <h3 className="text-[color:var(--text-primary)] font-semibold mb-2 text-sm">
               This app will request:
             </h3>
-            <ul className="text-gray-300 text-sm space-y-1">
+            <ul className="text-[color:var(--text-secondary)] text-sm space-y-1">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
                 <span>Access to your repositories (including private)</span>
@@ -34,7 +34,7 @@ export default function LoginPage() {
 
           <button
             onClick={login}
-            className="w-full bg-gray-900 hover:bg-gray-950 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-3 border border-gray-700 hover:border-gray-600"
+            className="w-full bg-[color:var(--accent-blue)] hover:bg-[color:var(--accent-blue-emphasis)] text-text-inverse font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-3 shadow-sm"
           >
             <svg
               className="w-6 h-6"
@@ -52,7 +52,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div className="text-center text-gray-500 text-xs">
+        <div className="text-center text-[color:var(--text-muted)] text-xs">
           <p>
             By signing in, you agree to allow this app to access your GitHub
             data.

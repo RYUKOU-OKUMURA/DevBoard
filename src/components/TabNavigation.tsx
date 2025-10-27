@@ -14,15 +14,15 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   updateCount = 0,
 }) => {
   return (
-    <nav className="flex gap-2 px-8 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <nav className="flex gap-2 px-8 bg-surface-primary border-b border-[color:var(--border-subtle)]">
       <button
         onClick={() => onTabChange('board')}
         className={`
           flex items-center gap-2 px-6 py-4 border-b-2 transition-all
           ${
             activeTab === 'board'
-              ? 'border-green-500 text-green-600 dark:text-green-400 font-medium'
-              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+              ? 'border-[color:var(--accent-green)] text-[color:var(--accent-green)] font-medium'
+              : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-surface-hover'
           }
         `}
       >
@@ -50,8 +50,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           flex items-center gap-2 px-6 py-4 border-b-2 transition-all relative
           ${
             activeTab === 'updates'
-              ? 'border-green-500 text-green-600 dark:text-green-400 font-medium'
-              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+              ? 'border-[color:var(--accent-green)] text-[color:var(--accent-green)] font-medium'
+              : 'border-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:bg-surface-hover'
           }
         `}
       >
@@ -70,7 +70,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </svg>
         <span>最近の更新</span>
         {updateCount > 0 && (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-white bg-green-500 rounded-full">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-full shadow-sm">
             {updateCount}
           </span>
         )}
