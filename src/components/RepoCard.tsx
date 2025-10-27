@@ -97,7 +97,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
         )}
 
         {/* Stars */}
-        {repo.stargazerCount !== undefined && repo.stargazerCount > 0 && (
+        {repo.stargazers_count !== undefined && repo.stargazers_count > 0 && (
           <div className="flex items-center gap-1.5 text-gray-600">
             <svg
               className="w-3.5 h-3.5 text-yellow-500"
@@ -108,7 +108,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
             >
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span>{repo.stargazerCount}</span>
+            <span>{repo.stargazers_count}</span>
           </div>
         )}
 
