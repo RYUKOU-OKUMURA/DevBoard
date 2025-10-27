@@ -185,17 +185,17 @@ export const TopBar: React.FC<TopBarProps> = ({
             {onCategorySettings && (
               <button
                 onClick={onCategorySettings}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1"
+                className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-1"
                 title="カテゴリプロファイル設定 (開発中)"
               >
                 カテゴリ設定
-                <span className="text-xs bg-purple-500 px-1.5 py-0.5 rounded">開発中</span>
+                <span className="text-xs bg-purple-500 px-1.5 py-0.5 rounded-md">開発中</span>
               </button>
             )}
             {hiddenRepos.length > 0 && (
               <button
                 onClick={() => setShowHiddenDialog(true)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors relative"
+                className="px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors relative"
                 title="非表示のリポジトリを管理"
               >
                 非表示を管理
@@ -208,7 +208,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (
                   <span className="flex items-center">
@@ -251,7 +251,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="リポジトリを検索（名前、言語、トピック、説明...）"
-                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
               />
               <svg
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
@@ -274,7 +274,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <select
               value={sortOrder}
               onChange={(event) => onSortChange(event.target.value as SortOrder)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-all"
             >
               <option value="lastUpdated">並び替え: 最終更新日</option>
               <option value="name">並び替え: 名前 (A-Z)</option>
@@ -289,7 +289,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               value={currentViewId}
               onChange={handleViewChange}
               disabled={!onViewSelect}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white transition-all"
             >
               <option value="">保存済みビュー ({savedViews.length}/5)</option>
               {savedViews.map((view) => (
@@ -301,7 +301,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               onClick={() => setShowSaveDialog(true)}
               disabled={savedViews.length >= 5}
-              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               title="現在のビューを保存"
             >
               +
@@ -309,7 +309,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {currentViewId && onDeleteView && (
               <button
                 onClick={(event) => handleDeleteClick(currentViewId, event)}
-                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
                 title="選択中のビューを削除"
               >
                 ×
@@ -323,7 +323,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               value={currentPresetId}
               onChange={handlePresetChange}
               disabled={!onPresetSelect}
-              className="flex-1 px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-purple-50"
+              className="flex-1 px-4 py-2 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-purple-50 transition-all"
             >
               <option value="">プリセット ({presets.length}/5)</option>
               {presets.map((preset) => (
@@ -335,7 +335,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <button
               onClick={() => setShowPresetDialog(true)}
               disabled={presets.length >= 5}
-              className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               title="現在の状態をプリセットとして保存"
             >
               +
@@ -343,7 +343,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {currentPresetId && onDeletePreset && (
               <button
                 onClick={(event) => handleDeletePresetClick(currentPresetId, event)}
-                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
                 title="選択中のプリセットを削除"
               >
                 ×
@@ -366,7 +366,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Save View Dialog */}
       {showSaveDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-bold mb-4">現在のビューを保存</h2>
             <p className="text-gray-600 mb-4">
               現在の検索キーワードと並び順を保存します。
@@ -389,7 +389,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }
                 }}
                 placeholder="例: アクティブなTypeScriptプロジェクト"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 autoFocus
               />
               {saveError && (
@@ -411,13 +411,13 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={handleSaveClick}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
               >
                 保存
               </button>
               <button
                 onClick={handleDialogClose}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
               >
                 キャンセル
               </button>
@@ -429,7 +429,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Save Preset Dialog */}
       {showPresetDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">プリセットとして保存</h2>
             <p className="text-gray-600 mb-4">
               現在のダッシュボードの状態（検索、並び順、カラム配置、カラム名、しきい値など）を保存します。
@@ -457,7 +457,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }
                 }}
                 placeholder="例: 開発中プロジェクト"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 autoFocus
               />
               {presetError && (
@@ -524,13 +524,13 @@ export const TopBar: React.FC<TopBarProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={handleSavePresetClick}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
               >
                 保存
               </button>
               <button
                 onClick={handlePresetDialogClose}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
               >
                 キャンセル
               </button>
@@ -542,7 +542,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Hidden Repos Dialog */}
       {showHiddenDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">非表示のリポジトリ ({hiddenRepos.length})</h2>
               <button
@@ -588,13 +588,13 @@ export const TopBar: React.FC<TopBarProps> = ({
                       onUnhideAll?.();
                       setShowHiddenDialog(false);
                     }}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
                   >
                     すべて表示
                   </button>
                   <button
                     onClick={() => setShowHiddenDialog(false)}
-                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
                   >
                     閉じる
                   </button>
