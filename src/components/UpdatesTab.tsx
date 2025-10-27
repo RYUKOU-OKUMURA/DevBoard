@@ -26,7 +26,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
       return {
         icon: isOpen ? (
           <svg
-            className="update-icon flex-shrink-0 text-green-600"
+            className="update-icon flex-shrink-0 text-green-600 dark:text-green-400"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -42,7 +42,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ) : (
           <svg
-            className="update-icon flex-shrink-0 text-purple-600"
+            className="update-icon flex-shrink-0 text-purple-600 dark:text-purple-400"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -57,11 +57,11 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ),
         badge: isOpen ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-700 border border-green-200 rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg">
             未対応
           </span>
         ) : (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-purple-100 text-purple-700 border border-purple-200 rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-lg">
             対応済み
           </span>
         ),
@@ -75,7 +75,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
       return {
         icon: isOpen ? (
           <svg
-            className="update-icon flex-shrink-0 text-green-600"
+            className="update-icon flex-shrink-0 text-green-600 dark:text-green-400"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -92,7 +92,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ) : (
           <svg
-            className="update-icon flex-shrink-0 text-purple-600"
+            className="update-icon flex-shrink-0 text-purple-600 dark:text-purple-400"
             width="18"
             height="18"
             viewBox="0 0 24 24"
@@ -109,15 +109,15 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ),
         badge: isOpen ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-green-100 text-green-700 border border-green-200 rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-lg">
             未対応
           </span>
         ) : isMerged ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-purple-100 text-purple-700 border border-purple-200 rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-lg">
             マージ済み
           </span>
         ) : (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-red-100 text-red-700 border border-red-200 rounded-lg">
+          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg">
             却下
           </span>
         ),
@@ -126,9 +126,9 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50">
+    <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Sub-tab Navigation */}
-      <div className="flex gap-4 px-8 py-6 bg-white border-b border-gray-200">
+      <div className="flex gap-4 px-8 py-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => onActivityTypeChange('issues')}
           className={`
@@ -136,7 +136,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
             ${
               activityType === 'issues'
                 ? 'bg-green-500 text-white border-green-500'
-                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
             }
           `}
         >
@@ -147,7 +147,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
               ${
                 activityType === 'issues'
                   ? 'bg-white bg-opacity-30 text-white'
-                  : 'bg-gray-200 text-gray-700'
+                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
               }
             `}
           >
@@ -162,7 +162,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
             ${
               activityType === 'pulls'
                 ? 'bg-green-500 text-white border-green-500'
-                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
             }
           `}
         >
@@ -173,7 +173,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
               ${
                 activityType === 'pulls'
                   ? 'bg-white bg-opacity-30 text-white'
-                  : 'bg-gray-200 text-gray-700'
+                  : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
               }
             `}
           >
@@ -188,14 +188,14 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           {isLoadingActivities ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">データを取得中...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 dark:border-green-400 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">データを取得中...</p>
               </div>
             </div>
           ) : recentItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-300">
+            <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700">
               <svg
-                className="w-16 h-16 text-gray-400 mb-4"
+                className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -207,7 +207,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
                   d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                 />
               </svg>
-              <p className="text-gray-600 font-medium">
+              <p className="text-gray-600 dark:text-gray-400 font-medium">
                 直近7日間の{activityType === 'issues' ? 'Issue' : 'Pull Request'}はありません
               </p>
             </div>
@@ -221,17 +221,17 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-green-300 transition-all group"
+                    className="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg hover:border-green-300 dark:hover:border-green-600 transition-all group"
                   >
                     <div className="flex items-start gap-3 mb-3">
                       {icon}
-                      <h3 className="flex-1 text-base font-semibold text-gray-900 group-hover:text-green-600 transition-colors">
+                      <h3 className="flex-1 text-base font-semibold text-gray-900 dark:text-gray-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                         {item.title}
                       </h3>
                       {badge}
                     </div>
 
-                    <div className="flex items-center gap-3 text-sm text-gray-600 ml-9">
+                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 ml-9">
                       <span className="font-medium">{item.repo.nameWithOwner}</span>
                       <span>#{item.number}</span>
                       <span>{item.relativeTime}</span>

@@ -14,15 +14,15 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   updateCount = 0,
 }) => {
   return (
-    <nav className="flex gap-2 px-8 bg-white border-b border-gray-200">
+    <nav className="flex gap-2 px-8 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <button
         onClick={() => onTabChange('board')}
         className={`
           flex items-center gap-2 px-6 py-4 border-b-2 transition-all
           ${
             activeTab === 'board'
-              ? 'border-green-500 text-green-600 font-medium'
-              : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'border-green-500 text-green-600 dark:text-green-400 font-medium'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
           }
         `}
       >
@@ -50,8 +50,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           flex items-center gap-2 px-6 py-4 border-b-2 transition-all relative
           ${
             activeTab === 'updates'
-              ? 'border-green-500 text-green-600 font-medium'
-              : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              ? 'border-green-500 text-green-600 dark:text-green-400 font-medium'
+              : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
           }
         `}
       >

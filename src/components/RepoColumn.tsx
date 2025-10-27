@@ -21,24 +21,24 @@ interface RepoColumnProps {
 
 const COLUMN_COLORS: Record<ColumnKey, { bg: string; border: string; header: string }> = {
   Active: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    header: 'bg-green-100 text-green-800',
+    bg: 'bg-green-50 dark:bg-green-900/20',
+    border: 'border-green-200 dark:border-green-800',
+    header: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300',
   },
   Stale: {
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
-    header: 'bg-yellow-100 text-yellow-800',
+    bg: 'bg-yellow-50 dark:bg-yellow-900/20',
+    border: 'border-yellow-200 dark:border-yellow-800',
+    header: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300',
   },
   Dormant: {
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
-    header: 'bg-orange-100 text-orange-800',
+    bg: 'bg-orange-50 dark:bg-orange-900/20',
+    border: 'border-orange-200 dark:border-orange-800',
+    header: 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300',
   },
   Archived: {
-    bg: 'bg-gray-50',
-    border: 'border-gray-200',
-    header: 'bg-gray-100 text-gray-800',
+    bg: 'bg-gray-50 dark:bg-gray-800/50',
+    border: 'border-gray-200 dark:border-gray-700',
+    header: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300',
   },
 };
 
@@ -162,7 +162,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
                 onChange={(event) => setDraftTitle(event.target.value)}
                 onBlur={handleTitleBlur}
                 onKeyDown={handleTitleKeyDown}
-                className="w-full bg-white/80 px-2 py-1 rounded text-base font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-white/80 dark:bg-gray-800 px-2 py-1 rounded text-base font-semibold text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 aria-label="カテゴリタイトル"
                 autoFocus
               />
@@ -180,7 +180,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
             <span>{title}</span>
           )}
         </div>
-        <span className="bg-white bg-opacity-50 px-2 py-1 rounded text-sm">
+        <span className="bg-white dark:bg-gray-800 bg-opacity-50 dark:bg-opacity-50 px-2 py-1 rounded text-sm">
           {repos.length}
         </span>
       </div>
@@ -192,7 +192,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
         onDrop={handleDropOnColumnEnd}
       >
         {repos.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-32 text-gray-400 dark:text-gray-500 text-sm">
             <div className="text-center">
               <svg
                 className="mx-auto h-12 w-12 mb-2 opacity-50"
