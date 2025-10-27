@@ -204,9 +204,7 @@ function AppContent() {
               <line x1="12.5" y1="10" x2="15.5" y2="10"/>
               <line x1="17.5" y1="7" x2="20.5" y2="7"/>
             </svg>
-            <h1 className="text-xl font-semibold text-gray-900">
-              {user?.username ? `${user.username} の DevBoard` : 'DevBoard - Guest'}
-            </h1>
+            <h1 className="text-xl font-semibold text-gray-900">DevBoard</h1>
           </div>
           <div className="flex items-center gap-3">
             <button

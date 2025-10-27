@@ -27,7 +27,6 @@ const COLUMN_TITLES: Record<ColumnKey, string> = {
 const COLUMN_ORDER: ColumnKey[] = ['Active', 'Stale', 'Dormant', 'Archived'];
 
 const ORDER_STORAGE_KEY = 'github-dashboard-column-order';
-const DASHBOARD_TITLE = 'GitHubダッシュボード';
 const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
 const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
 const HIDDEN_REPOS_STORAGE_KEY = 'github-dashboard-hidden-repos';
@@ -426,7 +425,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Top Bar */}
       <TopBar
-        title={DASHBOARD_TITLE}
+        title={user?.username ? `${user.username} の DevBoard` : 'DevBoard'}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         sortOrder={sortOrder}
