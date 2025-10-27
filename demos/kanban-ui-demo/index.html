@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Dashboard - UI Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <svg class="logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
+                    <path d="M9 18c-4.51 2-5-2-7-2"/>
+                </svg>
+                <h1 class="app-title">GitHub Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <button class="account-button" id="accountButton">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>Account</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+                <button class="add-repo-button" id="addRepoButton">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span>リポジトリ追加</span>
+                </button>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-navigation">
+            <button class="tab-button active" data-tab="board">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>カンバン</span>
+            </button>
+            <button class="tab-button" data-tab="updates">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                <span>最近の更新</span>
+                <span class="tab-badge">7</span>
+            </button>
+        </nav>
+
+        <!-- Board Tab Content -->
+        <div class="tab-content active" id="boardTab">
+            <!-- Control Bar -->
+            <div class="control-bar">
+                <div class="search-container">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="リポジトリを検索...">
+                </div>
+
+                <div class="control-group">
+                    <div class="select-wrapper">
+                        <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        <select class="control-select">
+                            <option>保存済みビュー (2/5)</option>
+                            <option>アクティブなプロジェクト</option>
+                            <option>個人リポジトリ</option>
+                        </select>
+                    </div>
+
+                    <div class="select-wrapper">
+                        <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                        <select class="control-select">
+                            <option>並び替え: 最終更新日</option>
+                            <option>並び替え: 名前 (A-Z)</option>
+                            <option>並び替え: スター数</option>
+                            <option>並び替え: 言語</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kanban Board -->
+            <main class="kanban-board">
+                <!-- Active Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <svg class="column-icon active" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                            <h2>アクティブ</h2>
+                        </div>
+                        <span class="column-count">3</span>
+                    </div>
+                    <div class="column-content">
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">owner/awesome-project</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge public">Public</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">GitHub リポジトリを管理するための美しいカンバンインターフェースを備えたモダンなウェブアプリケーション</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot typescript"></span>
+                                    TypeScript
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>234</span>
+                                </div>
+                                <span class="repo-updated">2日前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">react</span>
+                                <span class="topic-tag">typescript</span>
+                                <span class="topic-tag">kanban</span>
+                            </div>
+                        </div>
+
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">username/ml-experiments</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge private">Private</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">機械学習の実験と研究ノートブック</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot python"></span>
+                                    Python
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>12</span>
+                                </div>
+                                <span class="repo-updated">5日前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">machine-learning</span>
+                                <span class="topic-tag">pytorch</span>
+                            </div>
+                        </div>
+
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">team/api-gateway</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge private">Private</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">認証とレート制限を備えたマイクロサービス API ゲートウェイ</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot go"></span>
+                                    Go
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>45</span>
+                                </div>
+                                <span class="repo-updated">1週間前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">microservices</span>
+                                <span class="topic-tag">api</span>
+                                <span class="topic-tag">gateway</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stale Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <svg class="column-icon stale" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <h2>停滞</h2>
+                        </div>
+                        <span class="column-count">2</span>
+                    </div>
+                    <div class="column-content">
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">company/legacy-dashboard</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge private">Private</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">レガシー分析ダッシュボード - 新プラットフォームへ移行中</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot javascript"></span>
+                                    JavaScript
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>8</span>
+                                </div>
+                                <span class="repo-updated">2ヶ月前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">analytics</span>
+                                <span class="topic-tag">dashboard</span>
+                            </div>
+                        </div>
+
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">personal/blog-generator</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge public">Public</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">Markdown サポート付き個人ブログ用の静的サイトジェネレーター</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot rust"></span>
+                                    Rust
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>67</span>
+                                </div>
+                                <span class="repo-updated">3ヶ月前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">static-site</span>
+                                <span class="topic-tag">markdown</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dormant Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <svg class="column-icon dormant" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2a10 10 0 1 0 10 10H12V2Z"/>
+                            </svg>
+                            <h2>休眠</h2>
+                        </div>
+                        <span class="column-count">2</span>
+                    </div>
+                    <div class="column-content">
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">old-projects/game-prototype</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge public">Public</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">2023年からの実験的な2Dゲームエンジンのプロトタイプ</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot cpp"></span>
+                                    C++
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>3</span>
+                                </div>
+                                <span class="repo-updated">8ヶ月前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">game-engine</span>
+                                <span class="topic-tag">prototype</span>
+                            </div>
+                        </div>
+
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">archive/data-pipeline</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge private">Private</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">顧客データ処理用の ETL パイプライン</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot python"></span>
+                                    Python
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>1</span>
+                                </div>
+                                <span class="repo-updated">11ヶ月前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">etl</span>
+                                <span class="topic-tag">data</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Archived Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <svg class="column-icon archived" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="21 8 21 21 3 21 3 8"/>
+                                <rect x="1" y="3" width="22" height="5"/>
+                                <line x1="10" y1="12" x2="14" y2="12"/>
+                            </svg>
+                            <h2>アーカイブ</h2>
+                        </div>
+                        <span class="column-count">1</span>
+                    </div>
+                    <div class="column-content">
+                        <div class="repo-card">
+                            <div class="repo-header">
+                                <a href="#" class="repo-name">deprecated/old-website</a>
+                                <div class="repo-badges">
+                                    <span class="visibility-badge public">Public</span>
+                                    <button class="hide-button" title="非表示にする">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="repo-description">レガシー企業ウェブサイト - 新プラットフォームに置き換え済み</p>
+                            <div class="repo-meta">
+                                <div class="repo-language">
+                                    <span class="language-dot html"></span>
+                                    HTML
+                                </div>
+                                <div class="repo-stars">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                    <span>0</span>
+                                </div>
+                                <span class="repo-updated">2年前</span>
+                            </div>
+                            <div class="repo-topics">
+                                <span class="topic-tag">legacy</span>
+                                <span class="topic-tag">archived</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Updates Tab Content -->
+        <div class="tab-content" id="updatesTab">
+            <!-- Sub-tabs for Issues and PRs -->
+            <div class="sub-tab-navigation">
+                <button class="sub-tab-button active" data-subtab="issues">
+                    <span>Issues</span>
+                    <span class="sub-tab-badge">5</span>
+                </button>
+                <button class="sub-tab-button" data-subtab="prs">
+                    <span>Pull Requests</span>
+                    <span class="sub-tab-badge">2</span>
+                </button>
+            </div>
+
+            <!-- Issues Content -->
+            <div class="sub-tab-content active" id="issuesContent">
+                <div class="updates-list">
+                    <div class="update-item">
+                        <div class="update-header">
+                            <div class="update-title-row">
+                                <svg class="update-icon issue" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <a href="#" class="update-title">バグ修正: ログイン時のエラーハンドリング改善</a>
+                                <span class="status-badge open">未対応</span>
+                            </div>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-repo">owner/awesome-project</span>
+                            <span class="update-number">#123</span>
+                            <span class="update-time">2時間前</span>
+                        </div>
+                        <p class="update-description">ログイン失敗時のエラーメッセージが適切に表示されない問題を修正する必要があります。</p>
+                    </div>
+
+                    <div class="update-item">
+                        <div class="update-header">
+                            <div class="update-title-row">
+                                <svg class="update-icon issue" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <a href="#" class="update-title">機能追加: ダークモード対応</a>
+                                <span class="status-badge open">未対応</span>
+                            </div>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-repo">username/ml-experiments</span>
+                            <span class="update-number">#45</span>
+                            <span class="update-time">5時間前</span>
+                        </div>
+                        <p class="update-description">ユーザーの要望により、ダークモードのサポートを追加したい。</p>
+                    </div>
+
+                    <div class="update-item">
+                        <div class="update-header">
+                            <div class="update-title-row">
+                                <svg class="update-icon issue closed" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="9 11 12 14 16 10"/>
+                                </svg>
+                                <a href="#" class="update-title">ドキュメント更新: README に使用例を追加</a>
+                                <span class="status-badge closed">対応済み</span>
+                            </div>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-repo">personal/blog-generator</span>
+                            <span class="update-number">#89</span>
+                            <span class="update-time">1日前</span>
+                        </div>
+                        <p class="update-description">README に基本的な使用例のセクションを追加しました。</p>
+                    </div>
+
+                    <div class="update-item">
+                        <div class="update-header">
+                            <div class="update-title-row">
+                                <svg class="update-icon issue" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <a href="#" class="update-title">パフォーマンス改善: 検索速度の最適化</a>
+                                <span class="status-badge open">未対応</span>
+                            </div>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-repo">team/api-gateway</span>
+                            <span class="update-number">#234</span>
+                            <span class="update-time">3日前</span>
+                        </div>
+                        <p class="update-description">大量のリポジトリがある場合の検索パフォーマンスを改善する必要があります。</p>
+                    </div>
+
+                    <div class="update-item">
+                        <div class="update-header">
+                            <div class="update-title-row">
+                                <svg class="update-icon issue closed" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="9 11 12 14 16 10"/>
+                                </svg>
+                                <a href="#" class="update-title">セキュリティ: 依存関係の脆弱性修正</a>
+                                <span class="status-badge closed">対応済み</span>
+                            </div>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-repo">company/legacy-dashboard</span>
+                            <span class="update-number">#567</span>
+                            <span class="update-time">1週間前</span>
+                        </div>
+                        <p class="update-description">Dependabot で検出された脆弱性を修正しました。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pull Requests Content -->
+            <div class="sub-tab-content" id="prsContent">
+                <div class="updates-list">
+                    <div class="update-item">
+                        <div class="update-header">
+                            <div class="update-title-row">
+                                <svg class="update-icon pr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="18" cy="18" r="3"/>
+                                    <circle cx="6" cy="6" r="3"/>
+                                    <path d="M13 6h3a2 2 0 0 1 2 2v7"/>
+                                    <line x1="6" y1="9" x2="6" y2="21"/>
+                                </svg>
+                                <a href="#" class="update-title">新機能: カスタムフィルター機能の追加</a>
+                                <span class="status-badge open">未対応</span>
+                            </div>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-repo">owner/awesome-project</span>
+                            <span class="update-number">#45</span>
+                            <span class="update-time">3時間前</span>
+                            <span class="update-author">by @contributor</span>
+                        </div>
+                        <p class="update-description">ユーザーが独自のフィルタールールを作成できる機能を追加しました。</p>
+                        <div class="pr-stats">
+                            <span class="pr-stat additions">+245</span>
+                            <span class="pr-stat deletions">-89</span>
+                            <span class="pr-stat files">8 files</span>
+                        </div>
+                    </div>
+
+                    <div class="update-item">
+                        <div class="update-header">
+                            <div class="update-title-row">
+                                <svg class="update-icon pr merged" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="18" cy="18" r="3"/>
+                                    <circle cx="6" cy="6" r="3"/>
+                                    <path d="M13 6h3a2 2 0 0 1 2 2v7"/>
+                                    <line x1="6" y1="9" x2="6" y2="21"/>
+                                </svg>
+                                <a href="#" class="update-title">リファクタリング: API レイヤーの整理</a>
+                                <span class="status-badge merged">マージ済み</span>
+                            </div>
+                        </div>
+                        <div class="update-meta">
+                            <span class="update-repo">team/api-gateway</span>
+                            <span class="update-number">#67</span>
+                            <span class="update-time">1日前</span>
+                            <span class="update-author">by @teammate</span>
+                        </div>
+                        <p class="update-description">API 層のコードを整理し、保守性を向上させました。</p>
+                        <div class="pr-stats">
+                            <span class="pr-stat additions">+123</span>
+                            <span class="pr-stat deletions">-156</span>
+                            <span class="pr-stat files">12 files</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Repository Modal -->
+        <div class="modal" id="addRepoModal">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>リポジトリを追加</h2>
+                    <button class="modal-close" id="modalClose">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-description">GitHub アカウントからリポジトリを取り込みます</p>
+
+                    <div class="form-group">
+                        <label for="repoUrl">リポジトリ URL または owner/repo</label>
+                        <input type="text" id="repoUrl" class="form-input" placeholder="例: owner/repository">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="includePrivate">
+                            <span>プライベートリポジトリも含める</span>
+                        </label>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn btn-primary">追加</button>
+                        <button class="btn btn-secondary" id="modalCancel">キャンセル</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State (hidden by default, shown when no repos) -->
+        <div class="empty-state" style="display: none;">
+            <svg class="empty-state-icon" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
+                <path d="M9 18c-4.51 2-5-2-7-2"/>
+            </svg>
+            <h2>リポジトリがありません</h2>
+            <p>GitHub リポジトリを追加して、ダッシュボードで管理を始めましょう</p>
+            <button class="btn btn-primary btn-large" id="emptyStateAddRepo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>リポジトリを追加</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
