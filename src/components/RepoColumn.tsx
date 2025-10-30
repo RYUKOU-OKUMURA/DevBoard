@@ -30,32 +30,32 @@ const COLUMN_COLORS: Record<
   }
 > = {
   Active: {
-    headerBg: '--accent-green-muted',
-    headerText: '--accent-green-emphasis',
-    border: '--accent-green-border',
-    badgeBg: '--accent-green-muted',
-    badgeText: '--accent-green-emphasis',
+    headerBg: 'bg-accent-green-muted',
+    headerText: 'text-accent-green-strong',
+    border: 'border-accent-green-border',
+    badgeBg: 'bg-accent-green-muted',
+    badgeText: 'text-accent-green-strong',
   },
   Stale: {
-    headerBg: '--accent-yellow-muted',
-    headerText: '--accent-yellow-emphasis',
-    border: '--accent-yellow-border',
-    badgeBg: '--accent-yellow-muted',
-    badgeText: '--accent-yellow-emphasis',
+    headerBg: 'bg-accent-yellow-muted',
+    headerText: 'text-accent-yellow-strong',
+    border: 'border-accent-yellow-border',
+    badgeBg: 'bg-accent-yellow-muted',
+    badgeText: 'text-accent-yellow-strong',
   },
   Dormant: {
-    headerBg: '--accent-orange-muted',
-    headerText: '--accent-orange-emphasis',
-    border: '--accent-orange-border',
-    badgeBg: '--accent-orange-muted',
-    badgeText: '--accent-orange-emphasis',
+    headerBg: 'bg-accent-orange-muted',
+    headerText: 'text-accent-orange-strong',
+    border: 'border-accent-orange-border',
+    badgeBg: 'bg-accent-orange-muted',
+    badgeText: 'text-accent-orange-strong',
   },
   Archived: {
-    headerBg: '--bg-muted',
-    headerText: '--text-secondary',
-    border: '--border-subtle',
-    badgeBg: '--bg-tertiary',
-    badgeText: '--text-muted',
+    headerBg: 'bg-accent-red-muted',
+    headerText: 'text-accent-red-strong',
+    border: 'border-accent-red-border',
+    badgeBg: 'bg-accent-red-muted',
+    badgeText: 'text-accent-red-strong',
   },
 };
 
@@ -169,7 +169,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
     <div className="flex-1 min-w-[320px] flex flex-col transition-colors">
       {/* Column Header */}
       <div
-        className={`px-4 py-3 rounded-t-lg font-semibold flex items-center justify-between shadow-sm bg-[var(${colors.headerBg})] text-[var(${colors.headerText})] border border-b-0 border-[var(${colors.border})]`}
+        className={`px-4 py-3 rounded-t-lg font-semibold flex items-center justify-between shadow-sm ${colors.headerBg} ${colors.headerText} border border-b-0 ${colors.border}`}
       >
         <div className="flex-1 pr-3">
           {canEditTitle ? (
@@ -187,7 +187,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
               <button
                 type="button"
                 onClick={handleStartEditing}
-                className="text-left w-full font-semibold text-inherit focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:ring-offset-1 focus:ring-offset-[var(--bg-secondary)] rounded"
+                className="text-left w-full font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:ring-offset-1 focus:ring-offset-[var(--bg-secondary)] rounded"
                 title="クリックしてタイトルを編集"
               >
                 {title}
@@ -197,14 +197,14 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
             <span>{title}</span>
           )}
         </div>
-        <span className={`px-2 py-1 rounded text-sm border border-[var(${colors.border})] bg-[var(${colors.badgeBg})] text-[var(${colors.badgeText})]`}>
+        <span className={`px-2 py-1 rounded text-sm border ${colors.border} ${colors.badgeBg} ${colors.badgeText}`}>
           {repos.length}
         </span>
       </div>
 
       {/* Column Content */}
       <div
-        className={`bg-surface-secondary border-2 border-t-0 rounded-b-lg flex-1 overflow-y-auto p-3 space-y-3 border-[var(${colors.border})] shadow-md`}
+        className={`bg-surface-secondary border-2 border-t-0 rounded-b-lg flex-1 overflow-y-auto p-3 space-y-3 ${colors.border} shadow-md`}
         onDragOver={handleDragOver}
         onDrop={handleDropOnColumnEnd}
       >
