@@ -1,26 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab } from './components';
 import LoginPage from './components/LoginPage';
 import AccountSwitcher from './components/AccountSwitcher';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { Repo, ColumnKey } from './types';
-import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
+import { ColumnKey } from './types';
+import { useRepositories } from './hooks/useRepositories';
+import { useRecentActivity } from './hooks/useRecentActivity';
 import type { TabType } from './components/TabNavigation';
 
-type DataSource = 'viewer' | 'custom';
-
 function AppContent() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const [repos, setRepos] = useState<Repo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<DataSource>('viewer');
-  const [customInput, setCustomInput] = useState('');
-  const [customRepoSources, setCustomRepoSources] = useState<string[]>([]);
-  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+
+  const {
+    repos,
+    dataSource,
+    error,
+    isLoading,
+    customInput,
+    customRepoSources,
+    setCustomInput,
+    submitCustomRepos,
+    refresh,
+    clearError,
+  } = useRepositories(user);
+
+  const {
+    recentItems,
+    isLoadingActivities,
+    refreshRecentItems,
+  } = useRecentActivity(user, dataSource);
+
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const saved = localStorage.getItem('activeTab');
+    return saved === 'board' || saved === 'updates' ? saved : 'board';
+  });
+  const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
   const [displayedRepoCount, setDisplayedRepoCount] = useState<number | null>(null);
   const [displayedCategoryCounts, setDisplayedCategoryCounts] = useState<Record<ColumnKey, number>>({
     Active: 0,
@@ -28,137 +44,26 @@ function AppContent() {
     Dormant: 0,
     Archived: 0,
   });
-  const [activityRefreshToken, setActivityRefreshToken] = useState(0);
-  const totalReposDisplayed = displayedRepoCount ?? repos.length;
 
-  // Tab navigation state
-  const [activeTab, setActiveTab] = useState<TabType>(() => {
-    const saved = localStorage.getItem('activeTab');
-    return (saved === 'board' || saved === 'updates') ? saved : 'board';
-  });
-
-  // Modal state
-  const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
-
-  // Save active tab to localStorage
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
-  const parseCustomInput = (value: string): string[] => {
-    return value
-      .split(/[\n,]+/)
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0)
-      .slice(0, 25);
-  };
+  const totalReposDisplayed = displayedRepoCount ?? repos.length;
 
-  const loadCustomRepos = async (sources: string[]) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources);
-      if (fetched.length === 0) {
-        const message = failed.length
-          ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
-          : '有効なリポジトリを入力してください。';
-        setError(message);
-        return;
-      }
-
-      const uniqueNames = Array.from(new Set(fetched.map((repo) => repo.nameWithOwner)));
-      setRepos(fetched);
-      setDataSource('custom');
-      setCustomRepoSources(uniqueNames);
-      setCustomInput(uniqueNames.join('\n'));
-
-      if (failed.length > 0) {
-        setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
-      }
-    } catch (err) {
-      console.error('Failed to load custom repositories:', err);
-      setError(err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadRepos = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const realRepos = await fetchUserRepos();
-      setRepos(realRepos);
-      setDataSource('viewer');
-    } catch (err) {
-      console.error('Failed to load repositories:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load repositories');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    if (dataSource === 'viewer') {
-      // Reload from API
-      loadRepos();
-    } else if (dataSource === 'custom') {
-      if (customRepoSources.length > 0) {
-        loadCustomRepos(customRepoSources);
-      }
-    }
-    // Trigger activity refresh
-    setActivityRefreshToken((prev) => prev + 1);
-  };
-
-  const handleCustomSubmit = async () => {
-    const sources = parseCustomInput(customInput);
-    if (sources.length === 0) {
-      setError('リポジトリ URL または `owner/repo` を入力してください');
-      return;
-    }
-    await loadCustomRepos(sources);
-  };
-
-  // Load latest Issues/PRs when user is authenticated
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (user) {
-        setIsLoadingActivities(true);
-        try {
-          const [issues, pullRequests] = await Promise.all([
-            fetchLatestIssues(),
-            fetchLatestPullRequests(),
-          ]);
-          const combined = [...issues, ...pullRequests];
-          if (!cancelled) setRecentItems(combined);
-        } catch (err) {
-          console.error('Failed to fetch latest items:', err);
-          if (!cancelled) setRecentItems([]);
-        } finally {
-          if (!cancelled) setIsLoadingActivities(false);
-        }
-      } else {
-        setRecentItems([]);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, [user, dataSource, activityRefreshToken]);
-
-  // Auto-load repos when user logs in
-  useEffect(() => {
-    if (user && repos.length === 0 && !isLoading) {
-      loadRepos();
-    }
-  }, [user]);
-
-  // Handle stats update from RepoBoard
-  const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
+  const handleStatsUpdate = useCallback((totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
     setDisplayedRepoCount(totalVisible);
     setDisplayedCategoryCounts(categoryCounts);
-  };
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    refresh();
+    refreshRecentItems();
+  }, [refresh, refreshRecentItems]);
+
+  const handleModalSubmit = useCallback(() => {
+    void submitCustomRepos();
+  }, [submitCustomRepos]);
 
   // Show loading spinner while checking auth
   if (loading) {
@@ -313,7 +218,7 @@ function AppContent() {
             </svg>
             <span className="text-sm text-[var(--accent-red-emphasis)]">{error}</span>
             <button
-              onClick={() => setError(null)}
+              onClick={clearError}
               className="ml-auto text-[var(--accent-red)] hover:text-[var(--accent-red-emphasis)] transition-colors"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -387,7 +292,7 @@ function AppContent() {
         onClose={() => setIsAddRepoModalOpen(false)}
         value={customInput}
         onChange={setCustomInput}
-        onSubmit={handleCustomSubmit}
+        onSubmit={handleModalSubmit}
         isLoading={isLoading}
       />
     </div>

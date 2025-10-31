@@ -7,6 +7,7 @@ import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapsh
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocalStorageState } from '../hooks/useLocalStorageState';
 
 interface RepoBoardProps {
   repos: Repo[];
@@ -29,6 +30,62 @@ const ORDER_STORAGE_KEY = 'github-dashboard-column-order';
 const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
 const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
 const HIDDEN_REPOS_STORAGE_KEY = 'github-dashboard-hidden-repos';
+
+const DEFAULT_ORDER_MAP: Record<ColumnKey, string[]> = {
+  Active: [],
+  Stale: [],
+  Dormant: [],
+  Archived: [],
+};
+
+const parseColumnTitles = (raw: string): Record<ColumnKey, string> => {
+  try {
+    const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string>>;
+    return { ...COLUMN_TITLES, ...parsed };
+  } catch {
+    return { ...COLUMN_TITLES };
+  }
+};
+
+const parseColumnAssignments = (raw: string): Record<string, ColumnKey> => {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, ColumnKey>;
+    if (parsed && typeof parsed === 'object') {
+      return parsed;
+    }
+    return {};
+  } catch {
+    return {};
+  }
+};
+
+const parseOrderMap = (raw: string): Record<ColumnKey, string[]> => {
+  try {
+    const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string[]>>;
+    return {
+      Active: Array.isArray(parsed?.Active) ? parsed.Active : [],
+      Stale: Array.isArray(parsed?.Stale) ? parsed.Stale : [],
+      Dormant: Array.isArray(parsed?.Dormant) ? parsed.Dormant : [],
+      Archived: Array.isArray(parsed?.Archived) ? parsed.Archived : [],
+    };
+  } catch {
+    return { ...DEFAULT_ORDER_MAP };
+  }
+};
+
+const parseHiddenRepoIds = (raw: string): string[] => {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const arraysEqual = (a: string[], b: string[]) => {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+};
 
 export const RepoBoard: React.FC<RepoBoardProps> = ({
   repos,
@@ -61,61 +118,40 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     staleThreshold: DEFAULT_CONFIG.staleThreshold,
   });
 
-  const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>(() => {
-    try {
-      const raw = localStorage.getItem(COLUMN_TITLES_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string>>;
-        return { ...COLUMN_TITLES, ...parsed };
-      }
-    } catch {}
-    return { ...COLUMN_TITLES };
-  });
-  const [columnAssignments, setColumnAssignments] = useState<Record<string, ColumnKey>>(() => {
-    try {
-      const raw = localStorage.getItem(COLUMN_ASSIGNMENTS_STORAGE_KEY);
-      if (raw) {
-        return JSON.parse(raw) as Record<string, ColumnKey>;
-      }
-    } catch {}
-    return {};
-  });
-  const [orderMap, setOrderMap] = useState<Record<ColumnKey, string[]>>({
-    Active: [],
-    Stale: [],
-    Dormant: [],
-    Archived: [],
-  });
-  const [hiddenRepoIds, setHiddenRepoIds] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem(HIDDEN_REPOS_STORAGE_KEY);
-      if (raw) {
-        const arr = JSON.parse(raw) as string[];
-        return new Set(arr);
-      }
-    } catch {}
-    return new Set();
-  });
+  const [columnTitles, setColumnTitles] = useLocalStorageState<Record<ColumnKey, string>>(
+    COLUMN_TITLES_STORAGE_KEY,
+    { ...COLUMN_TITLES },
+    { deserialize: parseColumnTitles }
+  );
+  const [columnAssignments, setColumnAssignments] = useLocalStorageState<Record<string, ColumnKey>>(
+    COLUMN_ASSIGNMENTS_STORAGE_KEY,
+    {},
+    { deserialize: parseColumnAssignments }
+  );
+  const [orderMap, setOrderMap] = useLocalStorageState<Record<ColumnKey, string[]>>(
+    ORDER_STORAGE_KEY,
+    { ...DEFAULT_ORDER_MAP },
+    { deserialize: parseOrderMap }
+  );
+  const [hiddenRepoIds, setHiddenRepoIds] = useLocalStorageState<string[]>(
+    HIDDEN_REPOS_STORAGE_KEY,
+    [],
+    { deserialize: parseHiddenRepoIds }
+  );
 
   // Load saved views and presets on mount and when user changes
   useEffect(() => {
     setSavedViews(getSavedViews());
     setPresets(getPresets(user?.userId));
-    // Load order map
-    try {
-      const raw = localStorage.getItem(ORDER_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Record<ColumnKey, string[]>;
-        setOrderMap((prev) => ({ ...prev, ...parsed }));
-      }
-    } catch {}
   }, [user?.userId]);
+
+  const hiddenRepoIdSet = useMemo(() => new Set(hiddenRepoIds), [hiddenRepoIds]);
 
   const filteredRepos = useMemo(() => {
     const searchResults = searchAndSortRepos(repos, searchQuery, sortOrder);
     // Filter out hidden repos
-    return searchResults.filter((repo) => !hiddenRepoIds.has(repo.id));
-  }, [repos, searchQuery, sortOrder, hiddenRepoIds]);
+    return searchResults.filter((repo) => !hiddenRepoIdSet.has(repo.id));
+  }, [repos, searchQuery, sortOrder, hiddenRepoIdSet]);
 
   const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
 
@@ -158,44 +194,27 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     }
   }, [classifiedRepos, onStatsUpdate]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_TITLES_STORAGE_KEY, JSON.stringify(columnTitles));
-    } catch {}
-  }, [columnTitles]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(columnAssignments));
-    } catch {}
-  }, [columnAssignments]);
-
-  // Persist hidden repos
-  useEffect(() => {
-    try {
-      localStorage.setItem(HIDDEN_REPOS_STORAGE_KEY, JSON.stringify(Array.from(hiddenRepoIds)));
-    } catch {}
-  }, [hiddenRepoIds]);
-
   // Sync order map with current repos per column
   useEffect(() => {
-    const next: Record<ColumnKey, string[]> = { Active: [], Stale: [], Dormant: [], Archived: [] };
-    (Object.keys(classifiedRepos) as ColumnKey[]).forEach((col) => {
-      const ids = classifiedRepos[col].map((r) => r.id);
-      const existing = orderMap[col] || [];
-      // keep existing order, append any new ids
-      const ordered = [...existing.filter((id) => ids.includes(id)), ...ids.filter((id) => !existing.includes(id))];
-      next[col] = ordered;
-    });
-    setOrderMap(next);
-  }, [classifiedRepos]);
+    setOrderMap((prev) => {
+      const nextOrderMap: Record<ColumnKey, string[]> = { Active: [], Stale: [], Dormant: [], Archived: [] };
 
-  // Persist order map
-  useEffect(() => {
-    try {
-      localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orderMap));
-    } catch {}
-  }, [orderMap]);
+      (Object.keys(classifiedRepos) as ColumnKey[]).forEach((col) => {
+        const ids = classifiedRepos[col].map((r) => r.id);
+        const existing = prev[col] || [];
+        const ordered = [
+          ...existing.filter((id) => ids.includes(id)),
+          ...ids.filter((id) => !existing.includes(id)),
+        ];
+        nextOrderMap[col] = ordered;
+      });
+
+      const unchanged = COLUMN_ORDER.every((columnKey) =>
+        arraysEqual(prev[columnKey] ?? [], nextOrderMap[columnKey])
+      );
+      return unchanged ? prev : nextOrderMap;
+    });
+  }, [classifiedRepos, setOrderMap]);
 
   // Calculate total counts
   const totalRepos = repos.length;
@@ -338,19 +357,15 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   };
 
   const handleHideRepo = (repoId: string) => {
-    setHiddenRepoIds((prev) => new Set([...prev, repoId]));
+    setHiddenRepoIds((prev) => (prev.includes(repoId) ? prev : [...prev, repoId]));
   };
 
   const handleUnhideRepo = (repoId: string) => {
-    setHiddenRepoIds((prev) => {
-      const next = new Set(prev);
-      next.delete(repoId);
-      return next;
-    });
+    setHiddenRepoIds((prev) => prev.filter((id) => id !== repoId));
   };
 
   const handleUnhideAll = () => {
-    setHiddenRepoIds(new Set());
+    setHiddenRepoIds([]);
   };
 
   // Preset handlers
@@ -366,12 +381,17 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       // Load all state from preset
       setSearchQuery(preset.searchQuery);
       setSortOrder(preset.sortOrder);
-      setColumnTitles(preset.columnTitles);
-      setOrderMap(preset.columnOrder);
-      setColumnVisibility(preset.columnVisibility);
-      setThresholds(preset.thresholds);
-      setColumnAssignments(preset.columnAssignments);
-      setHiddenRepoIds(new Set(preset.hiddenRepoIds));
+      setColumnTitles({ ...preset.columnTitles });
+      setOrderMap({
+        Active: [...preset.columnOrder.Active],
+        Stale: [...preset.columnOrder.Stale],
+        Dormant: [...preset.columnOrder.Dormant],
+        Archived: [...preset.columnOrder.Archived],
+      });
+      setColumnVisibility({ ...preset.columnVisibility });
+      setThresholds({ ...preset.thresholds });
+      setColumnAssignments({ ...preset.columnAssignments });
+      setHiddenRepoIds([...preset.hiddenRepoIds]);
       setCurrentPresetId(presetId);
     }
   };
@@ -386,7 +406,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       columnVisibility,
       thresholds,
       columnAssignments,
-      hiddenRepoIds: Array.from(hiddenRepoIds),
+      hiddenRepoIds: [...hiddenRepoIds],
     });
 
     const newPreset = savePreset(presetSnapshot, user?.userId);
@@ -442,7 +462,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         columnTitles={columnTitles}
         columnVisibility={columnVisibility}
         thresholds={thresholds}
-        hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
+        hiddenRepos={hiddenRepoIds.map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
       />
