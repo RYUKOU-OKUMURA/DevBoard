@@ -19,7 +19,6 @@ function AppContent() {
   const [dataSource, setDataSource] = useState<DataSource>('viewer');
   const [customInput, setCustomInput] = useState('');
   const [customRepoSources, setCustomRepoSources] = useState<string[]>([]);
-  const [activityType, setActivityType] = useState<'issues' | 'pulls'>('issues');
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [displayedRepoCount, setDisplayedRepoCount] = useState<number | null>(null);
@@ -128,10 +127,12 @@ function AppContent() {
       if (user) {
         setIsLoadingActivities(true);
         try {
-          const items = activityType === 'issues' ?
-            await fetchLatestIssues() :
-            await fetchLatestPullRequests();
-          if (!cancelled) setRecentItems(items);
+          const [issues, pullRequests] = await Promise.all([
+            fetchLatestIssues(),
+            fetchLatestPullRequests(),
+          ]);
+          const combined = [...issues, ...pullRequests];
+          if (!cancelled) setRecentItems(combined);
         } catch (err) {
           console.error('Failed to fetch latest items:', err);
           if (!cancelled) setRecentItems([]);
@@ -144,7 +145,7 @@ function AppContent() {
     }
     load();
     return () => { cancelled = true; };
-  }, [user, dataSource, activityRefreshToken, activityType]);
+  }, [user, dataSource, activityRefreshToken]);
 
   // Auto-load repos when user logs in
   useEffect(() => {
@@ -375,8 +376,6 @@ function AppContent() {
       {/* Updates Tab Content */}
       {activeTab === 'updates' && (
         <UpdatesTab
-          activityType={activityType}
-          onActivityTypeChange={setActivityType}
           recentItems={recentItems}
           isLoadingActivities={isLoadingActivities}
         />

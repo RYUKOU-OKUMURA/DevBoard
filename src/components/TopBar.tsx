@@ -185,11 +185,11 @@ export const TopBar: React.FC<TopBarProps> = ({
             {onCategorySettings && (
               <button
                 onClick={onCategorySettings}
-                className="px-4 py-2 bg-[var(--accent-purple)] text-text-inverse rounded-xl hover:bg-[var(--accent-purple-emphasis)] transition-colors flex items-center gap-1 shadow-sm"
+                className="px-4 py-2 bg-[#0ea5e9] dark:bg-[#38bdf8] text-text-inverse rounded-xl hover:bg-[#0284c7] dark:hover:bg-[#0ea5e9] transition-colors flex items-center gap-1 shadow-sm"
                 title="カテゴリプロファイル設定 (開発中)"
               >
                 カテゴリ設定
-                <span className="text-xs bg-[var(--accent-purple-emphasis)] text-text-inverse px-1.5 py-0.5 rounded-md shadow-sm">
+                <span className="text-xs bg-[#0284c7] dark:bg-[#0ea5e9] text-text-inverse px-1.5 py-0.5 rounded-md shadow-sm">
                   開発中
                 </span>
               </button>
