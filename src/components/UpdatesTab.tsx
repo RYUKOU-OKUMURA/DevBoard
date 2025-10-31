@@ -1,18 +1,12 @@
 import React from 'react';
 import type { RecentItem } from '../types';
 
-type ActivityType = 'issues' | 'pulls';
-
 interface UpdatesTabProps {
-  activityType: ActivityType;
-  onActivityTypeChange: (type: ActivityType) => void;
   recentItems: RecentItem[];
   isLoadingActivities?: boolean;
 }
 
 export const UpdatesTab: React.FC<UpdatesTabProps> = ({
-  activityType,
-  onActivityTypeChange,
   recentItems,
   isLoadingActivities = false,
 }) => {
@@ -125,122 +119,92 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
     }
   };
 
+  // アイテムをタイプで分割
+  const issues = recentItems.filter(item => item.type === 'Issue');
+  const pullRequests = recentItems.filter(item => item.type === 'PullRequest');
+
+  const renderItemList = (items: RecentItem[], title: string, isLoading: boolean, emptyMessage: string) => {
+    return (
+      <div className="flex-1 min-w-0">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--border-subtle)]">
+          <h2 className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>
+          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-surface-tertiary text-[var(--text-secondary)]">
+            {items.length}
+          </span>
+        </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-green)] mx-auto mb-4"></div>
+              <p className="text-[var(--text-muted)]">データを取得中...</p>
+            </div>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-surface-secondary rounded-xl border border-dashed border-[var(--border-subtle)]">
+            <svg
+              className="w-12 h-12 text-[var(--text-muted)] mb-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+              />
+            </svg>
+            <p className="text-[var(--text-muted)] font-medium text-sm">{emptyMessage}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {items.map((item, index) => {
+              const { icon, badge } = getStatusDisplay(item);
+              return (
+                <a
+                  key={index}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-surface-primary border border-[var(--border-subtle)] rounded-lg p-4 hover:shadow-lg hover:border-[var(--accent-green)] transition-all group"
+                >
+                  <div className="flex items-start gap-3 mb-2">
+                    {icon}
+                    <h3 className="flex-1 text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-green)] transition-colors line-clamp-2">
+                      {item.title}
+                    </h3>
+                    {badge}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] ml-7 flex-wrap">
+                    <span className="font-medium truncate">{item.repo.nameWithOwner}</span>
+                    <span>#{item.number}</span>
+                    <span>{item.relativeTime}</span>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-surface-app transition-colors">
-      {/* Sub-tab Navigation */}
-      <div className="flex gap-4 px-8 py-6 bg-surface-primary border-b border-[var(--border-subtle)] transition-colors">
-        <button
-          onClick={() => onActivityTypeChange('issues')}
-          className={`
-            flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-medium
-            ${
-              activityType === 'issues'
-                ? 'bg-accent-green text-text-inverse border-[var(--accent-green)] shadow-sm'
-                : 'bg-surface-secondary text-[var(--text-muted)] border-[var(--border-subtle)] hover:bg-surface-hover'
-            }
-          `}
-        >
-          <span>Issues</span>
-          <span
-            className={`
-              px-2 py-0.5 text-xs font-semibold rounded-full
-              ${
-                activityType === 'issues'
-                  ? 'bg-[rgba(255,255,255,0.22)] text-text-inverse'
-                  : 'bg-surface-tertiary text-[var(--text-secondary)]'
-              }
-            `}
-          >
-            {activityType === 'issues' ? recentItems.length : 0}
-          </span>
-        </button>
-
-        <button
-          onClick={() => onActivityTypeChange('pulls')}
-          className={`
-            flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-medium
-            ${
-              activityType === 'pulls'
-                ? 'bg-accent-green text-text-inverse border-[var(--accent-green)] shadow-sm'
-                : 'bg-surface-secondary text-[var(--text-muted)] border-[var(--border-subtle)] hover:bg-surface-hover'
-            }
-          `}
-        >
-          <span>Pull Requests</span>
-          <span
-            className={`
-              px-2 py-0.5 text-xs font-semibold rounded-full
-              ${
-                activityType === 'pulls'
-                  ? 'bg-[rgba(255,255,255,0.22)] text-text-inverse'
-                  : 'bg-surface-tertiary text-[var(--text-secondary)]'
-              }
-            `}
-          >
-            {activityType === 'pulls' ? recentItems.length : 0}
-          </span>
-        </button>
+      {/* Header with title */}
+      <div className="px-8 py-6 bg-surface-primary border-b border-[var(--border-subtle)] transition-colors">
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">最近のアクティビティ</h1>
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-8 py-6 transition-colors">
-        <div className="max-w-5xl mx-auto">
-          {isLoadingActivities ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent-green)] mx-auto mb-4"></div>
-                <p className="text-[var(--text-muted)]">データを取得中...</p>
-              </div>
-            </div>
-          ) : recentItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 bg-surface-primary rounded-2xl border-2 border-dashed border-[var(--border-subtle)]">
-              <svg
-                className="w-16 h-16 text-[var(--text-muted)] mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                />
-              </svg>
-              <p className="text-[var(--text-muted)] font-medium">
-                直近7日間の{activityType === 'issues' ? 'Issue' : 'Pull Request'}はありません
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recentItems.map((item, index) => {
-                const { icon, badge } = getStatusDisplay(item);
-                return (
-                  <a
-                    key={index}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block bg-surface-primary border border-[var(--border-subtle)] rounded-xl p-6 hover:shadow-lg hover:border-[var(--accent-green)] transition-all group"
-                  >
-                    <div className="flex items-start gap-3 mb-3">
-                      {icon}
-                      <h3 className="flex-1 text-base font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-green)] transition-colors">
-                        {item.title}
-                      </h3>
-                      {badge}
-                    </div>
-
-                    <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] ml-9">
-                      <span className="font-medium">{item.repo.nameWithOwner}</span>
-                      <span>#{item.number}</span>
-                      <span>{item.relativeTime}</span>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          )}
+      <div className="flex-1 px-8 py-6 overflow-auto transition-colors">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+          {renderItemList(issues, 'Issues', isLoadingActivities, '直近7日間のIssueはありません')}
+          {renderItemList(pullRequests, 'Pull Requests', isLoadingActivities, '直近7日間のPull Requestはありません')}
         </div>
       </div>
     </div>
