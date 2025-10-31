@@ -4,7 +4,6 @@ export { RepoCard } from './RepoCard';
 export { TopBar } from './TopBar';
 export { RepoInputForm } from './RepoInputForm';
 export { DashboardStats } from './DashboardStats';
-export { CategoryManager } from './CategoryManager';
 export { default as AccountSwitcher } from './AccountSwitcher';
 export { TabNavigation } from './TabNavigation';
 export { AddRepoModal } from './AddRepoModal';

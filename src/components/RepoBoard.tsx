@@ -6,7 +6,6 @@ import { getSavedViews, saveView, deleteView, getViewById } from '../utils/stora
 import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapshot } from '../utils/presetStorage';
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
-import { CategoryManager } from './CategoryManager';
 import { useAuth } from '../contexts/AuthContext';
 
 interface RepoBoardProps {
@@ -43,7 +42,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [currentViewId, setCurrentViewId] = useState<string>('');
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // Preset management
   const [presets, setPresets] = useState<ViewPreset[]>([]);
@@ -63,9 +61,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     staleThreshold: DEFAULT_CONFIG.staleThreshold,
   });
 
-  // NOTE: Category profile feature is under development.
-  // Currently not used in classification logic, reserved for future implementation.
-  const [currentProfileId, setCurrentProfileId] = useState('default');
   const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>(() => {
     try {
       const raw = localStorage.getItem(COLUMN_TITLES_STORAGE_KEY);
@@ -450,14 +445,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
-        onCategorySettings={() => setShowCategoryManager(true)}
-      />
-
-      <CategoryManager
-        isOpen={showCategoryManager}
-        onClose={() => setShowCategoryManager(false)}
-        currentProfileId={currentProfileId}
-        onProfileSelect={setCurrentProfileId}
       />
 
       {/* Board Columns */}

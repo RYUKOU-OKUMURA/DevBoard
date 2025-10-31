@@ -29,7 +29,6 @@ interface TopBarProps {
   hiddenRepos?: Repo[];
   onUnhideRepo?: (repoId: string) => void;
   onUnhideAll?: () => void;
-  onCategorySettings?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -58,7 +57,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   hiddenRepos = [],
   onUnhideRepo,
   onUnhideAll,
-  onCategorySettings,
 }) => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showPresetDialog, setShowPresetDialog] = useState(false);
@@ -182,18 +180,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">{title}</h1>
           </div>
           <div className="flex items-center gap-2">
-            {onCategorySettings && (
-              <button
-                onClick={onCategorySettings}
-                className="px-4 py-2 bg-[#0ea5e9] dark:bg-[#38bdf8] text-text-inverse rounded-xl hover:bg-[#0284c7] dark:hover:bg-[#0ea5e9] transition-colors flex items-center gap-1 shadow-sm"
-                title="カテゴリプロファイル設定 (開発中)"
-              >
-                カテゴリ設定
-                <span className="text-xs bg-[#0284c7] dark:bg-[#0ea5e9] text-text-inverse px-1.5 py-0.5 rounded-md shadow-sm">
-                  開発中
-                </span>
-              </button>
-            )}
             {hiddenRepos.length > 0 && (
               <button
                 onClick={() => setShowHiddenDialog(true)}
