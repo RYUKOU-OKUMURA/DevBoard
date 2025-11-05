@@ -14,7 +14,7 @@ interface UseRepositoriesResult {
   customInput: string;
   customRepoSources: string[];
   setCustomInput: Dispatch<SetStateAction<string>>;
-  submitCustomRepos: () => Promise<void>;
+  submitCustomRepos: () => Promise<boolean>;
   refresh: () => void;
   clearError: () => void;
 }
@@ -56,7 +56,7 @@ export function useRepositories(activeUser: User | null): UseRepositoriesResult 
     }
   }, [activeUser]);
 
-  const loadCustomRepos = useCallback(async (sources: string[]) => {
+  const loadCustomRepos = useCallback(async (sources: string[]): Promise<boolean> => {
     if (!activeUser) {
       // Allow custom repos even when user is null to support future guest mode.
       // For now simply proceed with fetch which will be proxied by backend.
@@ -71,7 +71,7 @@ export function useRepositories(activeUser: User | null): UseRepositoriesResult 
           ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
           : '有効なリポジトリを入力してください。';
         setError(message);
-        return;
+        return false;
       }
 
       const uniqueNames = Array.from(new Set(fetched.map((repo) => repo.nameWithOwner)));
@@ -88,21 +88,23 @@ export function useRepositories(activeUser: User | null): UseRepositoriesResult 
       if (failed.length > 0) {
         setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
       }
+      return true;
     } catch (err) {
       console.error('Failed to load custom repositories:', err);
       setError(err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました');
+      return false;
     } finally {
       setIsLoading(false);
     }
   }, [activeUser]);
 
-  const submitCustomRepos = useCallback(async () => {
+  const submitCustomRepos = useCallback(async (): Promise<boolean> => {
     const sources = parseCustomInput(customInput);
     if (sources.length === 0) {
       setError('リポジトリ URL または `owner/repo` を入力してください');
-      return;
+      return false;
     }
-    await loadCustomRepos(sources);
+    return await loadCustomRepos(sources);
   }, [customInput, loadCustomRepos]);
 
   const refresh = useCallback(() => {
