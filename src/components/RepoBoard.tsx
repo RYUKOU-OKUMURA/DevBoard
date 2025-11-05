@@ -29,7 +29,18 @@ const COLUMN_ORDER: ColumnKey[] = ['Active', 'Stale', 'Dormant', 'Archived'];
 const ORDER_STORAGE_KEY = 'github-dashboard-column-order';
 const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
 const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
-const HIDDEN_REPOS_STORAGE_KEY = 'github-dashboard-hidden-repos';
+const HIDDEN_REPOS_STORAGE_KEY_PREFIX = 'github-dashboard-hidden-repos';
+
+/**
+ * Get storage key for hidden repos based on account ID
+ */
+function getHiddenReposStorageKey(accountId?: string): string {
+  if (accountId) {
+    return `${HIDDEN_REPOS_STORAGE_KEY_PREFIX}:${accountId}`;
+  }
+  // Fallback to global key for backward compatibility
+  return HIDDEN_REPOS_STORAGE_KEY_PREFIX;
+}
 
 const DEFAULT_ORDER_MAP: Record<ColumnKey, string[]> = {
   Active: [],
@@ -134,7 +145,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     { deserialize: parseOrderMap }
   );
   const [hiddenRepoIds, setHiddenRepoIds] = useLocalStorageState<string[]>(
-    HIDDEN_REPOS_STORAGE_KEY,
+    getHiddenReposStorageKey(user?.userId),
     [],
     { deserialize: parseHiddenRepoIds }
   );
