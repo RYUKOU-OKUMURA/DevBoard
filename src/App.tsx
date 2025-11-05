@@ -61,8 +61,11 @@ function AppContent() {
     refreshRecentItems();
   }, [refresh, refreshRecentItems]);
 
-  const handleModalSubmit = useCallback(() => {
-    void submitCustomRepos();
+  const handleModalSubmit = useCallback(async () => {
+    const success = await submitCustomRepos();
+    if (success) {
+      setIsAddRepoModalOpen(false);
+    }
   }, [submitCustomRepos]);
 
   // Show loading spinner while checking auth
