@@ -147,13 +147,20 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   const hiddenRepoIdSet = useMemo(() => new Set(hiddenRepoIds), [hiddenRepoIds]);
 
+  const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
+
+  // Calculate which hidden repos actually exist in the current repo list
+  const existingHiddenRepos = useMemo(() => {
+    return hiddenRepoIds
+      .map((id) => repoMap.get(id))
+      .filter((r): r is Repo => r !== undefined);
+  }, [hiddenRepoIds, repoMap]);
+
   const filteredRepos = useMemo(() => {
     const searchResults = searchAndSortRepos(repos, searchQuery, sortOrder);
     // Filter out hidden repos
     return searchResults.filter((repo) => !hiddenRepoIdSet.has(repo.id));
   }, [repos, searchQuery, sortOrder, hiddenRepoIdSet]);
-
-  const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
 
   // Apply search and sort, then classify into columns with manual overrides
   const classifiedRepos = useMemo(() => {
@@ -216,8 +223,8 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     });
   }, [classifiedRepos, setOrderMap]);
 
-  // Calculate total counts
-  const totalRepos = repos.length;
+  // Calculate total counts (excluding hidden repos)
+  const totalRepos = repos.length - existingHiddenRepos.length;
   const filteredCount = Object.values(classifiedRepos).reduce(
     (sum, columnRepos) => sum + columnRepos.length,
     0
@@ -462,7 +469,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         columnTitles={columnTitles}
         columnVisibility={columnVisibility}
         thresholds={thresholds}
-        hiddenRepos={hiddenRepoIds.map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
+        hiddenRepos={existingHiddenRepos}
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
       />
