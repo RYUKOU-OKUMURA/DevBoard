@@ -88,7 +88,7 @@ export function useRepositories(activeUser: User | null): UseRepositoriesResult 
       if (failed.length > 0) {
         setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
       }
-      return true;
+      return failed.length === 0;
     } catch (err) {
       console.error('Failed to load custom repositories:', err);
       setError(err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました');
