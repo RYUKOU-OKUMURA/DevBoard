@@ -341,7 +341,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Stats */}
-        <div className="mt-3 text-sm text-[var(--text-muted)]">
+        <div className="mt-3 text-sm text-[var(--text-muted)] tabular-nums">
           合計 {totalRepos} 件中 {filteredCount} 件を表示
           {searchQuery && (
             <span className="ml-2 text-[var(--accent-blue)]">
@@ -503,7 +503,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               </div>
 
               {hiddenRepos && hiddenRepos.length > 0 && (
-                <div className="text-sm text-[var(--text-secondary)]">
+                <div className="text-sm text-[var(--text-secondary)] tabular-nums">
                   <strong>非表示リポジトリ:</strong> {hiddenRepos.length}件
                 </div>
               )}
@@ -532,7 +532,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-surface-primary rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col shadow-lg transition-colors">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">非表示のリポジトリ ({hiddenRepos.length})</h2>
+              <h2 className="text-xl font-bold text-[var(--text-primary)] tabular-nums">非表示のリポジトリ ({hiddenRepos.length})</h2>
               <button
                 onClick={() => setShowHiddenDialog(false)}
                 className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
