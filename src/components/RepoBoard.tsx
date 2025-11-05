@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Repo, ColumnKey, SortOrder, AppConfig, SavedView, ViewPreset } from '../types';
 import { classifyRepo, DEFAULT_CONFIG } from '../utils/classify';
 import { searchAndSortRepos } from '../utils/search';
@@ -198,19 +198,38 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return columns;
   }, [filteredRepos, columnAssignments, config, thresholds]);
 
-  // Notify parent of stats updates
+  // Calculate stats from classified repos
+  const stats = useMemo(() => {
+    const totalVisible = Object.values(classifiedRepos).reduce((sum, repos) => sum + repos.length, 0);
+    const categoryCounts: Record<ColumnKey, number> = {
+      Active: classifiedRepos.Active.length,
+      Stale: classifiedRepos.Stale.length,
+      Dormant: classifiedRepos.Dormant.length,
+      Archived: classifiedRepos.Archived.length,
+    };
+    return { totalVisible, categoryCounts };
+  }, [classifiedRepos]);
+
+  // Track previous stats to prevent redundant updates
+  const prevStatsRef = useRef(stats);
+
+  // Notify parent of stats updates only when stats values actually change
   useEffect(() => {
-    if (onStatsUpdate) {
-      const totalVisible = Object.values(classifiedRepos).reduce((sum, repos) => sum + repos.length, 0);
-      const categoryCounts: Record<ColumnKey, number> = {
-        Active: classifiedRepos.Active.length,
-        Stale: classifiedRepos.Stale.length,
-        Dormant: classifiedRepos.Dormant.length,
-        Archived: classifiedRepos.Archived.length,
-      };
-      onStatsUpdate(totalVisible, categoryCounts);
+    if (!onStatsUpdate) return;
+
+    const prev = prevStatsRef.current;
+    const hasChanged =
+      prev.totalVisible !== stats.totalVisible ||
+      prev.categoryCounts.Active !== stats.categoryCounts.Active ||
+      prev.categoryCounts.Stale !== stats.categoryCounts.Stale ||
+      prev.categoryCounts.Dormant !== stats.categoryCounts.Dormant ||
+      prev.categoryCounts.Archived !== stats.categoryCounts.Archived;
+
+    if (hasChanged) {
+      onStatsUpdate(stats.totalVisible, stats.categoryCounts);
+      prevStatsRef.current = stats;
     }
-  }, [classifiedRepos, onStatsUpdate]);
+  }, [stats, onStatsUpdate]);
 
   // Sync order map with current repos per column
   useEffect(() => {
