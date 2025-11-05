@@ -75,7 +75,12 @@ export function useRepositories(activeUser: User | null): UseRepositoriesResult 
       }
 
       const uniqueNames = Array.from(new Set(fetched.map((repo) => repo.nameWithOwner)));
-      setRepos(fetched);
+      setRepos(prevRepos => {
+        // Merge with existing repos, avoiding duplicates by ID
+        const existingIds = new Set(prevRepos.map(r => r.id));
+        const newRepos = fetched.filter(r => !existingIds.has(r.id));
+        return [...prevRepos, ...newRepos];
+      });
       setDataSource('custom');
       setCustomRepoSources(uniqueNames);
       setCustomInput(uniqueNames.join('\n'));
