@@ -342,7 +342,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         {/* Stats */}
         <div className="mt-3 text-sm text-[var(--text-muted)] tabular-nums">
-          合計 {totalRepos} 件中 {filteredCount} 件を表示
+          合計 <span className="inline-block min-w-[3ch] text-right tabular-nums">{totalRepos}</span> 件中 <span className="inline-block min-w-[3ch] text-right tabular-nums">{filteredCount}</span> 件を表示
           {searchQuery && (
             <span className="ml-2 text-[var(--accent-blue)]">
               （フィルター: "{searchQuery}"）
