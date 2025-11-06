@@ -158,9 +158,6 @@ Cloudflare Pages へのデプロイ手順は [docs/DEPLOYMENT.md](docs/DEPLOYMEN
 
 この方針に基づき、UI コンポーネントは `timeAgo` を `src/lib/timeAgo` から直接 import するよう統一しました。`src/utils/timeAgo.ts` は後方互換（テスト等）目的で残しています。
 
-### Hooks の活用指針
-- hooks/: UI からの副作用やデータ取得を切り出し、状態管理をカプセル化した再利用可能なフック群。例: `useRepositories` はリポジトリ読み込みとエラー処理を統合し、`useRecentActivity` は直近の Issue/PR を取得、`useLocalStorageState` は localStorage と React state の同期を一元化します。
-
 ```
 GitHub_Dashboard/
 ├── README.md                  # 本ドキュメント
@@ -174,37 +171,36 @@ GitHub_Dashboard/
 │   ├── _middleware.ts         # CORS、セキュリティヘッダー
 │   ├── api/
 │   │   ├── auth/              # 認証エンドポイント
-│   │   │   ├── accounts.ts
-│   │   │   ├── callback.ts
-│   │   │   ├── login.ts
-│   │   │   ├── logout.ts
-│   │   │   ├── me.ts
-│   │   │   ├── remove.ts
-│   │   │   ├── status.ts
-│   │   │   └── switch.ts
+│   │   │   ├── login.ts       # OAuth開始
+│   │   │   ├── callback.ts    # OAuth コールバック
+│   │   │   ├── logout.ts      # ログアウト
+│   │   │   └── me.ts          # ユーザー情報取得
 │   │   └── github/
-│   │       └── [[path]].ts    # GitHub API プロキシ
+│   │       └── [[path]].ts    # GitHub APIプロキシ
 │   └── lib/
+│       ├── types.ts           # 型定義
 │       ├── crypto.ts          # トークン暗号化/復号化
-│       ├── session.ts         # セッション管理
-│       └── types.ts           # 型定義
+│       └── session.ts         # セッション管理
 ├── src/
+│   ├── main.tsx               # React エントリーポイント
 │   ├── App.tsx                # ルートコンポーネント
-│   ├── __tests__/             # 単体テスト
-│   ├── api/                   # API クライアント
-│   │   ├── octokit.ts
-│   │   └── repos.ts
-│   ├── components/            # UI コンポーネント
-│   ├── contexts/              # React コンテキスト
-│   ├── hooks/                 # カスタムフック
-│   │   ├── useLocalStorageState.ts
-│   │   ├── useRecentActivity.ts
-│   │   └── useRepositories.ts
-│   ├── lib/                   # ドメインロジック
-│   ├── storage/               # 保存ビュー等のローカルストレージ層
-│   ├── types/                 # 型定義
-│   ├── utils/                 # アプリ用ユーティリティ
-│   └── main.tsx               # React エントリーポイント
+│   ├── contexts/
+│   │   └── AuthContext.tsx    # 認証状態管理
+│   ├── components/            # React コンポーネント
+│   │   ├── LoginPage.tsx      # ログイン画面
+│   │   ├── RepoBoard.tsx      # メインボード
+│   │   ├── TopBar.tsx         # トップバー
+│   │   ├── RepoColumn.tsx     # 列
+│   │   └── RepoCard.tsx       # リポジトリカード
+│   ├── lib/                   # ユーティリティ関数
+│   │   ├── classifyRepo.ts    # 分類ロジック
+│   │   ├── timeAgo.ts         # 相対時間表示
+│   │   └── search.ts          # 検索フィルタリング
+│   ├── storage/               # ローカルストレージ
+│   ├── api/                   # API 通信
+│   │   └── octokit.ts         # GitHub API クライアント
+│   └── types/
+│       └── index.ts           # TypeScript 型定義
 ├── wrangler.toml              # Cloudflare Workers 設定
 ├── .dev.vars.example          # 環境変数テンプレート
 ├── vite.config.ts             # Vite ビルド設定

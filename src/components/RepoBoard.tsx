@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Repo, ColumnKey, SortOrder, AppConfig, SavedView, ViewPreset } from '../types';
 import { classifyRepo, DEFAULT_CONFIG } from '../utils/classify';
 import { searchAndSortRepos } from '../utils/search';
@@ -6,8 +6,8 @@ import { getSavedViews, saveView, deleteView, getViewById } from '../utils/stora
 import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapshot } from '../utils/presetStorage';
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
+import { CategoryManager } from './CategoryManager';
 import { useAuth } from '../contexts/AuthContext';
-import { useLocalStorageState } from '../hooks/useLocalStorageState';
 
 interface RepoBoardProps {
   repos: Repo[];
@@ -29,74 +29,7 @@ const COLUMN_ORDER: ColumnKey[] = ['Active', 'Stale', 'Dormant', 'Archived'];
 const ORDER_STORAGE_KEY = 'github-dashboard-column-order';
 const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
 const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
-const HIDDEN_REPOS_STORAGE_KEY_PREFIX = 'github-dashboard-hidden-repos';
-
-/**
- * Get storage key for hidden repos based on account ID
- */
-function getHiddenReposStorageKey(accountId?: string): string {
-  if (accountId) {
-    return `${HIDDEN_REPOS_STORAGE_KEY_PREFIX}:${accountId}`;
-  }
-  // Fallback to global key for backward compatibility
-  return HIDDEN_REPOS_STORAGE_KEY_PREFIX;
-}
-
-const DEFAULT_ORDER_MAP: Record<ColumnKey, string[]> = {
-  Active: [],
-  Stale: [],
-  Dormant: [],
-  Archived: [],
-};
-
-const parseColumnTitles = (raw: string): Record<ColumnKey, string> => {
-  try {
-    const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string>>;
-    return { ...COLUMN_TITLES, ...parsed };
-  } catch {
-    return { ...COLUMN_TITLES };
-  }
-};
-
-const parseColumnAssignments = (raw: string): Record<string, ColumnKey> => {
-  try {
-    const parsed = JSON.parse(raw) as Record<string, ColumnKey>;
-    if (parsed && typeof parsed === 'object') {
-      return parsed;
-    }
-    return {};
-  } catch {
-    return {};
-  }
-};
-
-const parseOrderMap = (raw: string): Record<ColumnKey, string[]> => {
-  try {
-    const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string[]>>;
-    return {
-      Active: Array.isArray(parsed?.Active) ? parsed.Active : [],
-      Stale: Array.isArray(parsed?.Stale) ? parsed.Stale : [],
-      Dormant: Array.isArray(parsed?.Dormant) ? parsed.Dormant : [],
-      Archived: Array.isArray(parsed?.Archived) ? parsed.Archived : [],
-    };
-  } catch {
-    return { ...DEFAULT_ORDER_MAP };
-  }
-};
-
-const parseHiddenRepoIds = (raw: string): string[] => {
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
-  } catch {
-    return [];
-  }
-};
-
-const arraysEqual = (a: string[], b: string[]) => {
-  if (a.length !== b.length) return false;
-  return a.every((value, index) => value === b[index]);
-};
+const HIDDEN_REPOS_STORAGE_KEY = 'github-dashboard-hidden-repos';
 
 export const RepoBoard: React.FC<RepoBoardProps> = ({
   repos,
@@ -110,6 +43,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [currentViewId, setCurrentViewId] = useState<string>('');
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // Preset management
   const [presets, setPresets] = useState<ViewPreset[]>([]);
@@ -129,72 +63,66 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     staleThreshold: DEFAULT_CONFIG.staleThreshold,
   });
 
-  const [columnTitles, setColumnTitles] = useLocalStorageState<Record<ColumnKey, string>>(
-    COLUMN_TITLES_STORAGE_KEY,
-    { ...COLUMN_TITLES },
-    { deserialize: parseColumnTitles }
-  );
-  const [columnAssignments, setColumnAssignments] = useLocalStorageState<Record<string, ColumnKey>>(
-    COLUMN_ASSIGNMENTS_STORAGE_KEY,
-    {},
-    { deserialize: parseColumnAssignments }
-  );
-  const [orderMap, setOrderMap] = useLocalStorageState<Record<ColumnKey, string[]>>(
-    ORDER_STORAGE_KEY,
-    { ...DEFAULT_ORDER_MAP },
-    { deserialize: parseOrderMap }
-  );
-  const [hiddenRepoIds, setHiddenRepoIds] = useLocalStorageState<string[]>(
-    getHiddenReposStorageKey(user?.userId),
-    [],
-    { deserialize: parseHiddenRepoIds }
-  );
-
-  // Migrate/merge hidden repo IDs from global key to account-scoped key when user ID becomes available
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const accountKey = getHiddenReposStorageKey(user?.userId);
-    const globalKey = HIDDEN_REPOS_STORAGE_KEY_PREFIX; // legacy key without account
-    if (accountKey === globalKey) return; // no user yet
-
+  // NOTE: Category profile feature is under development.
+  // Currently not used in classification logic, reserved for future implementation.
+  const [currentProfileId, setCurrentProfileId] = useState('default');
+  const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>(() => {
     try {
-      const globalRaw = window.localStorage.getItem(globalKey);
-      const accountRaw = window.localStorage.getItem(accountKey);
-      const globalIds = globalRaw ? parseHiddenRepoIds(globalRaw) : [];
-      const accountIds = accountRaw ? parseHiddenRepoIds(accountRaw) : [];
-      const merged = Array.from(new Set([...accountIds, ...globalIds]));
-      if (merged.length !== accountIds.length) {
-        window.localStorage.setItem(accountKey, JSON.stringify(merged));
-        window.localStorage.removeItem(globalKey);
-        setHiddenRepoIds(merged);
+      const raw = localStorage.getItem(COLUMN_TITLES_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string>>;
+        return { ...COLUMN_TITLES, ...parsed };
       }
-    } catch {
-      // no-op
-    }
-  }, [user?.userId]);
+    } catch {}
+    return { ...COLUMN_TITLES };
+  });
+  const [columnAssignments, setColumnAssignments] = useState<Record<string, ColumnKey>>(() => {
+    try {
+      const raw = localStorage.getItem(COLUMN_ASSIGNMENTS_STORAGE_KEY);
+      if (raw) {
+        return JSON.parse(raw) as Record<string, ColumnKey>;
+      }
+    } catch {}
+    return {};
+  });
+  const [orderMap, setOrderMap] = useState<Record<ColumnKey, string[]>>({
+    Active: [],
+    Stale: [],
+    Dormant: [],
+    Archived: [],
+  });
+  const [hiddenRepoIds, setHiddenRepoIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(HIDDEN_REPOS_STORAGE_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw) as string[];
+        return new Set(arr);
+      }
+    } catch {}
+    return new Set();
+  });
 
   // Load saved views and presets on mount and when user changes
   useEffect(() => {
     setSavedViews(getSavedViews());
     setPresets(getPresets(user?.userId));
+    // Load order map
+    try {
+      const raw = localStorage.getItem(ORDER_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<ColumnKey, string[]>;
+        setOrderMap((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {}
   }, [user?.userId]);
-
-  const hiddenRepoIdSet = useMemo(() => new Set(hiddenRepoIds), [hiddenRepoIds]);
-
-  const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
-
-  // Calculate which hidden repos actually exist in the current repo list
-  const existingHiddenRepos = useMemo(() => {
-    return hiddenRepoIds
-      .map((id) => repoMap.get(id))
-      .filter((r): r is Repo => r !== undefined);
-  }, [hiddenRepoIds, repoMap]);
 
   const filteredRepos = useMemo(() => {
     const searchResults = searchAndSortRepos(repos, searchQuery, sortOrder);
     // Filter out hidden repos
-    return searchResults.filter((repo) => !hiddenRepoIdSet.has(repo.id));
-  }, [repos, searchQuery, sortOrder, hiddenRepoIdSet]);
+    return searchResults.filter((repo) => !hiddenRepoIds.has(repo.id));
+  }, [repos, searchQuery, sortOrder, hiddenRepoIds]);
+
+  const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
 
   // Apply search and sort, then classify into columns with manual overrides
   const classifiedRepos = useMemo(() => {
@@ -221,63 +149,61 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return columns;
   }, [filteredRepos, columnAssignments, config, thresholds]);
 
-  // Calculate stats from classified repos
-  const stats = useMemo(() => {
-    const totalVisible = Object.values(classifiedRepos).reduce((sum, repos) => sum + repos.length, 0);
-    const categoryCounts: Record<ColumnKey, number> = {
-      Active: classifiedRepos.Active.length,
-      Stale: classifiedRepos.Stale.length,
-      Dormant: classifiedRepos.Dormant.length,
-      Archived: classifiedRepos.Archived.length,
-    };
-    return { totalVisible, categoryCounts };
-  }, [classifiedRepos]);
-
-  // Track previous stats to prevent redundant updates
-  const prevStatsRef = useRef(stats);
-
-  // Notify parent of stats updates only when stats values actually change
+  // Notify parent of stats updates
   useEffect(() => {
-    if (!onStatsUpdate) return;
-
-    const prev = prevStatsRef.current;
-    const hasChanged =
-      prev.totalVisible !== stats.totalVisible ||
-      prev.categoryCounts.Active !== stats.categoryCounts.Active ||
-      prev.categoryCounts.Stale !== stats.categoryCounts.Stale ||
-      prev.categoryCounts.Dormant !== stats.categoryCounts.Dormant ||
-      prev.categoryCounts.Archived !== stats.categoryCounts.Archived;
-
-    if (hasChanged) {
-      onStatsUpdate(stats.totalVisible, stats.categoryCounts);
-      prevStatsRef.current = stats;
+    if (onStatsUpdate) {
+      const totalVisible = Object.values(classifiedRepos).reduce((sum, repos) => sum + repos.length, 0);
+      const categoryCounts: Record<ColumnKey, number> = {
+        Active: classifiedRepos.Active.length,
+        Stale: classifiedRepos.Stale.length,
+        Dormant: classifiedRepos.Dormant.length,
+        Archived: classifiedRepos.Archived.length,
+      };
+      onStatsUpdate(totalVisible, categoryCounts);
     }
-  }, [stats, onStatsUpdate]);
+  }, [classifiedRepos, onStatsUpdate]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLUMN_TITLES_STORAGE_KEY, JSON.stringify(columnTitles));
+    } catch {}
+  }, [columnTitles]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(columnAssignments));
+    } catch {}
+  }, [columnAssignments]);
+
+  // Persist hidden repos
+  useEffect(() => {
+    try {
+      localStorage.setItem(HIDDEN_REPOS_STORAGE_KEY, JSON.stringify(Array.from(hiddenRepoIds)));
+    } catch {}
+  }, [hiddenRepoIds]);
 
   // Sync order map with current repos per column
   useEffect(() => {
-    setOrderMap((prev) => {
-      const nextOrderMap: Record<ColumnKey, string[]> = { Active: [], Stale: [], Dormant: [], Archived: [] };
-
-      (Object.keys(classifiedRepos) as ColumnKey[]).forEach((col) => {
-        const ids = classifiedRepos[col].map((r) => r.id);
-        const existing = prev[col] || [];
-        const ordered = [
-          ...existing.filter((id) => ids.includes(id)),
-          ...ids.filter((id) => !existing.includes(id)),
-        ];
-        nextOrderMap[col] = ordered;
-      });
-
-      const unchanged = COLUMN_ORDER.every((columnKey) =>
-        arraysEqual(prev[columnKey] ?? [], nextOrderMap[columnKey])
-      );
-      return unchanged ? prev : nextOrderMap;
+    const next: Record<ColumnKey, string[]> = { Active: [], Stale: [], Dormant: [], Archived: [] };
+    (Object.keys(classifiedRepos) as ColumnKey[]).forEach((col) => {
+      const ids = classifiedRepos[col].map((r) => r.id);
+      const existing = orderMap[col] || [];
+      // keep existing order, append any new ids
+      const ordered = [...existing.filter((id) => ids.includes(id)), ...ids.filter((id) => !existing.includes(id))];
+      next[col] = ordered;
     });
-  }, [classifiedRepos, setOrderMap]);
+    setOrderMap(next);
+  }, [classifiedRepos]);
 
-  // Calculate total counts (excluding hidden repos)
-  const totalRepos = repos.length - existingHiddenRepos.length;
+  // Persist order map
+  useEffect(() => {
+    try {
+      localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orderMap));
+    } catch {}
+  }, [orderMap]);
+
+  // Calculate total counts
+  const totalRepos = repos.length;
   const filteredCount = Object.values(classifiedRepos).reduce(
     (sum, columnRepos) => sum + columnRepos.length,
     0
@@ -417,15 +343,19 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   };
 
   const handleHideRepo = (repoId: string) => {
-    setHiddenRepoIds((prev) => (prev.includes(repoId) ? prev : [...prev, repoId]));
+    setHiddenRepoIds((prev) => new Set([...prev, repoId]));
   };
 
   const handleUnhideRepo = (repoId: string) => {
-    setHiddenRepoIds((prev) => prev.filter((id) => id !== repoId));
+    setHiddenRepoIds((prev) => {
+      const next = new Set(prev);
+      next.delete(repoId);
+      return next;
+    });
   };
 
   const handleUnhideAll = () => {
-    setHiddenRepoIds([]);
+    setHiddenRepoIds(new Set());
   };
 
   // Preset handlers
@@ -441,17 +371,12 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       // Load all state from preset
       setSearchQuery(preset.searchQuery);
       setSortOrder(preset.sortOrder);
-      setColumnTitles({ ...preset.columnTitles });
-      setOrderMap({
-        Active: [...preset.columnOrder.Active],
-        Stale: [...preset.columnOrder.Stale],
-        Dormant: [...preset.columnOrder.Dormant],
-        Archived: [...preset.columnOrder.Archived],
-      });
-      setColumnVisibility({ ...preset.columnVisibility });
-      setThresholds({ ...preset.thresholds });
-      setColumnAssignments({ ...preset.columnAssignments });
-      setHiddenRepoIds([...preset.hiddenRepoIds]);
+      setColumnTitles(preset.columnTitles);
+      setOrderMap(preset.columnOrder);
+      setColumnVisibility(preset.columnVisibility);
+      setThresholds(preset.thresholds);
+      setColumnAssignments(preset.columnAssignments);
+      setHiddenRepoIds(new Set(preset.hiddenRepoIds));
       setCurrentPresetId(presetId);
     }
   };
@@ -466,7 +391,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       columnVisibility,
       thresholds,
       columnAssignments,
-      hiddenRepoIds: [...hiddenRepoIds],
+      hiddenRepoIds: Array.from(hiddenRepoIds),
     });
 
     const newPreset = savePreset(presetSnapshot, user?.userId);
@@ -522,9 +447,17 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         columnTitles={columnTitles}
         columnVisibility={columnVisibility}
         thresholds={thresholds}
-        hiddenRepos={existingHiddenRepos}
+        hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
+        onCategorySettings={() => setShowCategoryManager(true)}
+      />
+
+      <CategoryManager
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        currentProfileId={currentProfileId}
+        onProfileSelect={setCurrentProfileId}
       />
 
       {/* Board Columns */}

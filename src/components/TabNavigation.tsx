@@ -18,7 +18,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       <button
         onClick={() => onTabChange('board')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-colors
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-all
           ${
             activeTab === 'board'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
@@ -70,7 +70,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </svg>
         <span>最近の更新</span>
         {updateCount > 0 && (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-full shadow-sm tabular-nums min-w-[2ch]">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-full shadow-sm">
             {updateCount}
           </span>
         )}

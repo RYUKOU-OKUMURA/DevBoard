@@ -54,6 +54,32 @@ export type AppConfig = {
   maxSavedViews: number;
 };
 
+// Category Profile Types
+export type CategoryFilterType = 'tag' | 'language' | 'name' | 'threshold' | 'archived' | 'custom';
+
+export type CategoryFilter =
+  | { type: 'tag'; tags: string[] }
+  | { type: 'language'; languages: string[] }
+  | { type: 'name'; patterns: string[] }
+  | { type: 'threshold'; activeThreshold: number; staleThreshold: number }
+  | { type: 'archived' }
+  | { type: 'custom'; repoIds: string[] };
+
+export type CustomCategory = {
+  key: string;
+  title: string;
+  color?: string;
+  filter: CategoryFilter;
+};
+
+export type CategoryProfile = {
+  id: string;
+  name: string;
+  categories: CustomCategory[];
+  createdAt: string;
+  isDefault?: boolean;
+};
+
 // Recent Activity Types
 export type IssueState = 'OPEN' | 'CLOSED';
 export type PullRequestState = 'OPEN' | 'CLOSED' | 'MERGED';

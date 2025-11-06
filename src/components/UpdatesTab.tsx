@@ -169,7 +169,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-surface-primary border border-[var(--border-subtle)] rounded-lg p-4 hover:shadow-lg hover:border-[var(--accent-green)] transition-[box-shadow,border-color] group"
+                  className="block bg-surface-primary border border-[var(--border-subtle)] rounded-lg p-4 hover:shadow-lg hover:border-[var(--accent-green)] transition-all group"
                 >
                   <div className="flex items-start gap-3 mb-2">
                     {icon}

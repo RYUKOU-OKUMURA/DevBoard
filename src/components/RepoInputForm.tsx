@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 
 interface RepoInputFormProps {
   value: string;
@@ -18,19 +18,17 @@ export const RepoInputForm: React.FC<RepoInputFormProps> = ({
     onSubmit();
   };
 
-  const textareaId = useId();
-
   return (
     <form
       onSubmit={handleSubmit}
       className="bg-surface-secondary border border-[var(--border-subtle)] rounded-lg shadow-sm p-3 space-y-2 transition-colors"
     >
       <div>
-        <label htmlFor={textareaId} className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+        <label htmlFor="repo-input" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
           リポジトリ URL または owner/repo
         </label>
         <textarea
-          id={textareaId}
+          id="repo-input"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="例: facebook/react (複数の場合は改行)"
