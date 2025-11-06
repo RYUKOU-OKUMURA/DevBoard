@@ -53,6 +53,17 @@ function AppContent() {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
+  // Listen for custom event to open add repo modal
+  useEffect(() => {
+    const handleOpenModal = () => {
+      setIsAddRepoModalOpen(true);
+    };
+    window.addEventListener('openAddRepoModal', handleOpenModal);
+    return () => {
+      window.removeEventListener('openAddRepoModal', handleOpenModal);
+    };
+  }, []);
+
   const parseCustomInput = (value: string): string[] => {
     return value
       .split(/[\n,]+/)
@@ -444,43 +455,49 @@ function AppContent() {
       />
 
       {/* Board Tab Content */}
-      {activeTab === 'board' && (
-        <RepoBoard
-          repos={repos}
-          isLoading={isLoading}
-          onRefresh={handleRefresh}
-          onStatsUpdate={handleStatsUpdate}
-        />
-      )}
+      <div className={activeTab === 'board' ? 'animate-slide-fade-in' : 'hidden'}>
+        {activeTab === 'board' && (
+          <RepoBoard
+            repos={repos}
+            isLoading={isLoading}
+            onRefresh={handleRefresh}
+            onStatsUpdate={handleStatsUpdate}
+          />
+        )}
+      </div>
 
       {/* Updates Tab Content */}
-      {activeTab === 'updates' && (
-        <UpdatesTab
-          recentItems={recentItems}
-          isLoadingActivities={isLoadingActivities}
-        />
-      )}
+      <div className={activeTab === 'updates' ? 'animate-slide-fade-in' : 'hidden'}>
+        {activeTab === 'updates' && (
+          <UpdatesTab
+            recentItems={recentItems}
+            isLoadingActivities={isLoadingActivities}
+          />
+        )}
+      </div>
 
       {/* Manual Repository Board Tab Content */}
-      {activeTab === 'manual' && (
-        <ManualRepoBoard
-          manualRepos={manualRepos}
-          selectedRepoIds={selectedRepoIds}
-          manualColumns={manualColumns}
-          onStatsUpdate={(count) => {
-            setManualRepoCount(count);
-            // Reload manual repos when count changes
-            const updatedRepos = getManualRepos();
-            setManualRepos(updatedRepos);
-          }}
-          onReposChange={(repos) => {
-            setManualRepos(repos);
-            setManualRepoCount(repos.length);
-          }}
-          onSelectedReposChange={setSelectedRepoIds}
-          onColumnsChange={setManualColumns}
-        />
-      )}
+      <div className={activeTab === 'manual' ? 'animate-slide-fade-in' : 'hidden'}>
+        {activeTab === 'manual' && (
+          <ManualRepoBoard
+            manualRepos={manualRepos}
+            selectedRepoIds={selectedRepoIds}
+            manualColumns={manualColumns}
+            onStatsUpdate={(count) => {
+              setManualRepoCount(count);
+              // Reload manual repos when count changes
+              const updatedRepos = getManualRepos();
+              setManualRepos(updatedRepos);
+            }}
+            onReposChange={(repos) => {
+              setManualRepos(repos);
+              setManualRepoCount(repos.length);
+            }}
+            onSelectedReposChange={setSelectedRepoIds}
+            onColumnsChange={setManualColumns}
+          />
+        )}
+      </div>
 
       {/* Add Repository Modal */}
       <AddRepoModal

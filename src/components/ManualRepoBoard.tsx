@@ -496,22 +496,23 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
               key={columnKey}
               title={columnConfig.columnTitles[columnKey]}
               repos={getOrderedRepos(columnKey)}
-              columnKey={columnKey as any}
+              columnKey={columnKey}
               onReorder={handleReorderWithinColumn}
               onReorderBetween={handleReorderBetween}
               onTitleChange={handleColumnTitleChange}
               isVisible={columnConfig.columnVisibility[columnKey]}
               onToggleVisibility={handleToggleColumnVisibility}
               renderRepoCard={(repo) => (
-                <RepoCard
-                  key={repo.id}
-                  repo={repo}
-                  showCheckbox={true}
-                  showDeleteButton={true}
-                  isSelected={selectedRepos.has(repo.id)}
-                  onSelect={handleToggleRepoSelection}
-                  onDelete={handleDeleteRepo}
-                />
+                <div key={repo.id} className="animate-fade-in">
+                  <RepoCard
+                    repo={repo}
+                    showCheckbox={true}
+                    showDeleteButton={true}
+                    isSelected={selectedRepos.has(repo.id)}
+                    onSelect={handleToggleRepoSelection}
+                    onDelete={handleDeleteRepo}
+                  />
+                </div>
               )}
             />
           ) : null
@@ -519,7 +520,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
 
         {/* Floating Action Bar */}
         {selectedRepos.size > 0 && (
-          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-surface-primary border-2 border-[var(--accent-green-border)] rounded-xl shadow-2xl px-6 py-4 flex items-center gap-4">
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-surface-primary border-2 border-[var(--accent-green-border)] rounded-xl shadow-2xl px-6 py-4 flex items-center gap-4 animate-fade-in">
             <div className="flex items-center gap-2 text-[var(--accent-green-emphasis)] font-semibold">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

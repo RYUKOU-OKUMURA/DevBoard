@@ -39,11 +39,19 @@ export const RepoCard: React.FC<RepoCardProps> = ({
     }
   };
 
-  const handleCheckboxClick = (e: React.MouseEvent) => {
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
     if (onSelect) {
       onSelect(repo.id);
     }
+  };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleCheckboxContainerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -69,7 +77,8 @@ export const RepoCard: React.FC<RepoCardProps> = ({
       onKeyDown={handleKeyDown}
       className={`
         bg-surface-primary border rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]
-        ${isSelected ? 'border-[var(--accent-green)] bg-opacity-90' : 'border-[var(--border-subtle)] hover:border-[var(--accent-green)]'}
+        ${isSelected ? 'border-[var(--accent-green)] bg-opacity-90 ring-2 ring-[var(--accent-green)] ring-opacity-30' : 'border-[var(--border-subtle)] hover:border-[var(--accent-green)]'}
+        animate-fade-in transition-all duration-200
       `}
     >
       {/* Repository Title and Actions */}
@@ -77,13 +86,16 @@ export const RepoCard: React.FC<RepoCardProps> = ({
         <div className="flex-1 min-w-0 flex items-center gap-3">
           {/* Checkbox */}
           {showCheckbox && (
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={handleCheckboxClick}
-              className="w-5 h-5 rounded border-[var(--border-subtle)] cursor-pointer accent-[var(--accent-green)]"
-              aria-label={`${repo.nameWithOwner} を選択`}
-            />
+            <div onClick={handleCheckboxContainerClick} className="flex items-center">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={handleCheckboxChange}
+                onClick={handleCheckboxClick}
+                className="w-5 h-5 rounded border-[var(--border-subtle)] cursor-pointer accent-[var(--accent-green)]"
+                aria-label={`${repo.nameWithOwner} を選択`}
+              />
+            </div>
           )}
           <h3 className="text-base font-semibold text-[var(--text-primary)] truncate">
             <span className="text-[var(--accent-green)]">{repoName}</span>
@@ -91,7 +103,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           </h3>
         </div>
 
-        <div className="flex items-center gap-1 ml-2">
+        <div className="flex items-center gap-1 ml-2 flex-wrap">
           {/* Privacy Badge */}
           {repo.isPrivate ? (
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border border-[var(--accent-yellow-border)] shadow-sm">

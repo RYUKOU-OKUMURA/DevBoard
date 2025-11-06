@@ -448,24 +448,75 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       />
 
       {/* Board Columns */}
-      <div className="flex-1 flex gap-4 p-4 overflow-x-auto">
-        {COLUMN_ORDER.map((columnKey) =>
-          columnVisibility[columnKey] ? (
-            <RepoColumn
-              key={columnKey}
-              title={columnTitles[columnKey]}
-              repos={getOrderedRepos(columnKey)}
-              columnKey={columnKey}
-              onReorder={handleReorderWithinColumn}
-              onReorderBetween={handleReorderBetween}
-              onTitleChange={handleColumnTitleChange}
-              onHide={handleHideRepo}
-              isVisible={columnVisibility[columnKey]}
-              onToggleVisibility={handleToggleColumnVisibility}
-            />
-          ) : null
-        )}
-      </div>
+      {filteredRepos.length === 0 && !isLoading ? (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center max-w-md">
+            <div className="mb-4 flex justify-center">
+              <svg
+                className="w-16 h-16 text-[var(--text-muted)]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+              まだリポジトリが追加されていません
+            </h2>
+            <p className="text-[var(--text-muted)] mb-6">
+              リポジトリを追加して、カンバンボードで管理しましょう
+            </p>
+            <button
+              onClick={() => {
+                // Trigger modal open - this will be handled by parent App component
+                const event = new CustomEvent('openAddRepoModal');
+                window.dispatchEvent(event);
+              }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--accent-green)] text-text-inverse rounded-xl hover:bg-[var(--accent-green-strong)] transition-colors font-medium shadow-sm"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 5v14m7-7H5"
+                />
+              </svg>
+              リポジトリを追加
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex gap-4 p-4 overflow-x-auto">
+          {COLUMN_ORDER.map((columnKey) =>
+            columnVisibility[columnKey] ? (
+              <RepoColumn
+                key={columnKey}
+                title={columnTitles[columnKey]}
+                repos={getOrderedRepos(columnKey)}
+                columnKey={columnKey}
+                onReorder={handleReorderWithinColumn}
+                onReorderBetween={handleReorderBetween}
+                onTitleChange={handleColumnTitleChange}
+                onHide={handleHideRepo}
+                isVisible={columnVisibility[columnKey]}
+                onToggleVisibility={handleToggleColumnVisibility}
+              />
+            ) : null
+          )}
+        </div>
+      )}
     </div>
   );
 };

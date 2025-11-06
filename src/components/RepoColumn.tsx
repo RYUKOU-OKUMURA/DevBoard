@@ -5,20 +5,22 @@ import { RepoCard } from './RepoCard';
 interface RepoColumnProps {
   title: string;
   repos: Repo[];
-  columnKey: ColumnKey;
-  onReorder?: (col: ColumnKey, fromId: string, toId?: string) => void;
+  columnKey: ColumnKey | string; // Support both ColumnKey and custom column names
+  onReorder?: (col: ColumnKey | string, fromId: string, toId?: string) => void;
   onReorderBetween?: (
-    fromCol: ColumnKey,
-    toCol: ColumnKey,
+    fromCol: ColumnKey | string,
+    toCol: ColumnKey | string,
     fromId: string,
     toId?: string
   ) => void;
-  onTitleChange?: (column: ColumnKey, newTitle: string) => void;
+  onTitleChange?: (column: ColumnKey | string, newTitle: string) => void;
   onHide?: (repoId: string) => void;
   isVisible?: boolean;
-  onToggleVisibility?: (columnKey: ColumnKey) => void;
+  onToggleVisibility?: (columnKey: ColumnKey | string) => void;
   renderRepoCard?: (repo: Repo) => React.ReactNode;
 }
+
+const COLUMN_CUSTOMIZATION_HELP_KEY = 'column-customization-help-shown';
 
 const COLUMN_COLORS: Record<
   ColumnKey,
@@ -60,6 +62,15 @@ const COLUMN_COLORS: Record<
   },
 };
 
+// Default colors for custom columns (ManualColumnKey)
+const DEFAULT_COLUMN_COLORS = {
+  headerBg: 'bg-accent-blue-muted',
+  headerText: 'text-accent-blue-strong',
+  border: 'border-accent-blue-border',
+  badgeBg: 'bg-accent-blue-muted',
+  badgeText: 'text-accent-blue-strong',
+};
+
 export const RepoColumn: React.FC<RepoColumnProps> = ({
   title,
   repos,
@@ -72,11 +83,31 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
   onToggleVisibility,
   renderRepoCard,
 }) => {
-  const colors = COLUMN_COLORS[columnKey];
+  // Use default colors if columnKey is not in COLUMN_COLORS (for custom columns)
+  const colors = COLUMN_COLORS[columnKey] || DEFAULT_COLUMN_COLORS;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState(title);
   const shouldCommitOnBlur = useRef(true);
   const canEditTitle = Boolean(onTitleChange);
+  const [showHelpTooltip, setShowHelpTooltip] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Show help tooltip on first visit
+  useEffect(() => {
+    const hasSeenHelp = localStorage.getItem(COLUMN_CUSTOMIZATION_HELP_KEY);
+    if (!hasSeenHelp && canEditTitle && repos.length > 0) {
+      // Show tooltip after a short delay
+      const timer = setTimeout(() => {
+        setShowHelpTooltip(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [canEditTitle, repos.length]);
+
+  const handleDismissTooltip = () => {
+    setShowHelpTooltip(false);
+    localStorage.setItem(COLUMN_CUSTOMIZATION_HELP_KEY, 'true');
+  };
 
   useEffect(() => {
     if (!isEditingTitle) {
@@ -168,9 +199,10 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
   };
 
   return (
-    <div className="flex-1 min-w-[320px] flex flex-col transition-colors">
+    <div className="flex-1 min-w-[320px] flex flex-col transition-colors relative">
       {/* Column Header */}
       <div
+        ref={headerRef}
         className={`px-4 py-3 rounded-t-lg font-semibold flex items-center justify-between shadow-sm ${colors.headerBg} ${colors.headerText} border border-b-0 ${colors.border}`}
       >
         <div className="flex-1 pr-3">
@@ -203,6 +235,31 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
           {repos.length}
         </span>
       </div>
+
+      {/* Help Tooltip */}
+      {showHelpTooltip && canEditTitle && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-2 mx-4 animate-fade-in">
+          <div className="bg-[var(--accent-blue)] text-text-inverse rounded-lg p-4 shadow-lg border border-[var(--accent-blue-border)]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium mb-1">💡 カラムのカスタマイズ</p>
+                <p className="text-xs opacity-90">
+                  列はドラッグ&ドロップで整理できます。列名をクリックして編集することもできます。
+                </p>
+              </div>
+              <button
+                onClick={handleDismissTooltip}
+                className="flex-shrink-0 p-1 hover:bg-white/20 rounded transition-colors"
+                aria-label="閉じる"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Column Content */}
       <div
@@ -237,6 +294,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
               onDragStart={(e) => handleDragStart(e, repo.id)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropOnCard(e, repo.id)}
+              className="animate-fade-in"
             >
               {renderRepoCard ? renderRepoCard(repo) : <RepoCard repo={repo} onHide={onHide} />}
             </div>

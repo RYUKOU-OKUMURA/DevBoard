@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export type TabType = 'board' | 'updates' | 'manual';
 
@@ -15,12 +15,26 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   updateCount = 0,
   manualRepoCount = 0,
 }) => {
+  const [prevTab, setPrevTab] = useState<TabType>(activeTab);
+
+  useEffect(() => {
+    if (prevTab !== activeTab) {
+      setPrevTab(activeTab);
+    }
+  }, [activeTab, prevTab]);
+
+  const handleTabChange = (tab: TabType) => {
+    if (tab !== activeTab) {
+      onTabChange(tab);
+    }
+  };
+
   return (
     <nav className="flex gap-2 px-8 bg-surface-primary border-b border-[var(--border-subtle)]">
       <button
-        onClick={() => onTabChange('board')}
+        onClick={() => handleTabChange('board')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-200
           ${
             activeTab === 'board'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
@@ -47,9 +61,9 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       </button>
 
       <button
-        onClick={() => onTabChange('updates')}
+        onClick={() => handleTabChange('updates')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all relative
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-200 relative
           ${
             activeTab === 'updates'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
@@ -79,9 +93,9 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       </button>
 
       <button
-        onClick={() => onTabChange('manual')}
+        onClick={() => handleTabChange('manual')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all relative
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-200 relative
           ${
             activeTab === 'manual'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'

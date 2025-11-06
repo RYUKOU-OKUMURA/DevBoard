@@ -1,5 +1,6 @@
 export type TimeAgoOptions = {
   now?: Date;
+  locale?: 'en' | 'ja';
 };
 
 const SECONDS_IN_MINUTE = 60;
@@ -15,10 +16,13 @@ function getReferenceDate(now?: Date): Date {
   return new Date();
 }
 
-function formatQuantity(value: number, suffix: string): string {
+function formatQuantity(value: number, suffix: string, locale: 'en' | 'ja' = 'en'): string {
   const rounded = Math.floor(value);
   if (rounded <= 0) {
-    return "just now";
+    return locale === 'ja' ? 'たった今' : 'just now';
+  }
+  if (locale === 'ja') {
+    return `${rounded}${suffix}前`;
   }
   return `${rounded}${suffix} ago`;
 }
@@ -29,40 +33,41 @@ function formatQuantity(value: number, suffix: string): string {
 export function timeAgo(value: string, options: TimeAgoOptions = {}): string {
   const reference = getReferenceDate(options.now);
   const target = new Date(value);
+  const locale = options.locale || 'en';
 
   if (Number.isNaN(target.getTime())) {
-    return "Invalid date";
+    return locale === 'ja' ? '無効な日付' : 'Invalid date';
   }
 
   const diffSeconds = (reference.getTime() - target.getTime()) / 1000;
 
   if (!Number.isFinite(diffSeconds)) {
-    return "Invalid date";
+    return locale === 'ja' ? '無効な日付' : 'Invalid date';
   }
 
   if (diffSeconds <= 0) {
-    return "just now";
+    return locale === 'ja' ? 'たった今' : 'just now';
   }
 
   if (diffSeconds < SECONDS_IN_MINUTE) {
-    return "just now";
+    return locale === 'ja' ? 'たった今' : 'just now';
   }
 
   if (diffSeconds < SECONDS_IN_HOUR) {
-    return formatQuantity(diffSeconds / SECONDS_IN_MINUTE, "m");
+    return formatQuantity(diffSeconds / SECONDS_IN_MINUTE, locale === 'ja' ? '分' : 'm', locale);
   }
 
   if (diffSeconds < SECONDS_IN_DAY) {
-    return formatQuantity(diffSeconds / SECONDS_IN_HOUR, "h");
+    return formatQuantity(diffSeconds / SECONDS_IN_HOUR, locale === 'ja' ? '時間' : 'h', locale);
   }
 
   if (diffSeconds < SECONDS_IN_MONTH) {
-    return formatQuantity(diffSeconds / SECONDS_IN_DAY, "d");
+    return formatQuantity(diffSeconds / SECONDS_IN_DAY, locale === 'ja' ? '日前' : 'd', locale);
   }
 
   if (diffSeconds < SECONDS_IN_YEAR) {
-    return formatQuantity(diffSeconds / SECONDS_IN_MONTH, "mo");
+    return formatQuantity(diffSeconds / SECONDS_IN_MONTH, locale === 'ja' ? 'ヶ月' : 'mo', locale);
   }
 
-  return formatQuantity(diffSeconds / SECONDS_IN_YEAR, "y");
+  return formatQuantity(diffSeconds / SECONDS_IN_YEAR, locale === 'ja' ? '年前' : 'y', locale);
 }
