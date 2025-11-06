@@ -197,7 +197,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
             <span>{title}</span>
           )}
         </div>
-        <span className={`px-2 py-1 rounded text-sm border ${colors.border} ${colors.badgeBg} ${colors.badgeText} tabular-nums min-w-[3ch] text-center`}>
+        <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-sm border ${colors.border} ${colors.badgeBg} ${colors.badgeText} tabular-nums min-w-[3ch]`}>
           {repos.length}
         </span>
       </div>
