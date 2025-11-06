@@ -1,0 +1,357 @@
+/**
+ * 手動追加リポジトリ用のカラム設定を管理
+ * デフォルト列: ["気になる", "学習用", "フォーク済み", "その他"]
+ */
+
+export type ManualColumnKey = string;
+
+export interface ManualColumnConfig {
+  columns: ManualColumnKey[];
+  columnTitles: Record<ManualColumnKey, string>;
+  columnOrder: Record<ManualColumnKey, string[]>; // リポジトリIDの順序
+  columnVisibility: Record<ManualColumnKey, boolean>;
+}
+
+export interface ManualColumnAssignments {
+  [repoId: string]: ManualColumnKey; // リポジトリIDとカラムのマッピング
+}
+
+const MANUAL_COLUMNS_STORAGE_KEY = 'github-dashboard-manual-columns-config';
+const MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-manual-column-assignments';
+
+// デフォルト列定義
+const DEFAULT_COLUMNS: ManualColumnKey[] = [
+  '気になる',
+  '学習用',
+  'フォーク済み',
+  'その他',
+];
+
+const DEFAULT_COLUMN_CONFIG: ManualColumnConfig = {
+  columns: DEFAULT_COLUMNS,
+  columnTitles: {
+    '気になる': '気になる',
+    '学習用': '学習用',
+    'フォーク済み': 'フォーク済み',
+    'その他': 'その他',
+  },
+  columnOrder: {
+    '気になる': [],
+    '学習用': [],
+    'フォーク済み': [],
+    'その他': [],
+  },
+  columnVisibility: {
+    '気になる': true,
+    '学習用': true,
+    'フォーク済み': true,
+    'その他': true,
+  },
+};
+
+/**
+ * 手動リポ用のカラム設定を取得
+ */
+export function getManualColumnConfig(): ManualColumnConfig {
+  try {
+    const data = localStorage.getItem(MANUAL_COLUMNS_STORAGE_KEY);
+    if (!data) {
+      // デフォルト設定を返す
+      return structuredClone(DEFAULT_COLUMN_CONFIG);
+    }
+    const config = JSON.parse(data);
+    
+    // バージョン互換性をチェック
+    if (!config.columns || !Array.isArray(config.columns)) {
+      return structuredClone(DEFAULT_COLUMN_CONFIG);
+    }
+
+    return config;
+  } catch (error) {
+    console.error('カラム設定の取得に失敗しました:', error);
+    return structuredClone(DEFAULT_COLUMN_CONFIG);
+  }
+}
+
+/**
+ * 手動リポ用のカラム設定を保存
+ */
+export function saveManualColumnConfig(config: ManualColumnConfig): boolean {
+  try {
+    // 設定の妥当性をチェック
+    if (!config.columns || !Array.isArray(config.columns) || config.columns.length === 0) {
+      console.error('無効なカラム設定です');
+      return false;
+    }
+
+    localStorage.setItem(MANUAL_COLUMNS_STORAGE_KEY, JSON.stringify(config));
+    return true;
+  } catch (error) {
+    console.error('カラム設定の保存に失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * 新しいカラムを追加
+ */
+export function addManualColumn(columnName: ManualColumnKey): boolean {
+  try {
+    const config = getManualColumnConfig();
+
+    // 既に存在するかチェック
+    if (config.columns.includes(columnName)) {
+      console.warn(`カラム "${columnName}" は既に存在します`);
+      return false;
+    }
+
+    config.columns.push(columnName);
+    config.columnTitles[columnName] = columnName;
+    config.columnOrder[columnName] = [];
+    config.columnVisibility[columnName] = true;
+
+    return saveManualColumnConfig(config);
+  } catch (error) {
+    console.error('カラムの追加に失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * カラムを削除
+ */
+export function removeManualColumn(columnName: ManualColumnKey): boolean {
+  try {
+    const config = getManualColumnConfig();
+
+    // 少なくとも1つのカラムは必要
+    if (config.columns.length <= 1) {
+      console.error('最後のカラムは削除できません');
+      return false;
+    }
+
+    // カラムが存在するかチェック
+    if (!config.columns.includes(columnName)) {
+      console.warn(`カラム "${columnName}" は見つかりません`);
+      return false;
+    }
+
+    config.columns = config.columns.filter((col) => col !== columnName);
+    delete config.columnTitles[columnName];
+    delete config.columnOrder[columnName];
+    delete config.columnVisibility[columnName];
+
+    // このカラムに割り当てられたリポジトリを削除
+    const assignments = getManualColumnAssignments();
+    const updatedAssignments = Object.fromEntries(
+      Object.entries(assignments).filter(([, col]) => col !== columnName)
+    );
+    saveManualColumnAssignments(updatedAssignments);
+
+    return saveManualColumnConfig(config);
+  } catch (error) {
+    console.error('カラムの削除に失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * カラムの名前を変更
+ */
+export function renameManualColumn(oldName: ManualColumnKey, newName: ManualColumnKey): boolean {
+  try {
+    const config = getManualColumnConfig();
+
+    // カラムが存在するかチェック
+    if (!config.columns.includes(oldName)) {
+      console.warn(`カラム "${oldName}" は見つかりません`);
+      return false;
+    }
+
+    // 新しい名前が既に存在するかチェック
+    if (config.columns.includes(newName)) {
+      console.error(`カラム "${newName}" は既に存在します`);
+      return false;
+    }
+
+    // カラムリストを更新
+    const columnIndex = config.columns.indexOf(oldName);
+    config.columns[columnIndex] = newName;
+
+    // 関連するプロパティを更新
+    config.columnTitles[newName] = config.columnTitles[oldName];
+    delete config.columnTitles[oldName];
+
+    config.columnOrder[newName] = config.columnOrder[oldName];
+    delete config.columnOrder[oldName];
+
+    config.columnVisibility[newName] = config.columnVisibility[oldName];
+    delete config.columnVisibility[oldName];
+
+    // 割り当てを更新
+    const assignments = getManualColumnAssignments();
+    const updatedAssignments: ManualColumnAssignments = {};
+    Object.entries(assignments).forEach(([repoId, colName]) => {
+      updatedAssignments[repoId] = colName === oldName ? newName : colName;
+    });
+    saveManualColumnAssignments(updatedAssignments);
+
+    return saveManualColumnConfig(config);
+  } catch (error) {
+    console.error('カラムの名前変更に失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * カラムの表示・非表示を切り替え
+ */
+export function toggleManualColumnVisibility(columnName: ManualColumnKey): boolean {
+  try {
+    const config = getManualColumnConfig();
+
+    if (!config.columns.includes(columnName)) {
+      console.warn(`カラム "${columnName}" は見つかりません`);
+      return false;
+    }
+
+    config.columnVisibility[columnName] = !config.columnVisibility[columnName];
+    return saveManualColumnConfig(config);
+  } catch (error) {
+    console.error('表示状態の切り替えに失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * すべての手動カラム設定をリセット
+ */
+export function resetManualColumns(): boolean {
+  try {
+    localStorage.removeItem(MANUAL_COLUMNS_STORAGE_KEY);
+    localStorage.removeItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY);
+    return true;
+  } catch (error) {
+    console.error('カラム設定のリセットに失敗しました:', error);
+    return false;
+  }
+}
+
+// ===== リポジトリの割り当て管理 =====
+
+/**
+ * カラムへのリポジトリ割り当てを取得
+ */
+export function getManualColumnAssignments(): ManualColumnAssignments {
+  try {
+    const data = localStorage.getItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY);
+    if (!data) {
+      return {};
+    }
+    const assignments = JSON.parse(data);
+    return typeof assignments === 'object' ? assignments : {};
+  } catch (error) {
+    console.error('リポジトリ割り当ての取得に失敗しました:', error);
+    return {};
+  }
+}
+
+/**
+ * カラムへのリポジトリ割り当てを保存
+ */
+export function saveManualColumnAssignments(assignments: ManualColumnAssignments): boolean {
+  try {
+    localStorage.setItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(assignments));
+    return true;
+  } catch (error) {
+    console.error('リポジトリ割り当ての保存に失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * リポジトリをカラムに割り当て
+ */
+export function assignRepoToColumn(repoId: string, columnName: ManualColumnKey): boolean {
+  try {
+    const config = getManualColumnConfig();
+
+    // カラムが存在するかチェック
+    if (!config.columns.includes(columnName)) {
+      console.warn(`カラム "${columnName}" は見つかりません`);
+      return false;
+    }
+
+    const assignments = getManualColumnAssignments();
+    const previousColumn = assignments[repoId];
+
+    // 前のカラムから削除
+    if (previousColumn && config.columnOrder[previousColumn]) {
+      config.columnOrder[previousColumn] = config.columnOrder[previousColumn].filter(
+        (id) => id !== repoId
+      );
+    }
+
+    // 新しいカラムに追加
+    if (!config.columnOrder[columnName].includes(repoId)) {
+      config.columnOrder[columnName].push(repoId);
+    }
+
+    // 割り当てを更新
+    assignments[repoId] = columnName;
+
+    return (
+      saveManualColumnConfig(config) && saveManualColumnAssignments(assignments)
+    );
+  } catch (error) {
+    console.error('リポジトリの割り当てに失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * リポジトリの割り当てを解除
+ */
+export function unassignRepoFromColumn(repoId: string): boolean {
+  try {
+    const assignments = getManualColumnAssignments();
+    const columnName = assignments[repoId];
+
+    if (!columnName) {
+      return true; // 割り当てが存在しない場合は成功
+    }
+
+    const config = getManualColumnConfig();
+    if (config.columnOrder[columnName]) {
+      config.columnOrder[columnName] = config.columnOrder[columnName].filter(
+        (id) => id !== repoId
+      );
+    }
+
+    delete assignments[repoId];
+
+    return (
+      saveManualColumnConfig(config) && saveManualColumnAssignments(assignments)
+    );
+  } catch (error) {
+    console.error('リポジトリの割り当て解除に失敗しました:', error);
+    return false;
+  }
+}
+
+/**
+ * リポジトリのカラムを取得
+ */
+export function getRepoColumn(repoId: string): ManualColumnKey | null {
+  const assignments = getManualColumnAssignments();
+  return assignments[repoId] || null;
+}
+
+/**
+ * 指定したカラムのリポジトリを取得
+ */
+export function getReposInColumn(columnName: ManualColumnKey): string[] {
+  const config = getManualColumnConfig();
+  return config.columnOrder[columnName] || [];
+}
+

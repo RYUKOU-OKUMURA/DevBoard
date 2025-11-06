@@ -9,6 +9,10 @@ export type Repo = {
   primaryLanguage?: string;
   topics: string[];
   stargazers_count?: number;
+  source?: {
+    type: 'viewer' | 'manual';
+    addedAt?: string; // ISO date
+  };
 };
 
 export type ColumnKey = "Active" | "Stale" | "Dormant" | "Archived";
