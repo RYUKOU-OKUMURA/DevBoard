@@ -76,6 +76,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     getManualColumnAssignments()
   );
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [orderMap, setOrderMap] = useState<Record<ManualColumnKey, string[]>>({});
 
   // Initialize orderMap from columnConfig
@@ -279,6 +280,14 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     }
   };
 
+  const handleToggleDeleteMode = () => {
+    setIsDeleteMode((prev) => !prev);
+    // 削除モードをオフにする時は選択をクリア
+    if (isDeleteMode) {
+      setSelectedRepos(new Set());
+    }
+  };
+
   const handleClearAll = () => {
     // 二重確認
     const firstConfirm = window.confirm(
@@ -299,6 +308,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     const updatedRepos: Repo[] = [];
     setManualRepos(updatedRepos);
     setSelectedRepos(new Set());
+    setIsDeleteMode(false);
     
     // Notify parent
     if (onStatsUpdate) {
@@ -469,21 +479,44 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
             列の管理
           </button>
           {manualRepos.length > 0 && (
-            <button
-              onClick={handleClearAll}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-sm"
-              title="すべてのリポジトリを削除"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              すべてクリア
-            </button>
+            <>
+              <button
+                onClick={handleToggleDeleteMode}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm border ${
+                  isDeleteMode
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-300'
+                    : 'bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] hover:bg-[var(--accent-red-hover)] border-[var(--accent-red-border)]'
+                }`}
+                title={isDeleteMode ? '削除操作を終了' : '削除操作を開始'}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                削除操作
+              </button>
+              {isDeleteMode && selectedRepos.size === manualRepos.length && (
+                <button
+                  onClick={handleClearAll}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-sm border border-red-300"
+                  title="すべてのリポジトリを削除"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  すべてクリア
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -506,8 +539,8 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
                 <div key={repo.id} className="animate-fade-in">
                   <RepoCard
                     repo={repo}
-                    showCheckbox={true}
-                    showDeleteButton={true}
+                    showCheckbox={isDeleteMode}
+                    showDeleteButton={isDeleteMode}
                     isSelected={selectedRepos.has(repo.id)}
                     onSelect={handleToggleRepoSelection}
                     onDelete={handleDeleteRepo}
