@@ -13,7 +13,7 @@ interface RepoBoardProps {
   config?: AppConfig;
   isLoading?: boolean;
   onRefresh?: () => void;
-  onStatsUpdate?: (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => void;
+  onStatsUpdate?: (totalVisible: number, categoryCounts: Record<ColumnKey, number>, columnTitles: Record<ColumnKey, string>) => void;
 }
 
 const COLUMN_TITLES: Record<ColumnKey, string> = {
@@ -154,9 +154,9 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         Dormant: classifiedRepos.Dormant.length,
         Archived: classifiedRepos.Archived.length,
       };
-      onStatsUpdate(totalVisible, categoryCounts);
+      onStatsUpdate(totalVisible, categoryCounts, columnTitles);
     }
-  }, [classifiedRepos, onStatsUpdate]);
+  }, [classifiedRepos, onStatsUpdate, columnTitles]);
 
   useEffect(() => {
     try {

@@ -30,6 +30,12 @@ function AppContent() {
     Dormant: 0,
     Archived: 0,
   });
+  const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>({
+    Active: 'アクティブ',
+    Stale: '停滞',
+    Dormant: '休眠',
+    Archived: 'アーカイブ',
+  });
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
   const [manualRepoCount, setManualRepoCount] = useState(0);
   const totalReposDisplayed = displayedRepoCount ?? repos.length;
@@ -236,9 +242,10 @@ function AppContent() {
   }, []);
 
   // Handle stats update from RepoBoard
-  const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
+  const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>, columnTitles: Record<ColumnKey, string>) => {
     setDisplayedRepoCount(totalVisible);
     setDisplayedCategoryCounts(categoryCounts);
+    setColumnTitles(columnTitles);
   };
 
   // Show loading spinner while checking auth
@@ -348,25 +355,25 @@ function AppContent() {
               </span>
             </div>
               <div className="flex items-center gap-1">
-                <span className="text-[var(--text-muted)]">アクティブ</span>
+                <span className="text-[var(--text-muted)]">{columnTitles.Active}</span>
                 <span className="text-sm font-semibold text-[var(--accent-green-emphasis)]">
                   {displayedCategoryCounts.Active}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[var(--text-muted)]">停滞</span>
+                <span className="text-[var(--text-muted)]">{columnTitles.Stale}</span>
                 <span className="text-sm font-semibold text-[var(--accent-yellow-emphasis)]">
                   {displayedCategoryCounts.Stale}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[var(--text-muted)]">休眠</span>
+                <span className="text-[var(--text-muted)]">{columnTitles.Dormant}</span>
                 <span className="text-sm font-semibold text-[var(--accent-orange-emphasis)]">
                   {displayedCategoryCounts.Dormant}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[var(--text-muted)]">アーカイブ</span>
+                <span className="text-[var(--text-muted)]">{columnTitles.Archived}</span>
                 <span className="text-sm font-semibold text-[var(--text-secondary)]">
                   {displayedCategoryCounts.Archived}
                 </span>
