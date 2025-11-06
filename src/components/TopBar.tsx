@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { SortOrder, SavedView, Repo, ViewPreset, ColumnKey } from '../types';
 
 interface TopBarProps {
@@ -65,6 +65,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   const [presetName, setPresetName] = useState('');
   const [saveError, setSaveError] = useState('');
   const [presetError, setPresetError] = useState('');
+
+  // Unique IDs for labeled inputs to avoid duplicate id warnings
+  const viewNameId = useId();
+  const presetNameId = useId();
 
   const handleViewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     if (onViewSelect) {
@@ -360,11 +364,11 @@ export const TopBar: React.FC<TopBarProps> = ({
               現在の検索キーワードと並び順を保存します。
             </p>
             <div className="mb-4">
-              <label htmlFor="viewName" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+              <label htmlFor={viewNameId} className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 ビュー名
               </label>
               <input
-                id="viewName"
+                id={viewNameId}
                 type="text"
                 value={viewName}
                 onChange={(event) => {
@@ -423,11 +427,11 @@ export const TopBar: React.FC<TopBarProps> = ({
               現在のダッシュボードの状態（検索、並び順、カラム配置、カラム名、しきい値など）を保存します。
             </p>
             <div className="mb-4">
-              <label htmlFor="presetName" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+              <label htmlFor={presetNameId} className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                 プリセット名
               </label>
               <input
-                id="presetName"
+                id={presetNameId}
                 type="text"
                 value={presetName}
                 onChange={(event) => {
