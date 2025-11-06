@@ -17,6 +17,7 @@ interface RepoColumnProps {
   onHide?: (repoId: string) => void;
   isVisible?: boolean;
   onToggleVisibility?: (columnKey: ColumnKey) => void;
+  renderRepoCard?: (repo: Repo) => React.ReactNode;
 }
 
 const COLUMN_COLORS: Record<
@@ -69,6 +70,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
   onHide,
   isVisible = true,
   onToggleVisibility,
+  renderRepoCard,
 }) => {
   const colors = COLUMN_COLORS[columnKey];
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -236,7 +238,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropOnCard(e, repo.id)}
             >
-              <RepoCard repo={repo} onHide={onHide} />
+              {renderRepoCard ? renderRepoCard(repo) : <RepoCard repo={repo} onHide={onHide} />}
             </div>
           ))
         )}

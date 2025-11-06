@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab } from './components';
+import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard } from './components';
 import LoginPage from './components/LoginPage';
 import AccountSwitcher from './components/AccountSwitcher';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -7,6 +7,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Repo, ColumnKey } from './types';
 import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
 import type { TabType } from './components/TabNavigation';
+import { getManualRepoCount } from './utils/manualRepoStorage';
 
 type DataSource = 'viewer' | 'custom';
 
@@ -29,12 +30,13 @@ function AppContent() {
     Archived: 0,
   });
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
+  const [manualRepoCount, setManualRepoCount] = useState(0);
   const totalReposDisplayed = displayedRepoCount ?? repos.length;
 
   // Tab navigation state
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const saved = localStorage.getItem('activeTab');
-    return (saved === 'board' || saved === 'updates') ? saved : 'board';
+    return (saved === 'board' || saved === 'updates' || saved === 'manual') ? saved : 'board';
   });
 
   // Modal state
@@ -153,6 +155,11 @@ function AppContent() {
       loadRepos();
     }
   }, [user]);
+
+  // Update manual repo count
+  useEffect(() => {
+    setManualRepoCount(getManualRepoCount());
+  }, []);
 
   // Handle stats update from RepoBoard
   const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
@@ -361,6 +368,7 @@ function AppContent() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         updateCount={recentItems.length}
+        manualRepoCount={manualRepoCount}
       />
 
       {/* Board Tab Content */}
@@ -378,6 +386,13 @@ function AppContent() {
         <UpdatesTab
           recentItems={recentItems}
           isLoadingActivities={isLoadingActivities}
+        />
+      )}
+
+      {/* Manual Repository Board Tab Content */}
+      {activeTab === 'manual' && (
+        <ManualRepoBoard
+          onStatsUpdate={(count) => setManualRepoCount(count)}
         />
       )}
 

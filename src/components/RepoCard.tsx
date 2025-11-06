@@ -5,9 +5,22 @@ import { timeAgo } from '../lib/timeAgo';
 interface RepoCardProps {
   repo: Repo;
   onHide?: (repoId: string) => void;
+  showDeleteButton?: boolean;
+  showCheckbox?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
+export const RepoCard: React.FC<RepoCardProps> = ({
+  repo,
+  onHide,
+  showDeleteButton = false,
+  showCheckbox = false,
+  isSelected = false,
+  onSelect,
+  onDelete,
+}) => {
   const handleClick = () => {
     window.open(repo.htmlUrl, '_blank', 'noopener,noreferrer');
   };
@@ -26,6 +39,20 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
     }
   };
 
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSelect) {
+      onSelect(repo.id);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(repo.id);
+    }
+  };
+
   // Extract owner and repo name
   const [owner, repoName] = repo.nameWithOwner.split('/');
 
@@ -40,11 +67,24 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
       aria-label={`リポジトリを開く ${repo.nameWithOwner}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="bg-surface-primary border border-[var(--border-subtle)] rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-[var(--accent-green)] motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]"
+      className={`
+        bg-surface-primary border rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]
+        ${isSelected ? 'border-[var(--accent-green)] bg-opacity-90' : 'border-[var(--border-subtle)] hover:border-[var(--accent-green)]'}
+      `}
     >
       {/* Repository Title and Actions */}
       <div className="flex items-start justify-between mb-2">
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-3">
+          {/* Checkbox */}
+          {showCheckbox && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={handleCheckboxClick}
+              className="w-5 h-5 rounded border-[var(--border-subtle)] cursor-pointer accent-[var(--accent-green)]"
+              aria-label={`${repo.nameWithOwner} を選択`}
+            />
+          )}
           <h3 className="text-base font-semibold text-[var(--text-primary)] truncate">
             <span className="text-[var(--accent-green)]">{repoName}</span>
             <span className="text-[var(--text-muted)]"> / {owner}</span>
@@ -63,8 +103,22 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
             </span>
           )}
 
+          {/* Delete Button */}
+          {showDeleteButton && onDelete && (
+            <button
+              onClick={handleDeleteClick}
+              className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-red-100 hover:text-red-600 text-[var(--text-muted)] transition-colors"
+              title="削除する"
+              aria-label="このリポジトリを削除する"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          )}
+
           {/* Hide Button */}
-          {onHide && (
+          {onHide && !showDeleteButton && (
             <button
               onClick={handleHideClick}
               className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-surface-hover text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
