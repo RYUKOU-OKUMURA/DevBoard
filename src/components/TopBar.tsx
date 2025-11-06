@@ -187,7 +187,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 title="非表示のリポジトリを管理"
               >
                 非表示を管理
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text-inverse bg-[var(--accent-red)] rounded-full shadow-sm tabular-nums font-mono">
+                <span className="ml-2 inline-flex items-center justify-center px-1 min-w-[2ch] h-5 text-xs font-bold text-text-inverse bg-[var(--accent-red)] rounded-full shadow-sm tabular-nums font-mono text-center">
                   {hiddenRepos.length}
                 </span>
               </button>
