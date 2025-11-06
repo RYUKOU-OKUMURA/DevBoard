@@ -40,7 +40,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
       aria-label={`リポジトリを開く ${repo.nameWithOwner}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="bg-surface-primary border border-[var(--border-subtle)] rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-[var(--accent-green)] motion-safe:transition-[transform,box-shadow,border-color] motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]"
+      className="bg-surface-primary border border-[var(--border-subtle)] rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-[var(--accent-green)] motion-safe:transition-[transform,box-shadow,border-color] motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)] will-change-transform transform-gpu"
     >
       {/* Repository Title and Actions */}
       <div className="flex items-start justify-between mb-2">

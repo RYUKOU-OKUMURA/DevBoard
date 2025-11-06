@@ -70,7 +70,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </svg>
         <span>最近の更新</span>
         {updateCount > 0 && (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-full shadow-sm">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-full shadow-sm tabular-nums min-w-[2ch]">
             {updateCount}
           </span>
         )}

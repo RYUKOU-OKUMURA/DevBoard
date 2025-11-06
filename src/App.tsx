@@ -170,13 +170,13 @@ function AppContent() {
               <span className="uppercase tracking-wide text-[var(--text-muted)] text-[11px] sm:text-xs">
                 総数
               </span>
-              <span className="text-base font-semibold text-[var(--text-primary)] tabular-nums inline-flex justify-end min-w-[3ch]">
+              <span className="text-base font-semibold text-[var(--text-primary)] tabular-nums font-mono inline-flex justify-end min-w-[4ch]">
                 {totalReposDisplayed}
               </span>
             </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">アクティブ</span>
-                <span className="text-sm font-semibold text-[var(--accent-green-emphasis)] tabular-nums inline-flex justify-end min-w-[3ch]">
+                <span className="text-sm font-semibold text-[var(--accent-green-emphasis)] tabular-nums font-mono inline-flex justify-end min-w-[3ch]">
                   {displayedCategoryCounts.Active}
                 </span>
               </div>

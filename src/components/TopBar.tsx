@@ -187,7 +187,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 title="非表示のリポジトリを管理"
               >
                 非表示を管理
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text-inverse bg-[var(--accent-red)] rounded-full shadow-sm tabular-nums">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text-inverse bg-[var(--accent-red)] rounded-full shadow-sm tabular-nums font-mono">
                   {hiddenRepos.length}
                 </span>
               </button>
@@ -239,7 +239,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="リポジトリを検索（名前、言語、トピック、説明...）"
-                className="w-full px-4 py-2 pl-10 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent transition-all bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] shadow-inner"
+                className="w-full px-4 py-2 pl-10 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent transition-colors bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] shadow-inner"
               />
               <svg
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[var(--text-muted)]"
@@ -262,7 +262,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <select
               value={sortOrder}
               onChange={(event) => onSortChange(event.target.value as SortOrder)}
-              className="w-full px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-all"
+              className="w-full px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-colors"
             >
               <option value="lastUpdated">並び替え: 最終更新日</option>
               <option value="name">並び替え: 名前 (A-Z)</option>
