@@ -8,6 +8,17 @@ import {
 } from "../lib/transformRepository";
 import { sortRepositories } from "../lib/repoSearch";
 import { timeAgo } from "../lib/timeAgo";
+import {
+  loadViewerRepos,
+  saveViewerRepos,
+  loadCustomRepos,
+  saveCustomRepos,
+} from "../utils/repoStorage";
+import {
+  checkRateLimit,
+  recordRequest,
+  getRateLimitErrorMessage,
+} from "../utils/rateLimiter";
 
 /**
  * GitHub GraphQL API レスポンスの型定義
@@ -91,14 +102,49 @@ interface SingleRepositoryResponse {
 
 /**
  * すべてのリポジトリを取得（ページネーション対応）
+ * @param forceRefresh - trueの場合、キャッシュを無視してAPIから取得
  */
-export async function fetchAllRepositories(retryAttempt = false): Promise<Repo[]> {
-  const graphqlClient = createGraphQLClient();
+export async function fetchAllRepositories(
+  retryAttempt = false,
+  forceRefresh = false
+): Promise<Repo[]> {
+  // ローカルストレージをチェック（forceRefreshがfalseの場合のみ）
+  if (!forceRefresh) {
+    const cached = loadViewerRepos();
+    if (cached) {
+      console.log(
+        `Using cached viewer repositories (${cached.length} repos)`
+      );
+      return cached;
+    }
+  }
+
+  // レート制限をチェック
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    const errorMessage = getRateLimitErrorMessage(rateLimit.resetTime!);
+    console.warn(errorMessage);
+
+    // キャッシュがあればそれを返す
+    const cached = loadViewerRepos();
+    if (cached) {
+      console.log("Using cached data due to rate limit");
+      return cached;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  // カンバンボード用のエンドポイントを使用
+  const graphqlClient = createGraphQLClient("/github/graphql/repos/viewer");
   const repositories: Repo[] = [];
   let hasNextPage = true;
   let cursor: string | null = null;
 
   try {
+    // リクエストを記録
+    recordRequest();
+
     while (hasNextPage) {
       const response = await graphqlClient<GraphQLResponse>(REPOSITORIES_QUERY, {
         first: 100,
@@ -132,16 +178,29 @@ export async function fetchAllRepositories(retryAttempt = false): Promise<Repo[]
       console.warn("Repository fetch completed but returned no data.");
       if (!retryAttempt) {
         console.info("Retrying repository fetch once due to empty result...");
-        return fetchAllRepositories(true);
+        return fetchAllRepositories(true, forceRefresh);
       }
       console.warn("Retry attempt also returned an empty repository list.");
     }
 
     console.log(`Successfully fetched ${repositories.length} repositories`);
-    return sortRepositories(repositories, "lastUpdated");
+    const sortedRepos = sortRepositories(repositories, "lastUpdated");
+
+    // ローカルストレージに保存
+    saveViewerRepos(sortedRepos);
+
+    return sortedRepos;
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     console.error("Failed to fetch repositories:", errorMessage);
+
+    // エラー時にキャッシュがあればそれを返す
+    const cached = loadViewerRepos();
+    if (cached) {
+      console.log("Using cached data due to API error");
+      return cached;
+    }
+
     throw new Error(`Failed to fetch repositories: ${errorMessage}`);
   }
 }
@@ -189,9 +248,38 @@ function parseRepositoryIdentifier(input: string): RepositoryIdentifier | null {
 }
 
 export async function fetchRepositoriesByUrls(
-  inputs: string[]
+  inputs: string[],
+  forceRefresh = false
 ): Promise<{ repos: Repo[]; failed: string[] }> {
-  const graphqlClient = createGraphQLClient();
+  // ローカルストレージをチェック（forceRefreshがfalseの場合のみ）
+  if (!forceRefresh) {
+    const cached = loadCustomRepos();
+    if (cached) {
+      console.log(
+        `Using cached custom repositories (${cached.length} repos)`
+      );
+      return { repos: cached, failed: [] };
+    }
+  }
+
+  // レート制限をチェック
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    const errorMessage = getRateLimitErrorMessage(rateLimit.resetTime!);
+    console.warn(errorMessage);
+
+    // キャッシュがあればそれを返す
+    const cached = loadCustomRepos();
+    if (cached) {
+      console.log("Using cached custom data due to rate limit");
+      return { repos: cached, failed: [] };
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  // カスタムリポジトリ取得用のエンドポイントを使用
+  const graphqlClient = createGraphQLClient("/github/graphql/repos/custom");
   const identifiers: RepositoryIdentifier[] = [];
   const seen = new Set<string>();
   const invalidInputs: string[] = [];
@@ -220,6 +308,9 @@ export async function fetchRepositoriesByUrls(
         : inputs.filter((value) => value.trim().length > 0),
     };
   }
+
+  // リクエストを記録
+  recordRequest();
 
   const repos: Repo[] = [];
   const failed: string[] = [...invalidInputs];
@@ -252,8 +343,15 @@ export async function fetchRepositoriesByUrls(
     }
   }
 
+  const sortedRepos = sortRepositories(repos, "lastUpdated");
+
+  // ローカルストレージに保存
+  if (sortedRepos.length > 0) {
+    saveCustomRepos(sortedRepos);
+  }
+
   return {
-    repos: sortRepositories(repos, "lastUpdated"),
+    repos: sortedRepos,
     failed,
   };
 }
@@ -273,7 +371,8 @@ export interface RecentActivity {
  * Fetch recent repository activities (last 7 days) from GitHub events
  */
 export async function fetchRecentActivities(): Promise<RecentActivity[]> {
-  const graphqlClient = createGraphQLClient();
+  // Recent activities用のエンドポイントを使用
+  const graphqlClient = createGraphQLClient("/github/graphql/activities/recent");
 
   const RECENT_EVENTS_QUERY = `
     query GetRecentEvents {
@@ -342,7 +441,8 @@ export async function fetchRecentActivities(): Promise<RecentActivity[]> {
  * Fetch latest Issues contributed by the viewer within last 7 days
  */
 export async function fetchLatestIssues(): Promise<RecentItem[]> {
-  const graphqlClient = createGraphQLClient();
+  // Issues用のエンドポイントを使用
+  const graphqlClient = createGraphQLClient("/github/graphql/activities/issues");
   const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const QUERY = `
@@ -406,7 +506,8 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
  * Fetch latest Pull Requests contributed by the viewer within last 7 days
  */
 export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
-  const graphqlClient = createGraphQLClient();
+  // Pull Requests用のエンドポイントを使用
+  const graphqlClient = createGraphQLClient("/github/graphql/activities/pullrequests");
   const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const QUERY = `

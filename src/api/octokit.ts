@@ -46,8 +46,9 @@ async function callGitHubProxy<T>(
 
 /**
  * Creates a GraphQL client that uses the proxy server with OAuth authentication
+ * @param endpoint - API endpoint path (e.g., "/github/graphql/repos", "/github/graphql/activities")
  */
-export function createGraphQLClient(): GraphQLClient {
+export function createGraphQLClient(endpoint = "/github/graphql"): GraphQLClient {
   return async function graphQLRequest<T>(
     query: string,
     variables: GraphQLVariables = {}
@@ -58,7 +59,7 @@ export function createGraphQLClient(): GraphQLClient {
     };
 
     const result = await callGitHubProxy<GraphQLResponse<T>>(
-      "/github/graphql",
+      endpoint,
       {
         method: "POST",
         body: JSON.stringify(payload),

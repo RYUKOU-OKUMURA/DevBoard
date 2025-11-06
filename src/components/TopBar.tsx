@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SortOrder, SavedView, Repo, ViewPreset, ColumnKey } from '../types';
+import { formatLastUpdateTime } from '../utils/timeFormatter';
 
 interface TopBarProps {
   title: string;
@@ -29,6 +30,7 @@ interface TopBarProps {
   hiddenRepos?: Repo[];
   onUnhideRepo?: (repoId: string) => void;
   onUnhideAll?: () => void;
+  lastUpdateTime?: number | null;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -57,6 +59,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   hiddenRepos = [],
   onUnhideRepo,
   onUnhideAll,
+  lastUpdateTime,
 }) => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showPresetDialog, setShowPresetDialog] = useState(false);
@@ -179,7 +182,12 @@ export const TopBar: React.FC<TopBarProps> = ({
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">{title}</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {lastUpdateTime && (
+              <div className="text-xs text-[var(--text-muted)] px-3 py-2 bg-surface-secondary rounded-lg border border-[var(--border-subtle)]">
+                最終更新: {formatLastUpdateTime(lastUpdateTime)}
+              </div>
+            )}
             {hiddenRepos.length > 0 && (
               <button
                 onClick={() => setShowHiddenDialog(true)}

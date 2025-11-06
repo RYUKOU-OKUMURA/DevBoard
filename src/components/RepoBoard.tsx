@@ -14,6 +14,7 @@ interface RepoBoardProps {
   isLoading?: boolean;
   onRefresh?: () => void;
   onStatsUpdate?: (totalVisible: number, categoryCounts: Record<ColumnKey, number>, columnTitles: Record<ColumnKey, string>) => void;
+  lastUpdateTime?: number | null;
 }
 
 const COLUMN_TITLES: Record<ColumnKey, string> = {
@@ -36,6 +37,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   isLoading = false,
   onRefresh,
   onStatsUpdate,
+  lastUpdateTime,
 }) => {
   const { user } = useAuth(); // Get current user for account-scoped presets
   const [searchQuery, setSearchQuery] = useState('');
@@ -445,6 +447,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
+        lastUpdateTime={lastUpdateTime}
       />
 
       {/* Board Columns */}

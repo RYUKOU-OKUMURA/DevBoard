@@ -1,11 +1,35 @@
 import { useAuth } from '../contexts/AuthContext';
 
-export default function LoginPage() {
+interface LoginPageProps {
+  onBack?: () => void;
+}
+
+export default function LoginPage({ onBack }: LoginPageProps) {
   const { login } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--bg-app)] via-[var(--bg-secondary)] to-[var(--bg-app)] flex items-center justify-center p-4 transition-colors">
       <div className="max-w-md w-full bg-surface-primary rounded-lg shadow-lg p-8 border border-[var(--border-subtle)] transition-colors">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            トップページに戻る
+          </button>
+        )}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-2">
             DevBoard

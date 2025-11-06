@@ -43,11 +43,22 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const pathArray = params.path as string[];
     const apiPath = pathArray ? pathArray.join('/') : '';
 
-    // Determine if this is a GraphQL request
-    const isGraphQL = apiPath === 'graphql';
+    // Map our custom endpoints to GitHub API paths
+    // All our custom GraphQL endpoints map to GitHub's /graphql
+    let githubApiPath = apiPath;
+    let isGraphQL = false;
+
+    if (apiPath.startsWith('graphql')) {
+      // Any path starting with 'graphql' (including graphql/repos/viewer, graphql/activities/issues, etc.)
+      // should be routed to GitHub's /graphql endpoint
+      githubApiPath = 'graphql';
+      isGraphQL = true;
+      console.log(`[GitHub Proxy] Mapped custom endpoint: ${apiPath} -> graphql`);
+    }
 
     // Build the full GitHub API URL
-    const githubUrl = `https://api.github.com/${apiPath}${url.search}`;
+    const githubUrl = `https://api.github.com/${githubApiPath}${url.search}`;
+    console.log(`[GitHub Proxy] Request to: ${githubUrl}`);
 
     // Forward the request to GitHub API
     const githubResponse = await fetch(githubUrl, {

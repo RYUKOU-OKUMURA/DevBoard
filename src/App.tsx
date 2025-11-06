@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard } from './components';
 import LoginPage from './components/LoginPage';
+import LandingPage from './components/LandingPage';
 import AccountSwitcher from './components/AccountSwitcher';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -9,11 +10,12 @@ import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatest
 import type { TabType } from './components/TabNavigation';
 import { getManualRepoCount, getManualRepos, addMultipleManualRepos } from './utils/manualRepoStorage';
 import { getManualColumnConfig, ManualColumnKey } from './utils/manualColumnStorage';
+import { getViewerReposTimestamp, getCustomReposTimestamp } from './utils/repoStorage';
 
 type DataSource = 'viewer' | 'custom';
 
 function AppContent() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [repos, setRepos] = useState<Repo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +40,15 @@ function AppContent() {
   });
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
   const [manualRepoCount, setManualRepoCount] = useState(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number | null>(null);
   const totalReposDisplayed = displayedRepoCount ?? repos.length;
 
   // Manual repository state management
   const [manualRepos, setManualRepos] = useState<Repo[]>([]);
   const [selectedRepoIds, setSelectedRepoIds] = useState<Set<string>>(new Set());
   const [manualColumns, setManualColumns] = useState<string[]>([]);
+  const [preAuthView, setPreAuthView] = useState<'landing' | 'login'>('landing');
+  const previousUserRef = useRef(user);
 
   // Tab navigation state
   const [activeTab, setActiveTab] = useState<TabType>(() => {
@@ -58,6 +63,13 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (previousUserRef.current && !user) {
+      setPreAuthView('landing');
+    }
+    previousUserRef.current = user;
+  }, [user]);
 
   // Listen for custom event to open add repo modal
   useEffect(() => {
@@ -78,11 +90,11 @@ function AppContent() {
       .slice(0, 25);
   };
 
-  const loadCustomRepos = async (sources: string[]) => {
+  const loadCustomRepos = async (sources: string[], forceRefresh = false) => {
     setIsLoading(true);
     setError(null);
     try {
-      const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources);
+      const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, forceRefresh);
       if (fetched.length === 0) {
         const message = failed.length
           ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
@@ -97,6 +109,10 @@ function AppContent() {
       setCustomRepoSources(uniqueNames);
       setCustomInput(uniqueNames.join('\n'));
 
+      // Update last update time
+      const timestamp = getCustomReposTimestamp();
+      setLastUpdateTime(timestamp);
+
       if (failed.length > 0) {
         setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
       }
@@ -108,13 +124,17 @@ function AppContent() {
     }
   };
 
-  const loadRepos = async () => {
+  const loadRepos = async (forceRefresh = false) => {
     setIsLoading(true);
     setError(null);
     try {
-      const realRepos = await fetchUserRepos();
+      const realRepos = await fetchUserRepos(false, forceRefresh);
       setRepos(realRepos);
       setDataSource('viewer');
+
+      // Update last update time
+      const timestamp = getViewerReposTimestamp();
+      setLastUpdateTime(timestamp);
     } catch (err) {
       console.error('Failed to load repositories:', err);
       setError(err instanceof Error ? err.message : 'Failed to load repositories');
@@ -125,11 +145,11 @@ function AppContent() {
 
   const handleRefresh = () => {
     if (dataSource === 'viewer') {
-      // Reload from API
-      loadRepos();
+      // Reload from API with force refresh
+      loadRepos(true);
     } else if (dataSource === 'custom') {
       if (customRepoSources.length > 0) {
-        loadCustomRepos(customRepoSources);
+        loadCustomRepos(customRepoSources, true);
       }
     }
     // Trigger activity refresh
@@ -147,7 +167,8 @@ function AppContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources);
+      // Force refresh for manual additions
+      const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, true);
       if (fetched.length === 0) {
         const message = failed.length
           ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
@@ -262,7 +283,10 @@ function AppContent() {
 
   // Show login page if not authenticated
   if (!user) {
-    return <LoginPage />;
+    if (preAuthView === 'landing') {
+      return <LandingPage onContinue={() => setPreAuthView('login')} />;
+    }
+    return <LoginPage onBack={() => setPreAuthView('landing')} />;
   }
 
   return (
@@ -460,6 +484,7 @@ function AppContent() {
             isLoading={isLoading}
             onRefresh={handleRefresh}
             onStatsUpdate={handleStatsUpdate}
+            lastUpdateTime={lastUpdateTime}
           />
         )}
       </div>
