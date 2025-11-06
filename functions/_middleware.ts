@@ -1,7 +1,14 @@
 // Global middleware for CORS and security headers
 
 import type { Env } from './lib/types';
-import { validateOrigin, applyCORS, applyNoCache } from './utils/security';
+import {
+  validateOrigin,
+  applyCORS,
+  applyNoCache,
+  getClientIP,
+  checkRateLimit,
+  createRateLimitResponse,
+} from './utils/security';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env, next } = context;
@@ -11,7 +18,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   // 1. オリジン検証
   const validOrigin = validateOrigin(origin, env.ALLOWED_ORIGINS);
 
-  // 2. preflight処理
+  // 2. preflight処理（レート制限の対象外）
   if (request.method === 'OPTIONS') {
     if (validOrigin) {
       return new Response(null, {
@@ -27,6 +34,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       });
     } else {
       return new Response(null, { status: 403 });
+    }
+  }
+
+  // 2.5. レート制限チェック（APIエンドポイントのみ）
+  let rateLimitResult: { allowed: boolean; remaining: number; resetAt: number } | null = null;
+  if (pathname.startsWith('/api/')) {
+    const clientIP = getClientIP(request);
+    rateLimitResult = await checkRateLimit(env.SESSIONS, clientIP);
+    
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult.resetAt, validOrigin);
     }
   }
 
@@ -55,6 +73,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('X-XSS-Protection', '1; mode=block');
+
+  // レート制限情報ヘッダー（APIエンドポイントの場合、既にチェック済みの結果を使用）
+  if (pathname.startsWith('/api/') && rateLimitResult) {
+    headers.set('X-RateLimit-Limit', '10');
+    headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining));
+    headers.set('X-RateLimit-Reset', String(rateLimitResult.resetAt));
+  }
 
   // キャッシュ制御（認証エンドポイント）
   if (requiresAuth || pathname.startsWith('/api/auth/')) {
