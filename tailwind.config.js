@@ -53,4 +53,7 @@ export default {
     },
   },
   plugins: [],
+  corePlugins: {
+    fontVariantNumeric: true,
+  },
 }
