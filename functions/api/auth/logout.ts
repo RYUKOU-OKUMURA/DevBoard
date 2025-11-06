@@ -7,6 +7,7 @@ import {
   deleteSessionCookie,
   getMultiAccountSession,
 } from '../../lib/session';
+import { applyNoCache } from '../../utils/security';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
@@ -39,14 +40,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     }
 
     // Return success response with cookie deletion
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'Set-Cookie': deleteSessionCookie(),
+    });
+    applyNoCache(headers);
+
     return new Response(
       JSON.stringify({ success: true, message: 'Logged out successfully' }),
       {
         status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Set-Cookie': deleteSessionCookie(),
-        },
+        headers,
       }
     );
   } catch (error) {

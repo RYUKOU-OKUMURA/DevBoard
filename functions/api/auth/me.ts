@@ -2,6 +2,7 @@
 
 import type { Env } from '../../lib/types';
 import { getSessionIdFromCookie, getActiveAccountSession, getMultiAccountSession } from '../../lib/session';
+import { applyNoCache } from '../../utils/security';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
@@ -10,12 +11,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // Get master session ID from cookie
     const masterSessionId = await getSessionIdFromCookie(request, env);
 
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    applyNoCache(headers);
+
     if (!masterSessionId) {
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
         {
           status: 401,
-          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+          headers,
         }
       );
     }
@@ -28,7 +32,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         JSON.stringify({ error: 'Session expired or invalid' }),
         {
           status: 401,
-          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+          headers,
         }
       );
     }
@@ -41,7 +45,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         JSON.stringify({ error: 'No active account' }),
         {
           status: 401,
-          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+          headers,
         }
       );
     }
@@ -54,7 +58,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        headers,
       }
     );
   } catch (error) {

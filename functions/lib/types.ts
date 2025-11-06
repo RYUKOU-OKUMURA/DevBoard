@@ -9,6 +9,8 @@ export interface Env {
   GITHUB_CLIENT_SECRET: string;
   SESSION_SECRET: string;
   ENCRYPTION_KEY: string;
+  ALLOWED_ORIGINS?: string;
+  GITHUB_REDIRECT_URI?: string;
 }
 
 export interface SessionData {
@@ -44,4 +46,12 @@ export interface GitHubTokenResponse {
   access_token: string;
   token_type: string;
   scope: string;
+}
+
+// OAuth session data stored in KV during OAuth flow
+export interface OAuthSessionData {
+  state: string;
+  codeVerifier: string;
+  sessionId: string;
+  createdAt: number;
 }

@@ -2,6 +2,7 @@
 
 import type { Env } from '../../lib/types';
 import { getSessionIdFromCookie, switchActiveAccount } from '../../lib/session';
+import { applyNoCache } from '../../utils/security';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
@@ -16,11 +17,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const masterSessionId = await getSessionIdFromCookie(request, env);
 
     if (!masterSessionId) {
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+      applyNoCache(headers);
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
         {
           status: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers,
         }
       );
     }
@@ -29,11 +32,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const body = await request.json() as { userId: string };
 
     if (!body.userId) {
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+      applyNoCache(headers);
       return new Response(
         JSON.stringify({ error: 'userId is required' }),
         {
           status: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers,
         }
       );
     }
@@ -45,12 +50,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       env
     );
 
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    applyNoCache(headers);
+
     if (!multiSession) {
       return new Response(
         JSON.stringify({ error: 'Account not found' }),
         {
           status: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers,
         }
       );
     }
@@ -63,7 +71,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
       }
     );
   } catch (error) {

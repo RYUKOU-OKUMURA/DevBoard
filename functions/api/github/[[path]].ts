@@ -2,6 +2,7 @@
 
 import type { Env } from '../../lib/types';
 import { getSessionIdFromCookie, getActiveAccountSession } from '../../lib/session';
+import { applyNoCache } from '../../utils/security';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request, params } = context;
@@ -11,11 +12,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const masterSessionId = await getSessionIdFromCookie(request, env);
 
     if (!masterSessionId) {
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+      applyNoCache(headers);
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
         {
           status: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers,
         }
       );
     }
@@ -24,11 +27,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const session = await getActiveAccountSession(masterSessionId, env);
 
     if (!session) {
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+      applyNoCache(headers);
       return new Response(
         JSON.stringify({ error: 'No active account or session expired' }),
         {
           status: 401,
-          headers: { 'Content-Type': 'application/json' },
+          headers,
         }
       );
     }
@@ -64,22 +69,27 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const responseBody = await githubResponse.text();
 
     // Forward the response back to the client
+    const headers = new Headers({
+      'Content-Type': githubResponse.headers.get('Content-Type') || 'application/json',
+      'X-RateLimit-Limit': githubResponse.headers.get('X-RateLimit-Limit') || '',
+      'X-RateLimit-Remaining': githubResponse.headers.get('X-RateLimit-Remaining') || '',
+      'X-RateLimit-Reset': githubResponse.headers.get('X-RateLimit-Reset') || '',
+    });
+    applyNoCache(headers);
+
     return new Response(responseBody, {
       status: githubResponse.status,
-      headers: {
-        'Content-Type': githubResponse.headers.get('Content-Type') || 'application/json',
-        'X-RateLimit-Limit': githubResponse.headers.get('X-RateLimit-Limit') || '',
-        'X-RateLimit-Remaining': githubResponse.headers.get('X-RateLimit-Remaining') || '',
-        'X-RateLimit-Reset': githubResponse.headers.get('X-RateLimit-Reset') || '',
-      },
+      headers,
     });
   } catch (error) {
     console.error('GitHub API proxy error:', error);
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    applyNoCache(headers);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
       }
     );
   }
