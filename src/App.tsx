@@ -170,31 +170,31 @@ function AppContent() {
               <span className="uppercase tracking-wide text-[var(--text-muted)] text-[11px] sm:text-xs">
                 総数
               </span>
-              <span className="text-base font-semibold text-[var(--text-primary)]">
+              <span className="text-base font-semibold text-[var(--text-primary)] tabular-nums">
                 {totalReposDisplayed}
               </span>
             </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">アクティブ</span>
-                <span className="text-sm font-semibold text-[var(--accent-green-emphasis)]">
+                <span className="text-sm font-semibold text-[var(--accent-green-emphasis)] tabular-nums">
                   {displayedCategoryCounts.Active}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">停滞</span>
-                <span className="text-sm font-semibold text-[var(--accent-yellow-emphasis)]">
+                <span className="text-sm font-semibold text-[var(--accent-yellow-emphasis)] tabular-nums">
                   {displayedCategoryCounts.Stale}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">休眠</span>
-                <span className="text-sm font-semibold text-[var(--accent-orange-emphasis)]">
+                <span className="text-sm font-semibold text-[var(--accent-orange-emphasis)] tabular-nums">
                   {displayedCategoryCounts.Dormant}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">アーカイブ</span>
-                <span className="text-sm font-semibold text-[var(--text-secondary)]">
+                <span className="text-sm font-semibold text-[var(--text-secondary)] tabular-nums">
                   {displayedCategoryCounts.Archived}
                 </span>
               </div>

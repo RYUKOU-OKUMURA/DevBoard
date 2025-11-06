@@ -187,7 +187,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 title="非表示のリポジトリを管理"
               >
                 非表示を管理
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text-inverse bg-[var(--accent-red)] rounded-full shadow-sm">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text-inverse bg-[var(--accent-red)] rounded-full shadow-sm tabular-nums">
                   {hiddenRepos.length}
                 </span>
               </button>
@@ -277,7 +277,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               value={currentViewId}
               onChange={handleViewChange}
               disabled={!onViewSelect}
-              className="flex-1 px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-all disabled:opacity-70"
+              className="flex-1 px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-all disabled:opacity-70 tabular-nums"
             >
               <option value="">保存済みビュー ({savedViews.length}/5)</option>
               {savedViews.map((view) => (
@@ -311,7 +311,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               value={currentPresetId}
               onChange={handlePresetChange}
               disabled={!onPresetSelect}
-              className="flex-1 px-4 py-2 border border-[var(--accent-purple-border)] rounded-xl focus:ring-2 focus:ring-[var(--accent-purple)] focus:border-transparent bg-[var(--accent-purple-muted)] text-[var(--text-primary)] transition-all disabled:opacity-70"
+              className="flex-1 px-4 py-2 border border-[var(--accent-purple-border)] rounded-xl focus:ring-2 focus:ring-[var(--accent-purple)] focus:border-transparent bg-[var(--accent-purple-muted)] text-[var(--text-primary)] transition-all disabled:opacity-70 tabular-nums"
             >
               <option value="">プリセット ({presets.length}/5)</option>
               {presets.map((preset) => (
