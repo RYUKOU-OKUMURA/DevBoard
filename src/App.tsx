@@ -7,7 +7,8 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Repo, ColumnKey } from './types';
 import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
 import type { TabType } from './components/TabNavigation';
-import { getManualRepoCount } from './utils/manualRepoStorage';
+import { getManualRepoCount, getManualRepos, addMultipleManualRepos } from './utils/manualRepoStorage';
+import { getManualColumnConfig, ManualColumnKey } from './utils/manualColumnStorage';
 
 type DataSource = 'viewer' | 'custom';
 
@@ -32,6 +33,11 @@ function AppContent() {
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
   const [manualRepoCount, setManualRepoCount] = useState(0);
   const totalReposDisplayed = displayedRepoCount ?? repos.length;
+
+  // Manual repository state management
+  const [manualRepos, setManualRepos] = useState<Repo[]>([]);
+  const [selectedRepoIds, setSelectedRepoIds] = useState<Set<string>>(new Set());
+  const [manualColumns, setManualColumns] = useState<string[]>([]);
 
   // Tab navigation state
   const [activeTab, setActiveTab] = useState<TabType>(() => {
@@ -122,6 +128,66 @@ function AppContent() {
     await loadCustomRepos(sources);
   };
 
+  // Handle manual repository addition from AddRepoModal
+  const handleManualRepoSubmit = async () => {
+    const sources = parseCustomInput(customInput);
+    if (sources.length === 0) {
+      setError('リポジトリ URL または `owner/repo` を入力してください');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources);
+      if (fetched.length === 0) {
+        const message = failed.length
+          ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
+          : '有効なリポジトリを入力してください。';
+        setError(message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Add source information and save to manualRepoStorage
+      const reposWithSource = fetched.map((repo) => ({
+        ...repo,
+        source: {
+          type: 'manual' as const,
+          addedAt: new Date().toISOString(),
+        },
+      }));
+
+      // Save to manualRepoStorage
+      const success = addMultipleManualRepos(reposWithSource);
+      if (!success) {
+        setError('リポジトリの保存に失敗しました');
+        setIsLoading(false);
+        return;
+      }
+
+      // Update state
+      const updatedRepos = getManualRepos();
+      setManualRepos(updatedRepos);
+      setManualRepoCount(updatedRepos.length);
+
+      // Clear input
+      setCustomInput('');
+
+      // Close modal
+      setIsAddRepoModalOpen(false);
+
+      if (failed.length > 0) {
+        setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
+      }
+    } catch (err) {
+      console.error('Failed to add manual repositories:', err);
+      setError(err instanceof Error ? err.message : 'リポジトリの追加に失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load latest Issues/PRs when user is authenticated
   useEffect(() => {
     let cancelled = false;
@@ -156,9 +222,15 @@ function AppContent() {
     }
   }, [user]);
 
-  // Update manual repo count
+  // Load manual repos from localStorage on mount
   useEffect(() => {
-    setManualRepoCount(getManualRepoCount());
+    const loadedRepos = getManualRepos();
+    setManualRepos(loadedRepos);
+    setManualRepoCount(loadedRepos.length);
+    
+    // Load manual column configuration
+    const columnConfig = getManualColumnConfig();
+    setManualColumns(columnConfig.columns);
   }, []);
 
   // Handle stats update from RepoBoard
@@ -392,7 +464,21 @@ function AppContent() {
       {/* Manual Repository Board Tab Content */}
       {activeTab === 'manual' && (
         <ManualRepoBoard
-          onStatsUpdate={(count) => setManualRepoCount(count)}
+          manualRepos={manualRepos}
+          selectedRepoIds={selectedRepoIds}
+          manualColumns={manualColumns}
+          onStatsUpdate={(count) => {
+            setManualRepoCount(count);
+            // Reload manual repos when count changes
+            const updatedRepos = getManualRepos();
+            setManualRepos(updatedRepos);
+          }}
+          onReposChange={(repos) => {
+            setManualRepos(repos);
+            setManualRepoCount(repos.length);
+          }}
+          onSelectedReposChange={setSelectedRepoIds}
+          onColumnsChange={setManualColumns}
         />
       )}
 
@@ -402,7 +488,7 @@ function AppContent() {
         onClose={() => setIsAddRepoModalOpen(false)}
         value={customInput}
         onChange={setCustomInput}
-        onSubmit={handleCustomSubmit}
+        onSubmit={activeTab === 'manual' ? handleManualRepoSubmit : handleCustomSubmit}
         isLoading={isLoading}
       />
     </div>

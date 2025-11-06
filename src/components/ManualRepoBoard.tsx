@@ -4,7 +4,7 @@ import {
   getManualRepos,
   saveManualRepos,
   removeManualRepos,
-  getManualRepoCount,
+  clearManualRepos,
 } from '../utils/manualRepoStorage';
 import {
   getManualColumnConfig,
@@ -13,8 +13,6 @@ import {
   saveManualColumnAssignments,
   ManualColumnKey,
   ManualColumnConfig,
-  assignRepoToColumn,
-  getReposInColumn,
 } from '../utils/manualColumnStorage';
 import { RepoColumn } from './RepoColumn';
 import { ColumnSettingsModal } from './ColumnSettingsModal';
@@ -22,17 +20,61 @@ import { RepoCard } from './RepoCard';
 
 interface ManualRepoBoardProps {
   onStatsUpdate?: (manualRepoCount: number) => void;
+  // Props from App.tsx (optional - for controlled mode)
+  manualRepos?: Repo[];
+  selectedRepoIds?: Set<string>;
+  manualColumns?: string[];
+  onReposChange?: (repos: Repo[]) => void;
+  onSelectedReposChange?: (ids: Set<string>) => void;
+  onColumnsChange?: (columns: string[]) => void;
 }
 
-export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({ onStatsUpdate }) => {
-  const [manualRepos, setManualRepos] = useState<Repo[]>([]);
+export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
+  onStatsUpdate,
+  manualRepos: externalManualRepos,
+  selectedRepoIds: externalSelectedRepoIds,
+  manualColumns: externalManualColumns,
+  onReposChange,
+  onSelectedReposChange,
+  onColumnsChange,
+}) => {
+  // Use external props if provided, otherwise use internal state
+  const [internalManualRepos, setInternalManualRepos] = useState<Repo[]>([]);
+  const [internalSelectedRepos, setInternalSelectedRepos] = useState<Set<string>>(new Set());
+  
+  const manualRepos = externalManualRepos ?? internalManualRepos;
+  const selectedRepos = externalSelectedRepoIds ?? internalSelectedRepos;
+  
+  const setManualRepos = (repos: Repo[]) => {
+    if (onReposChange) {
+      onReposChange(repos);
+    } else {
+      setInternalManualRepos(repos);
+    }
+  };
+  
+  const setSelectedRepos = (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    if (onSelectedReposChange) {
+      if (typeof ids === 'function') {
+        onSelectedReposChange(ids(selectedRepos));
+      } else {
+        onSelectedReposChange(ids);
+      }
+    } else {
+      if (typeof ids === 'function') {
+        setInternalSelectedRepos(ids);
+      } else {
+        setInternalSelectedRepos(ids);
+      }
+    }
+  };
+
   const [columnConfig, setColumnConfig] = useState<ManualColumnConfig>(() =>
     getManualColumnConfig()
   );
   const [columnAssignments, setColumnAssignments] = useState(() =>
     getManualColumnAssignments()
   );
-  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [orderMap, setOrderMap] = useState<Record<ManualColumnKey, string[]>>({});
 
@@ -49,23 +91,60 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({ onStatsUpdate 
     );
   }, [columnConfig]);
 
-  // Load manual repos on mount
+  // Load manual repos on mount (only if not controlled by props)
   useEffect(() => {
-    const repos = getManualRepos();
-    setManualRepos(repos);
-    if (onStatsUpdate) {
-      onStatsUpdate(repos.length);
+    if (!externalManualRepos) {
+      const repos = getManualRepos();
+      setInternalManualRepos(repos);
+      if (onStatsUpdate) {
+        onStatsUpdate(repos.length);
+      }
+    } else {
+      // If external repos are provided, just notify parent of count
+      if (onStatsUpdate) {
+        onStatsUpdate(externalManualRepos.length);
+      }
     }
-  }, [onStatsUpdate]);
+  }, [externalManualRepos, onStatsUpdate]);
 
-  // Persist changes
+  // Sync external columns to columnConfig when changed externally
   useEffect(() => {
-    saveManualRepos(manualRepos);
-  }, [manualRepos]);
+    if (externalManualColumns && externalManualColumns.length > 0) {
+      const currentConfig = getManualColumnConfig();
+      const newColumns = externalManualColumns.filter(col => !currentConfig.columns.includes(col));
+      if (newColumns.length > 0 || externalManualColumns.length !== currentConfig.columns.length) {
+        const updatedConfig = {
+          ...currentConfig,
+          columns: externalManualColumns,
+        };
+        // Add new columns to config if needed
+        newColumns.forEach(col => {
+          updatedConfig.columnTitles[col] = col;
+          updatedConfig.columnOrder[col] = [];
+          updatedConfig.columnVisibility[col] = true;
+        });
+        setColumnConfig(updatedConfig);
+        if (onColumnsChange) {
+          onColumnsChange(externalManualColumns);
+        }
+      }
+    }
+  }, [externalManualColumns, onColumnsChange]);
+
+  // Persist changes (only if not controlled by props)
+  useEffect(() => {
+    if (!externalManualRepos) {
+      saveManualRepos(manualRepos);
+    }
+  }, [manualRepos, externalManualRepos]);
 
   useEffect(() => {
     saveManualColumnConfig(columnConfig);
-  }, [columnConfig]);
+    // Notify parent of column changes
+    if (onColumnsChange) {
+      onColumnsChange(columnConfig.columns);
+    }
+  }, [columnConfig, onColumnsChange]);
 
   useEffect(() => {
     saveManualColumnAssignments(columnAssignments);
@@ -122,7 +201,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({ onStatsUpdate 
 
   // Handlers
   const handleToggleRepoSelection = (repoId: string) => {
-    setSelectedRepos((prev) => {
+    setSelectedRepos((prev: Set<string>) => {
       const next = new Set(prev);
       if (next.has(repoId)) {
         next.delete(repoId);
@@ -133,28 +212,98 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({ onStatsUpdate 
     });
   };
 
+  const handleSelectAll = () => {
+    const allIds = new Set(manualRepos.map((repo) => repo.id));
+    setSelectedRepos(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedRepos(new Set());
+  };
+
   const handleDeleteSelectedRepos = () => {
-    if (selectedRepos.size === 0 || !window.confirm('選択したリポジトリを削除しますか？')) {
+    if (selectedRepos.size === 0) {
+      return;
+    }
+
+    // 二重確認
+    const firstConfirm = window.confirm(
+      `選択した ${selectedRepos.size} 件のリポジトリを削除しますか？`
+    );
+    if (!firstConfirm) {
+      return;
+    }
+
+    const secondConfirm = window.confirm(
+      'この操作は取り消せません。本当に削除しますか？'
+    );
+    if (!secondConfirm) {
       return;
     }
 
     removeManualRepos(Array.from(selectedRepos));
-    setManualRepos(getManualRepos());
+    const updatedRepos = getManualRepos();
+    setManualRepos(updatedRepos);
     setSelectedRepos(new Set());
+    
+    // Notify parent
+    if (onStatsUpdate) {
+      onStatsUpdate(updatedRepos.length);
+    }
   };
 
   const handleDeleteRepo = (repoId: string) => {
-    if (!window.confirm('このリポジトリを削除しますか？')) {
+    // 二重確認
+    const firstConfirm = window.confirm('このリポジトリを削除しますか？');
+    if (!firstConfirm) {
+      return;
+    }
+
+    const secondConfirm = window.confirm('この操作は取り消せません。本当に削除しますか？');
+    if (!secondConfirm) {
       return;
     }
 
     removeManualRepos([repoId]);
-    setManualRepos(getManualRepos());
-    setSelectedRepos((prev) => {
+    const updatedRepos = getManualRepos();
+    setManualRepos(updatedRepos);
+    setSelectedRepos((prev: Set<string>) => {
       const next = new Set(prev);
       next.delete(repoId);
       return next;
     });
+    
+    // Notify parent
+    if (onStatsUpdate) {
+      onStatsUpdate(updatedRepos.length);
+    }
+  };
+
+  const handleClearAll = () => {
+    // 二重確認
+    const firstConfirm = window.confirm(
+      `すべてのリポジトリ（${manualRepos.length} 件）を削除しますか？`
+    );
+    if (!firstConfirm) {
+      return;
+    }
+
+    const secondConfirm = window.confirm(
+      'この操作は取り消せません。本当にすべてのリポジトリを削除しますか？'
+    );
+    if (!secondConfirm) {
+      return;
+    }
+
+    clearManualRepos();
+    const updatedRepos: Repo[] = [];
+    setManualRepos(updatedRepos);
+    setSelectedRepos(new Set());
+    
+    // Notify parent
+    if (onStatsUpdate) {
+      onStatsUpdate(0);
+    }
   };
 
   const handleReorderWithinColumn = (col: ManualColumnKey, fromId: string, toId?: string) => {
@@ -299,23 +448,6 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({ onStatsUpdate 
         </div>
 
         <div className="flex items-center gap-2">
-          {selectedRepos.size > 0 && (
-            <button
-              onClick={handleDeleteSelectedRepos}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-sm"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              {selectedRepos.size}件を削除
-            </button>
-          )}
-
           <button
             onClick={() => setIsSettingsModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] hover:bg-[var(--accent-blue-hover)] transition-colors font-medium text-sm border border-[var(--accent-blue-border)]"
@@ -336,11 +468,28 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({ onStatsUpdate 
             </svg>
             列の管理
           </button>
+          {manualRepos.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-sm"
+              title="すべてのリポジトリを削除"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              すべてクリア
+            </button>
+          )}
         </div>
       </div>
 
       {/* Board Columns */}
-      <div className="flex-1 flex gap-4 p-4 overflow-x-auto">
+      <div className="flex-1 flex gap-4 p-4 overflow-x-auto relative">
         {columnConfig.columns.map((columnKey) =>
           columnConfig.columnVisibility[columnKey] ? (
             <RepoColumn
@@ -366,6 +515,52 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({ onStatsUpdate 
               )}
             />
           ) : null
+        )}
+
+        {/* Floating Action Bar */}
+        {selectedRepos.size > 0 && (
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-surface-primary border-2 border-[var(--accent-green-border)] rounded-xl shadow-2xl px-6 py-4 flex items-center gap-4">
+            <div className="flex items-center gap-2 text-[var(--accent-green-emphasis)] font-semibold">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>{selectedRepos.size}件選択中</span>
+            </div>
+            <div className="h-6 w-px bg-[var(--border-subtle)]" />
+            <button
+              onClick={handleSelectAll}
+              className="px-4 py-2 rounded-lg bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] hover:bg-[var(--accent-blue-hover)] transition-colors font-medium text-sm border border-[var(--accent-blue-border)]"
+            >
+              すべて選択
+            </button>
+            <button
+              onClick={handleDeselectAll}
+              className="px-4 py-2 rounded-lg bg-surface-tertiary text-[var(--text-primary)] hover:bg-surface-hover transition-colors font-medium text-sm border border-[var(--border-subtle)]"
+            >
+              選択解除
+            </button>
+            <button
+              onClick={handleDeleteSelectedRepos}
+              className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-sm"
+            >
+              <span className="inline-flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                削除
+              </span>
+            </button>
+          </div>
         )}
       </div>
 
