@@ -130,15 +130,6 @@ function AppContent() {
     setActivityRefreshToken((prev) => prev + 1);
   };
 
-  const handleCustomSubmit = async () => {
-    const sources = parseCustomInput(customInput);
-    if (sources.length === 0) {
-      setError('リポジトリ URL または `owner/repo` を入力してください');
-      return;
-    }
-    await loadCustomRepos(sources);
-  };
-
   // Handle manual repository addition from AddRepoModal
   const handleManualRepoSubmit = async () => {
     const sources = parseCustomInput(customInput);
@@ -505,7 +496,7 @@ function AppContent() {
         onClose={() => setIsAddRepoModalOpen(false)}
         value={customInput}
         onChange={setCustomInput}
-        onSubmit={activeTab === 'manual' ? handleManualRepoSubmit : handleCustomSubmit}
+        onSubmit={handleManualRepoSubmit}
         isLoading={isLoading}
       />
     </div>
