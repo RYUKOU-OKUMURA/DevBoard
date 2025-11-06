@@ -40,7 +40,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
       aria-label={`リポジトリを開く ${repo.nameWithOwner}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      className="bg-surface-primary border border-[var(--border-subtle)] rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-[var(--accent-green)] motion-safe:transition motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]"
+      className="bg-surface-primary border border-[var(--border-subtle)] rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-[var(--accent-green)] motion-safe:transition-[transform,box-shadow,border-color] motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]"
     >
       {/* Repository Title and Actions */}
       <div className="flex items-start justify-between mb-2">
@@ -108,7 +108,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({ repo, onHide }) => {
             >
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            <span className="inline-flex justify-end min-w-[3ch]">{repo.stargazers_count}</span>
+            <span className="inline-flex justify-end min-w-[3ch] tabular-nums">{repo.stargazers_count}</span>
           </div>
         )}
 

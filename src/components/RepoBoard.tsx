@@ -150,6 +150,29 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     { deserialize: parseHiddenRepoIds }
   );
 
+  // Migrate/merge hidden repo IDs from global key to account-scoped key when user ID becomes available
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const accountKey = getHiddenReposStorageKey(user?.userId);
+    const globalKey = HIDDEN_REPOS_STORAGE_KEY_PREFIX; // legacy key without account
+    if (accountKey === globalKey) return; // no user yet
+
+    try {
+      const globalRaw = window.localStorage.getItem(globalKey);
+      const accountRaw = window.localStorage.getItem(accountKey);
+      const globalIds = globalRaw ? parseHiddenRepoIds(globalRaw) : [];
+      const accountIds = accountRaw ? parseHiddenRepoIds(accountRaw) : [];
+      const merged = Array.from(new Set([...accountIds, ...globalIds]));
+      if (merged.length !== accountIds.length) {
+        window.localStorage.setItem(accountKey, JSON.stringify(merged));
+        window.localStorage.removeItem(globalKey);
+        setHiddenRepoIds(merged);
+      }
+    } catch {
+      // no-op
+    }
+  }, [user?.userId]);
+
   // Load saved views and presets on mount and when user changes
   useEffect(() => {
     setSavedViews(getSavedViews());

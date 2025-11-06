@@ -18,7 +18,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       <button
         onClick={() => onTabChange('board')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-colors
           ${
             activeTab === 'board'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
