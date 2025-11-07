@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f5f8ff"/>
+      <stop offset="100%" stop-color="#e9f0fb"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" rx="32"/>
+  <g font-family="'Noto Sans JP','Hiragino Sans','Yu Gothic','Segoe UI',sans-serif">
+    <rect x="140" y="120" width="210" height="56" rx="28" fill="#dfeafe"/>
+    <text x="245" y="156" font-size="26" text-anchor="middle" fill="#1b2c48">DevBoard へようこそ</text>
+
+    <text x="140" y="260" font-size="72" font-weight="700" fill="#0f172a">
+      リポジトリ管理をかんたんに
+    </text>
+
+    <text x="140" y="330" font-size="30" fill="#344054">
+      DevBoard は、GitHub リポジトリやタスクをまとめて可視化し、
+    </text>
+    <text x="140" y="374" font-size="30" fill="#344054">
+      開発や進捗管理をスムーズにするカンバン型の開発ダッシュボードです。
+    </text>
+    <text x="140" y="418" font-size="30" fill="#344054">
+      アプリの使い方や主要な機能を、洗練された UI で直感的に操作できます。
+    </text>
+  </g>
+</svg>
