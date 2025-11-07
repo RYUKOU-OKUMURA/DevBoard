@@ -75,10 +75,12 @@ export function addMultipleManualRepos(newRepos: Repo[]): boolean {
       .filter((repo) => !existingIds.has(repo.id))
       .map((repo) => ({
         ...repo,
-        source: {
-          type: 'manual' as const,
-          addedAt: new Date().toISOString(),
-        },
+        source: repo.source?.type === 'manual'
+          ? repo.source
+          : {
+              type: 'manual' as const,
+              addedAt: new Date().toISOString(),
+            },
       }));
 
     const updatedRepos = [...repos, ...reposToAdd];
