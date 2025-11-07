@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard } from './components';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
@@ -18,7 +18,8 @@ function AppContent() {
   const { user, loading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [repos, setRepos] = useState<Repo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isRepoLoading, setIsRepoLoading] = useState(false);
+  const [isSavingManualRepos, setIsSavingManualRepos] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<DataSource>('viewer');
   const [customInput, setCustomInput] = useState('');
@@ -90,8 +91,18 @@ function AppContent() {
       .slice(0, 25);
   };
 
-  const loadCustomRepos = async (sources: string[], forceRefresh = false) => {
-    setIsLoading(true);
+  const updateManualRepoStateFromList = useCallback((repos: Repo[]) => {
+    setManualRepos(repos);
+    setManualRepoCount(repos.length);
+  }, []);
+
+  const refreshManualRepoState = useCallback(() => {
+    const updatedRepos = getManualRepos();
+    updateManualRepoStateFromList(updatedRepos);
+  }, [updateManualRepoStateFromList]);
+
+  const loadCustomRepos = useCallback(async (sources: string[], forceRefresh = false) => {
+    setIsRepoLoading(true);
     setError(null);
     try {
       const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, forceRefresh);
@@ -120,12 +131,12 @@ function AppContent() {
       console.error('Failed to load custom repositories:', err);
       setError(err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました');
     } finally {
-      setIsLoading(false);
+      setIsRepoLoading(false);
     }
-  };
+  }, []);
 
-  const loadRepos = async (forceRefresh = false) => {
-    setIsLoading(true);
+  const loadRepos = useCallback(async (forceRefresh = false) => {
+    setIsRepoLoading(true);
     setError(null);
     try {
       const realRepos = await fetchUserRepos(false, forceRefresh);
@@ -139,9 +150,9 @@ function AppContent() {
       console.error('Failed to load repositories:', err);
       setError(err instanceof Error ? err.message : 'Failed to load repositories');
     } finally {
-      setIsLoading(false);
+      setIsRepoLoading(false);
     }
-  };
+  }, []);
 
   const handleRefresh = () => {
     if (dataSource === 'viewer') {
@@ -164,7 +175,7 @@ function AppContent() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSavingManualRepos(true);
     setError(null);
     try {
       // Force refresh for manual additions
@@ -174,7 +185,6 @@ function AppContent() {
           ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
           : '有効なリポジトリを入力してください。';
         setError(message);
-        setIsLoading(false);
         return;
       }
 
@@ -191,14 +201,11 @@ function AppContent() {
       const success = addMultipleManualRepos(reposWithSource);
       if (!success) {
         setError('リポジトリの保存に失敗しました');
-        setIsLoading(false);
         return;
       }
 
       // Update state
-      const updatedRepos = getManualRepos();
-      setManualRepos(updatedRepos);
-      setManualRepoCount(updatedRepos.length);
+      refreshManualRepoState();
 
       // Clear input
       setCustomInput('');
@@ -213,7 +220,7 @@ function AppContent() {
       console.error('Failed to add manual repositories:', err);
       setError(err instanceof Error ? err.message : 'リポジトリの追加に失敗しました');
     } finally {
-      setIsLoading(false);
+      setIsSavingManualRepos(false);
     }
   };
 
@@ -245,22 +252,22 @@ function AppContent() {
   }, [user, dataSource, activityRefreshToken]);
 
   // Auto-load repos when user logs in
+  const hasRepos = repos.length > 0;
+
   useEffect(() => {
-    if (user && repos.length === 0 && !isLoading) {
+    if (user && !hasRepos && !isRepoLoading) {
       loadRepos();
     }
-  }, [user]);
+  }, [user, hasRepos, isRepoLoading, loadRepos]);
 
   // Load manual repos from localStorage on mount
   useEffect(() => {
-    const loadedRepos = getManualRepos();
-    setManualRepos(loadedRepos);
-    setManualRepoCount(loadedRepos.length);
-    
+    refreshManualRepoState();
+
     // Load manual column configuration
     const columnConfig = getManualColumnConfig();
     setManualColumns(columnConfig.columns);
-  }, []);
+  }, [refreshManualRepoState]);
 
   // Handle stats update from RepoBoard
   const handleStatsUpdate = (totalVisible: number, categoryCounts: Record<ColumnKey, number>, columnTitles: Record<ColumnKey, string>) => {
@@ -481,10 +488,10 @@ function AppContent() {
         {activeTab === 'board' && (
           <RepoBoard
             repos={repos}
-            isLoading={isLoading}
             onRefresh={handleRefresh}
             onStatsUpdate={handleStatsUpdate}
             lastUpdateTime={lastUpdateTime}
+            isLoading={isRepoLoading}
           />
         )}
       </div>
@@ -509,13 +516,9 @@ function AppContent() {
             onStatsUpdate={(count) => {
               setManualRepoCount(count);
               // Reload manual repos when count changes
-              const updatedRepos = getManualRepos();
-              setManualRepos(updatedRepos);
+              refreshManualRepoState();
             }}
-            onReposChange={(repos) => {
-              setManualRepos(repos);
-              setManualRepoCount(repos.length);
-            }}
+            onReposChange={updateManualRepoStateFromList}
             onSelectedReposChange={setSelectedRepoIds}
             onColumnsChange={setManualColumns}
           />
@@ -529,7 +532,7 @@ function AppContent() {
         value={customInput}
         onChange={setCustomInput}
         onSubmit={handleManualRepoSubmit}
-        isLoading={isLoading}
+        isLoading={isSavingManualRepos}
       />
     </div>
   );
