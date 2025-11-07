@@ -30,16 +30,17 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   };
 
   return (
-    <nav className="flex gap-2 px-8 bg-surface-primary border-b border-[var(--border-subtle)]">
+    <nav className="flex gap-2 px-8 bg-surface-primary border-b border-[var(--border-subtle)] transition-colors">
       <button
         onClick={() => handleTabChange('board')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-200
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-250 motion-safe:ease-smooth
           ${
             activeTab === 'board'
-              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
+              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-semibold'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50
         `}
       >
         <svg
@@ -63,12 +64,13 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       <button
         onClick={() => handleTabChange('updates')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-200 relative
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-250 motion-safe:ease-smooth relative
           ${
             activeTab === 'updates'
-              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
+              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-semibold'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50
         `}
       >
         <svg
@@ -86,7 +88,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </svg>
         <span>最近の更新</span>
         {updateCount > 0 && (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-full shadow-sm">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-lg shadow-sm">
             {updateCount}
           </span>
         )}
@@ -95,12 +97,13 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       <button
         onClick={() => handleTabChange('manual')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-200 relative
+          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-250 motion-safe:ease-smooth relative
           ${
             activeTab === 'manual'
-              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-medium'
+              ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-semibold'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50
         `}
       >
         <svg
@@ -117,7 +120,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </svg>
         <span>追加したリポジトリ</span>
         {manualRepoCount > 0 && (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-full shadow-sm">
+          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-lg shadow-sm">
             {manualRepoCount}
           </span>
         )}

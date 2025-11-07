@@ -16,33 +16,38 @@
   --text-secondary: #374151;
   --text-muted: #6b7280;
   --text-inverse: #ffffff;
-  --accent-green: #10b981;
-  --accent-green-emphasis: #059669;
-  --accent-green-muted: rgba(16, 185, 129, 0.15);
-  --accent-green-border: rgba(16, 185, 129, 0.3);
+  /* より落ち着いたアクセントカラー - エメラルドグリーン系 */
+  --accent-green: #059669;
+  --accent-green-emphasis: #047857;
+  --accent-green-muted: rgba(5, 150, 105, 0.12);
+  --accent-green-border: rgba(5, 150, 105, 0.24);
   --accent-blue: #2563eb;
   --accent-blue-emphasis: #1d4ed8;
   --accent-blue-muted: rgba(37, 99, 235, 0.12);
-  --accent-blue-border: rgba(37, 99, 235, 0.28);
+  --accent-blue-border: rgba(37, 99, 235, 0.24);
   --accent-purple: #7c3aed;
   --accent-purple-emphasis: #6d28d9;
-  --accent-purple-muted: rgba(124, 58, 237, 0.15);
-  --accent-purple-border: rgba(124, 58, 237, 0.32);
-  --accent-yellow: #f59e0b;
-  --accent-yellow-emphasis: #d97706;
-  --accent-yellow-muted: rgba(245, 158, 11, 0.15);
-  --accent-yellow-border: rgba(245, 158, 11, 0.28);
-  --accent-orange: #f97316;
-  --accent-orange-emphasis: #ea580c;
-  --accent-orange-muted: rgba(249, 115, 22, 0.18);
-  --accent-orange-border: rgba(249, 115, 22, 0.32);
-  --accent-red: #ef4444;
-  --accent-red-emphasis: #dc2626;
-  --accent-red-muted: rgba(239, 68, 68, 0.15);
-  --accent-red-border: rgba(239, 68, 68, 0.3);
-  --shadow-sm: 0 6px 18px -12px rgb(15 23 42 / 0.2);
-  --shadow-md: 0 12px 30px -16px rgb(15 23 42 / 0.14);
-  --shadow-lg: 0 18px 40px -20px rgb(15 23 42 / 0.18);
+  --accent-purple-muted: rgba(124, 58, 237, 0.12);
+  --accent-purple-border: rgba(124, 58, 237, 0.24);
+  /* より柔らかいアンバー系 */
+  --accent-yellow: #d97706;
+  --accent-yellow-emphasis: #b45309;
+  --accent-yellow-muted: rgba(217, 119, 6, 0.12);
+  --accent-yellow-border: rgba(217, 119, 6, 0.24);
+  /* より温かみのあるテラコッタ系 */
+  --accent-orange: #c2410c;
+  --accent-orange-emphasis: #9a3412;
+  --accent-orange-muted: rgba(194, 65, 12, 0.12);
+  --accent-orange-border: rgba(194, 65, 12, 0.24);
+  /* より落ち着いたローズ系 */
+  --accent-red: #dc2626;
+  --accent-red-emphasis: #b91c1c;
+  --accent-red-muted: rgba(220, 38, 38, 0.12);
+  --accent-red-border: rgba(220, 38, 38, 0.24);
+  /* より柔らかく自然なシャドウ - ブラー値を大きく、不透明度を下げる */
+  --shadow-sm: 0 2px 8px -2px rgb(15 23 42 / 0.08), 0 1px 3px -1px rgb(15 23 42 / 0.06);
+  --shadow-md: 0 4px 16px -4px rgb(15 23 42 / 0.1), 0 2px 6px -2px rgb(15 23 42 / 0.08);
+  --shadow-lg: 0 8px 24px -6px rgb(15 23 42 / 0.12), 0 4px 12px -4px rgb(15 23 42 / 0.1);
 }
 
 .dark {
@@ -59,33 +64,38 @@
   --text-secondary: #c9d1d9;
   --text-muted: #8b949e;
   --text-inverse: #0d1117;
-  --accent-green: #3fb950;
-  --accent-green-emphasis: #2ea043;
-  --accent-green-muted: rgba(63, 185, 80, 0.18);
-  --accent-green-border: rgba(63, 185, 80, 0.35);
+  /* より落ち着いたエメラルドグリーン系 */
+  --accent-green: #2ea043;
+  --accent-green-emphasis: #238636;
+  --accent-green-muted: rgba(46, 160, 67, 0.16);
+  --accent-green-border: rgba(46, 160, 67, 0.32);
   --accent-blue: #58a6ff;
   --accent-blue-emphasis: #3d8bff;
-  --accent-blue-muted: rgba(56, 139, 253, 0.18);
-  --accent-blue-border: rgba(56, 139, 253, 0.38);
-  --accent-purple: #bf9fff;
-  --accent-purple-emphasis: #a371f7;
-  --accent-purple-muted: rgba(191, 159, 255, 0.2);
-  --accent-purple-border: rgba(191, 159, 255, 0.45);
-  --accent-yellow: #e3b341;
-  --accent-yellow-emphasis: #d29922;
-  --accent-yellow-muted: rgba(227, 179, 65, 0.2);
-  --accent-yellow-border: rgba(227, 179, 65, 0.45);
-  --accent-orange: #ffb757;
-  --accent-orange-emphasis: #fb8f44;
-  --accent-orange-muted: rgba(240, 160, 78, 0.22);
-  --accent-orange-border: rgba(240, 160, 78, 0.45);
-  --accent-red: #ff7b72;
-  --accent-red-emphasis: #f65f5f;
-  --accent-red-muted: rgba(255, 123, 114, 0.2);
-  --accent-red-border: rgba(255, 123, 114, 0.38);
-  --shadow-sm: 0 6px 20px -15px rgb(0 0 0 / 0.45);
-  --shadow-md: 0 18px 40px -24px rgb(0 0 0 / 0.55);
-  --shadow-lg: 0 28px 65px -36px rgb(0 0 0 / 0.7);
+  --accent-blue-muted: rgba(88, 166, 255, 0.16);
+  --accent-blue-border: rgba(88, 166, 255, 0.32);
+  --accent-purple: #a371f7;
+  --accent-purple-emphasis: #8957e5;
+  --accent-purple-muted: rgba(163, 113, 247, 0.16);
+  --accent-purple-border: rgba(163, 113, 247, 0.32);
+  /* より柔らかいアンバー系 */
+  --accent-yellow: #d29922;
+  --accent-yellow-emphasis: #bb8009;
+  --accent-yellow-muted: rgba(210, 153, 34, 0.16);
+  --accent-yellow-border: rgba(210, 153, 34, 0.32);
+  /* より温かみのあるテラコッタ系 */
+  --accent-orange: #fb8f44;
+  --accent-orange-emphasis: #e67e22;
+  --accent-orange-muted: rgba(251, 143, 68, 0.16);
+  --accent-orange-border: rgba(251, 143, 68, 0.32);
+  /* より落ち着いたローズ系 */
+  --accent-red: #f65f5f;
+  --accent-red-emphasis: #e5484d;
+  --accent-red-muted: rgba(246, 95, 95, 0.16);
+  --accent-red-border: rgba(246, 95, 95, 0.32);
+  /* より柔らかく自然なシャドウ */
+  --shadow-sm: 0 2px 12px -4px rgb(0 0 0 / 0.4), 0 1px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 20px -6px rgb(0 0 0 / 0.5), 0 2px 8px -4px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 8px 32px -8px rgb(0 0 0 / 0.6), 0 4px 16px -6px rgb(0 0 0 / 0.5);
 }
 
 /* Custom styles */
@@ -98,6 +108,43 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-app);
   color: var(--text-primary);
+  /* タイポグラフィスケールの統一 */
+  font-size: 1rem; /* base: 16px */
+  line-height: 1.6; /* より読みやすい行間 */
+}
+
+/* タイポグラフィスケール */
+h1 {
+  font-size: 1.875rem; /* 2xl: 30px */
+  line-height: 1.3;
+  font-weight: 600; /* Semibold */
+}
+
+h2 {
+  font-size: 1.5rem; /* xl: 24px */
+  line-height: 1.4;
+  font-weight: 600; /* Semibold */
+}
+
+h3 {
+  font-size: 1.125rem; /* lg: 18px */
+  line-height: 1.5;
+  font-weight: 600; /* Semibold */
+}
+
+p {
+  font-size: 1rem; /* base: 16px */
+  line-height: 1.6;
+}
+
+small {
+  font-size: 0.875rem; /* sm: 14px */
+  line-height: 1.5;
+}
+
+.text-xs {
+  font-size: 0.75rem; /* xs: 12px */
+  line-height: 1.5;
 }
 
 code {
@@ -138,7 +185,7 @@ html {
   background: var(--accent-blue-emphasis);
 }
 
-/* Animations */
+/* Animations - スムーズなトランジション */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -172,14 +219,40 @@ html {
   }
 }
 
+@keyframes subtle-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .animate-fade-in {
-  animation: fade-in 0.2s ease-out;
+  animation: fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .animate-fade-out {
-  animation: fade-out 0.2s ease-out;
+  animation: fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .animate-slide-fade-in {
-  animation: slide-fade-in 0.3s ease-out;
+  animation: slide-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-subtle-scale {
+  animation: subtle-scale 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* motion-reduce 対応 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

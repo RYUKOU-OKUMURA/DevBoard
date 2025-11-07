@@ -50,6 +50,50 @@ export default {
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
       },
+      // 8pxグリッドに基づくスペーシングシステム
+      spacing: {
+        '0.5': '0.125rem',   // 2px
+        '1': '0.25rem',       // 4px
+        '1.5': '0.375rem',    // 6px
+        '2': '0.5rem',        // 8px
+        '3': '0.75rem',       // 12px
+        '4': '1rem',          // 16px
+        '6': '1.5rem',        // 24px
+        '8': '2rem',          // 32px
+        '12': '3rem',         // 48px
+        '16': '4rem',         // 64px
+      },
+      // ボーダー半径の統一（3段階）
+      borderRadius: {
+        'lg': '0.5rem',   // 8px - 小さな要素、バッジ
+        'xl': '0.75rem',  // 12px - カード、ボタン
+        '2xl': '1rem',    // 16px - モーダル、大きなコンテナ
+      },
+      // タイポグラフィスケール
+      fontSize: {
+        'xs': ['0.75rem', { lineHeight: '1.5' }],      // 12px
+        'sm': ['0.875rem', { lineHeight: '1.5' }],     // 14px
+        'base': ['1rem', { lineHeight: '1.6' }],       // 16px
+        'lg': ['1.125rem', { lineHeight: '1.5' }],     // 18px
+        'xl': ['1.5rem', { lineHeight: '1.4' }],       // 24px
+        '2xl': ['1.875rem', { lineHeight: '1.3' }],    // 30px
+        '3xl': ['2.25rem', { lineHeight: '1.2' }],     // 36px
+      },
+      fontWeight: {
+        'normal': '400',
+        'medium': '500',
+        'semibold': '600',
+        'bold': '700',
+      },
+      // トランジション設定
+      transitionDuration: {
+        '200': '200ms',
+        '250': '250ms',
+        '300': '300ms',
+      },
+      transitionTimingFunction: {
+        'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
     },
   },
   plugins: [],

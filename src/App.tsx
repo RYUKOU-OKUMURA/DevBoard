@@ -324,7 +324,7 @@ function AppContent() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsAddRepoModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors font-medium shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors font-semibold shadow-sm motion-safe:duration-250 motion-safe:ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50"
             >
               <svg
                 width="20"
@@ -343,7 +343,7 @@ function AppContent() {
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-surface-hover transition-colors"
+              className="p-2 rounded-lg hover:bg-surface-hover transition-colors motion-safe:duration-250 motion-safe:ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50"
               aria-label="Toggle theme"
               title={isDark ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
             >

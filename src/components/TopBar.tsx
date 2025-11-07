@@ -247,7 +247,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="リポジトリを検索（名前、言語、トピック、説明...）"
-                className="w-full px-4 py-2 pl-10 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent transition-all bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] shadow-inner"
+                className="w-full px-4 py-2 pl-10 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:ring-opacity-50 focus:border-transparent transition-all bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] shadow-inner"
               />
               <svg
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[var(--text-muted)]"
@@ -270,7 +270,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             <select
               value={sortOrder}
               onChange={(event) => onSortChange(event.target.value as SortOrder)}
-              className="w-full px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-all"
+              className="w-full px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:ring-opacity-50 focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-all"
             >
               <option value="lastUpdated">並び替え: 最終更新日</option>
               <option value="name">並び替え: 名前 (A-Z)</option>
@@ -285,7 +285,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               value={currentViewId}
               onChange={handleViewChange}
               disabled={!onViewSelect}
-              className="flex-1 px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-all disabled:opacity-70"
+              className="flex-1 px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:ring-opacity-50 focus:border-transparent bg-surface-secondary text-[var(--text-primary)] transition-all disabled:opacity-70"
             >
               <option value="">保存済みビュー ({savedViews.length}/5)</option>
               {savedViews.map((view) => (
@@ -319,7 +319,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               value={currentPresetId}
               onChange={handlePresetChange}
               disabled={!onPresetSelect}
-              className="flex-1 px-4 py-2 border border-[var(--accent-purple-border)] rounded-xl focus:ring-2 focus:ring-[var(--accent-purple)] focus:border-transparent bg-[var(--accent-purple-muted)] text-[var(--text-primary)] transition-all disabled:opacity-70"
+              className="flex-1 px-4 py-2 border border-[var(--accent-purple-border)] rounded-xl focus:ring-2 focus:ring-[var(--accent-purple)] focus:ring-opacity-50 focus:border-transparent bg-[var(--accent-purple-muted)] text-[var(--text-primary)] transition-all disabled:opacity-70"
             >
               <option value="">プリセット ({presets.length}/5)</option>
               {presets.map((preset) => (
@@ -362,7 +362,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Save View Dialog */}
       {showSaveDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-surface-primary rounded-xl p-6 max-w-md w-full mx-4 shadow-lg transition-colors">
+          <div className="bg-surface-primary rounded-2xl p-6 max-w-md w-full mx-4 shadow-lg transition-colors">
             <h2 className="text-xl font-bold mb-4 text-[var(--text-primary)]">現在のビューを保存</h2>
             <p className="text-[var(--text-muted)] mb-4">
               現在の検索キーワードと並び順を保存します。
@@ -385,7 +385,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }
                 }}
                 placeholder="例: アクティブなTypeScriptプロジェクト"
-                className="w-full px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:border-transparent bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+                className="w-full px-4 py-2 border border-[var(--border-subtle)] rounded-xl focus:ring-2 focus:ring-[var(--accent-green)] focus:ring-opacity-50 focus:border-transparent bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all"
                 autoFocus
               />
               {saveError && (
@@ -425,7 +425,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Save Preset Dialog */}
       {showPresetDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-surface-primary rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-lg transition-colors">
+          <div className="bg-surface-primary rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-lg transition-colors">
             <h2 className="text-xl font-bold mb-4 text-[var(--text-primary)]">プリセットとして保存</h2>
             <p className="text-[var(--text-muted)] mb-4">
               現在のダッシュボードの状態（検索、並び順、カラム配置、カラム名、しきい値など）を保存します。
@@ -453,7 +453,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }
                 }}
                 placeholder="例: 開発中プロジェクト"
-                className="w-full px-4 py-2 border border-[var(--accent-purple-border)] rounded-xl focus:ring-2 focus:ring-[var(--accent-purple)] focus:border-transparent bg-[var(--accent-purple-muted)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+                className="w-full px-4 py-2 border border-[var(--accent-purple-border)] rounded-xl focus:ring-2 focus:ring-[var(--accent-purple)] focus:ring-opacity-50 focus:border-transparent bg-[var(--accent-purple-muted)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all"
                 autoFocus
               />
               {presetError && (
@@ -538,7 +538,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       {/* Hidden Repos Dialog */}
       {showHiddenDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-surface-primary rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col shadow-lg transition-colors">
+          <div className="bg-surface-primary rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col shadow-lg transition-colors">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-[var(--text-primary)]">非表示のリポジトリ ({hiddenRepos.length})</h2>
               <button

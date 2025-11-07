@@ -76,9 +76,13 @@ export const RepoCard: React.FC<RepoCardProps> = ({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={`
-        bg-surface-primary border rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]
-        ${isSelected ? 'border-[var(--accent-green)] bg-opacity-90 ring-2 ring-[var(--accent-green)] ring-opacity-30' : 'border-[var(--border-subtle)] hover:border-[var(--accent-green)]'}
-        animate-fade-in transition-all duration-200
+        bg-surface-primary border rounded-xl p-5 shadow-sm 
+        hover:shadow-md hover:-translate-y-0.5 
+        motion-safe:transition-all motion-safe:duration-250 motion-safe:ease-smooth motion-reduce:transition-none 
+        cursor-pointer outline-none 
+        focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)] focus-visible:ring-opacity-50
+        ${isSelected ? 'border-[var(--accent-green)] bg-opacity-95 ring-2 ring-[var(--accent-green)] ring-opacity-25' : 'border-[var(--border-subtle)] hover:border-[var(--accent-green-border)]'}
+        animate-fade-in
       `}
     >
       {/* Repository Title and Actions */}
@@ -106,11 +110,11 @@ export const RepoCard: React.FC<RepoCardProps> = ({
         <div className="flex items-center gap-1 ml-2 flex-wrap">
           {/* Privacy Badge */}
           {repo.isPrivate ? (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border border-[var(--accent-yellow-border)] shadow-sm">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border border-[var(--accent-yellow-border)] shadow-sm transition-colors">
               Private
             </span>
           ) : (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm transition-colors">
               Public
             </span>
           )}
@@ -119,7 +123,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           {showDeleteButton && onDelete && (
             <button
               onClick={handleDeleteClick}
-              className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-red-100 hover:text-red-600 text-[var(--text-muted)] transition-colors"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-lg hover:bg-[var(--accent-red-muted)] hover:text-[var(--accent-red-emphasis)] text-[var(--text-muted)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-red)] focus-visible:ring-offset-1"
               title="削除する"
               aria-label="このリポジトリを削除する"
             >
@@ -133,7 +137,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           {onHide && !showDeleteButton && (
             <button
               onClick={handleHideClick}
-              className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-surface-hover text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-lg hover:bg-surface-hover text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-1"
               title="非表示にする"
               aria-label="このカードを非表示にする"
             >
@@ -190,13 +194,13 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           {displayTopics.map((topic) => (
             <span
               key={topic}
-              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] border border-[var(--accent-blue-border)] shadow-sm"
+              className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] border border-[var(--accent-blue-border)] shadow-sm transition-colors"
             >
               #{topic}
             </span>
           ))}
           {hasMoreTopics && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-surface-tertiary text-[var(--text-muted)] border border-[var(--border-subtle)]">
+            <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-surface-tertiary text-[var(--text-muted)] border border-[var(--border-subtle)]">
               +{repo.topics.length - 3}
             </span>
           )}
