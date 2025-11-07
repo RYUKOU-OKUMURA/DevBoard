@@ -204,7 +204,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
           </div>
           <div className="px-8 pb-8">
             <a
-              href="https://github.com/RYUKOU-OKUMURA/GitHub_Dashboard"
+              href="https://note.com/redcord/n/n8a9e8ba0e0f6?sub_rt=share_pb"
               className="group inline-flex items-center gap-2 text-sm font-semibold transition-colors"
               style={{ color: '#38bdf8' }}
               target="_blank"
