@@ -25,18 +25,18 @@ const FEATURES = [
 const USE_CASES = [
   {
     label: '1',
-    title: 'スプリント計画に',
-    description: 'プロジェクトの目標と優先順位を共有し、次のスプリントをスムーズにスタート。',
+    title: 'リポジトリ整理に',
+    description: '増えていくリポジトリを日本語UI＆カンバンで整理し、管理ストレスを軽減。',
   },
   {
     label: '2',
-    title: '日次スタンドアップに',
-    description: 'チームメンバーのタスク進行状況や課題を視覚的に確認し、議論を効率化。',
+    title: '優先順位を1画面で把握',
+    description: '最新のIssue・プルリクを確認して、即座に修正やタスクを実行することができる。',
   },
   {
     label: '3',
-    title: '振り返りに',
-    description: '完了したタスクの振り返りやボトルネックの抽出で、継続的な改善につなげます。',
+    title: 'コンテンツ・教材管理にも',
+    description: '公開されているリポジトリを集めて、新たな開発や学習に活かす。',
   },
 ];
 
@@ -97,10 +97,10 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
               DevBoard へようこそ
             </span>
             <h1 className="mt-6 text-4xl font-bold leading-tight md:text-5xl" style={{ color: palette.textPrimary }}>
-              開発チームのワークフローを、ひと目で把握。
+              リポジトリ管理をかんたんに
             </h1>
             <p className="mt-5 text-base leading-relaxed md:text-lg" style={{ color: palette.textMuted }}>
-              DevBoard は、GitHub リポジトリやタスクをまとめて可視化し、チームの進捗をリアルタイムで共有できるカンバン型の開発ダッシュボードです。アプリの使い方や主要な機能を、洗練された UI で直感的に操作できます。
+              DevBoard は、GitHub リポジトリやタスクをまとめて可視化し、開発や進捗管理をスムーズにするカンバン型の開発ダッシュボードです。アプリの使い方や主要な機能を、洗練された UI で直感的に操作できます。
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <button
@@ -185,6 +185,22 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
                 </div>
               </div>
             ))}
+
+            {/* 今後の追加機能予定 */}
+            <div className="mt-8 p-6 rounded-2xl border-2 border-dashed"
+                 style={{
+                   background: isDark ? 'rgba(56, 189, 248, 0.05)' : 'rgba(56, 189, 248, 0.02)',
+                   borderColor: isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(56, 189, 248, 0.2)',
+                 }}>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: palette.textPrimary }}>
+                今後の追加機能予定
+              </h3>
+              <ul className="text-sm leading-relaxed space-y-2" style={{ color: palette.previewBodyText }}>
+                <li>• <strong>本アプリからIssue・PullRequestを作成する機能</strong></li>
+                <li>• <strong>Codex、Claude Codeをメンションで呼び出す機能</strong></li>
+                <li>• <strong>ToDoや実装予定を作成する機能</strong></li>
+              </ul>
+            </div>
           </div>
           <div className="px-8 pb-8">
             <a

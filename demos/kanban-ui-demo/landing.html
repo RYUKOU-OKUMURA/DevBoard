@@ -199,6 +199,27 @@
             line-height: 1.5;
         }
 
+        .future-features {
+            margin-top: 32px;
+            padding: 24px;
+            border: 2px dashed rgba(14, 165, 233, 0.2);
+            border-radius: 16px;
+            background: rgba(14, 165, 233, 0.02);
+        }
+
+        .future-features-content h4 {
+            margin: 0 0 8px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .future-features-content p {
+            margin: 0;
+            color: rgba(15, 23, 42, 0.75);
+            line-height: 1.5;
+        }
+
         .preview-footer {
             padding: 0 24px 28px;
             margin-top: auto;
@@ -255,9 +276,9 @@
     <main class="landing-container">
         <section class="hero">
             <span class="badge">DevBoard へようこそ</span>
-            <h1>開発チームのワークフローを、ひと目で把握。</h1>
+            <h1>リポジトリ管理をかんたんに</h1>
             <p>
-                DevBoard は、GitHub リポジトリやタスクをまとめて可視化し、チームの進捗をリアルタイムで共有できるカンバン型の開発ダッシュボードです。
+                DevBoard は、GitHub リポジトリやタスクをまとめて可視化し、開発や進捗管理をスムーズにするカンバン型の開発ダッシュボードです。
                 アプリの使い方や主要な機能を、洗練された UI で直感的に操作できます。
             </p>
             <a class="call-to-action" href="index.html">
@@ -291,22 +312,34 @@
                 <div class="preview-point">
                     <div class="preview-point-icon">1</div>
                     <div class="preview-point-content">
-                        <h4>スプリント計画に</h4>
-                        <p>プロジェクトの目標と優先順位を共有し、次のスプリントをスムーズにスタート。</p>
+                        <h4>リポジトリ整理に</h4>
+                        <p>増えていくリポジトリを日本語UI＆カンバンで整理し、管理ストレスを軽減。</p>
                     </div>
                 </div>
                 <div class="preview-point">
                     <div class="preview-point-icon">2</div>
                     <div class="preview-point-content">
-                        <h4>日次スタンドアップに</h4>
-                        <p>チームメンバーのタスク進行状況や課題を視覚的に確認し、議論を効率化。</p>
+                        <h4>優先順位を1画面で把握</h4>
+                        <p>最新のIssue・プルリクを確認して、即座に修正やタスクを実行することができる。</p>
                     </div>
                 </div>
                 <div class="preview-point">
                     <div class="preview-point-icon">3</div>
                     <div class="preview-point-content">
-                        <h4>振り返りに</h4>
-                        <p>完了したタスクの振り返りやボトルネックの抽出で、継続的な改善につなげます。</p>
+                        <h4>コンテンツ・教材管理にも</h4>
+                        <p>公開されているリポジトリを集めて、新たな開発や学習に活かす。</p>
+                    </div>
+                </div>
+
+                <!-- 今後の追加機能予定 -->
+                <div class="preview-point future-features">
+                    <div class="future-features-content">
+                        <h4>今後の追加機能予定</h4>
+                        <ul>
+                            <li>• <strong>本アプリからIssue・PullRequestを作成する機能</strong></li>
+                            <li>• <strong>Codex、Claude Codeをメンションで呼び出す機能</strong></li>
+                            <li>• <strong>ToDoや実装予定を作成する機能</strong></li>
+                        </ul>
                     </div>
                 </div>
             </div>
