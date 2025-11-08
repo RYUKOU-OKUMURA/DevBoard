@@ -1,4 +1,5 @@
 import { useTheme } from '../contexts/ThemeContext';
+import { useDesignSystem } from '../lib/designSystem';
 
 interface LandingPageProps {
   onContinue: () => void;
@@ -57,35 +58,14 @@ const USE_CASES = [
 
 export default function LandingPage({ onContinue }: LandingPageProps) {
   const { isDark } = useTheme();
-
-  const palette = {
-    background: isDark
-      ? 'linear-gradient(180deg, #05070f 0%, #0a1224 45%, #060712 100%)'
-      : 'linear-gradient(180deg, #f6f2ff 0%, #ede4ff 55%, #eef2ff 100%)',
-    hero: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.95)',
-    heroBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(81, 45, 168, 0.2)',
-    textPrimary: isDark ? '#f8fafc' : '#0f172a',
-    textMuted: isDark ? 'rgba(248, 250, 252, 0.78)' : 'rgba(15, 23, 42, 0.7)',
-    featureBg: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.8)',
-    featureBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(148, 163, 184, 0.18)',
-    highlight: 'var(--color-1-soft)',
-    accent: 'var(--color-1)',
-    accentGlow: 'var(--color-1-glow)',
-    accentGradient: 'linear-gradient(135deg, var(--color-1), #7c4dff)',
-    callToActionText: '#ffffff',
-    callToActionShadow: '0 22px 45px rgba(81, 45, 168, 0.35)',
-  };
-
-  const auraGradient = isDark
-    ? `radial-gradient(circle at 15% -10%, ${palette.highlight}, transparent 40%), radial-gradient(circle at 90% 5%, ${palette.accentGlow}, transparent 50%)`
-    : `radial-gradient(circle at 20% -5%, ${palette.highlight}, transparent 45%), radial-gradient(circle at 70% -10%, ${palette.accentGlow}, transparent 55%)`;
+  const { palette, componentStyles, auraGradient } = useDesignSystem(isDark);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8" style={{ background: palette.background }}>
       <main className="max-w-6xl w-full grid gap-10 lg:grid-cols-[1.1fr_0.9fr]" style={{ color: palette.textPrimary }}>
         <section
-          className="relative overflow-hidden rounded-[32px] border p-10 shadow-[0_25px_60px_rgba(15,23,42,0.25)]"
-          style={{ background: palette.hero, borderColor: palette.heroBorder }}
+          className="relative overflow-hidden rounded-[32px] border p-10"
+          style={componentStyles.heroSection}
         >
           <div className="pointer-events-none absolute inset-0" style={{ background: auraGradient }} />
           <div className="relative z-10 flex flex-col gap-10">
@@ -106,8 +86,8 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
               {FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className="rounded-2xl border p-5 transition hover:-translate-y-0.5"
-                  style={{ background: palette.featureBg, borderColor: palette.featureBorder }}
+                  className="rounded-2xl border p-5 hover:-translate-y-0.5"
+                  style={componentStyles.featureCard}
                 >
                   <h3 className="text-base font-semibold" style={{ color: palette.textPrimary }}>
                     {feature.title}
@@ -122,12 +102,8 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
               <button
                 type="button"
                 onClick={onContinue}
-                className="inline-flex items-center gap-3 rounded-full px-6 py-3 text-base font-semibold transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
-                style={{
-                  background: palette.accentGradient,
-                  color: palette.callToActionText,
-                  boxShadow: palette.callToActionShadow,
-                }}
+                className="inline-flex items-center gap-3 rounded-full px-6 py-3 text-base font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
+                style={componentStyles.ctaButton}
               >
                 ログインページへ進む
                 <svg
@@ -153,11 +129,8 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
         </section>
 
         <aside
-          className="flex h-full flex-col gap-6 rounded-[32px] border p-8 shadow-[0_20px_45px_rgba(15,23,42,0.18)]"
-          style={{
-            background: isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.95)',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(148, 163, 184, 0.2)',
-          }}
+          className="flex h-full flex-col gap-6 rounded-[32px] border p-8"
+          style={componentStyles.asideSection}
         >
           <div className="space-y-2">
             <h2 className="text-xl font-semibold" style={{ color: palette.textPrimary }}>
@@ -172,7 +145,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
               <div key={useCase.label} className="flex items-start gap-4">
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-semibold"
-                  style={{ background: palette.highlight, color: palette.accent }}
+                  style={componentStyles.useCaseBadge}
                 >
                   {useCase.label}
                 </div>
@@ -190,10 +163,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
 
           <div
             className="rounded-2xl border-2 border-dashed p-6"
-            style={{
-              borderColor: palette.accentGlow,
-              background: isDark ? 'rgba(81, 45, 168, 0.08)' : 'rgba(81, 45, 168, 0.08)',
-            }}
+            style={componentStyles.futureBox}
           >
             <h3 className="text-lg font-semibold mb-2" style={{ color: palette.textPrimary }}>
               今後の追加機能予定
