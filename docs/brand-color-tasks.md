@@ -8,9 +8,9 @@
 
 ### 0.1 タイポグラフィ階層の確立（2時間）
 
-#### タスク 0.1.1: Tailwind Config にセマンティックフォントサイズを追加（30分）
-- [ ] `tailwind.config.js` を開く
-- [ ] `fontSize` オブジェクトに以下を追加:
+-#### タスク 0.1.1: Tailwind Config にセマンティックフォントサイズを追加（30分）
+- [x] `tailwind.config.js` を開く
+- [x] `fontSize` オブジェクトに以下を追加:
   - `display-lg`: 60px, lineHeight 1.1, letterSpacing -0.04em
   - `display`: 48px, lineHeight 1.15, letterSpacing -0.03em
   - `title-1`: 36px, lineHeight 1.2, letterSpacing -0.02em
@@ -20,65 +20,65 @@
   - `body-sm`: 14px, lineHeight 1.5, letterSpacing 0em
   - `caption`: 12px, lineHeight 1.4, letterSpacing 0.02em
   - `label`: 14px, lineHeight 1, letterSpacing 0.4em
-- [ ] ファイルを保存
+- [x] ファイルを保存
 
 #### タスク 0.1.2: Design System にタイポグラフィトークンを追加（30分）
-- [ ] `src/lib/designSystem.ts` を開く
-- [ ] `DesignPalette` インターフェースに `typography` セクションを追加
-- [ ] `createDesignPalette()` 関数を更新してタイポグラフィ値を返す
-- [ ] TypeScript エラーがないことを確認
+- [x] `src/lib/designSystem.ts` を開く
+- [x] `DesignPalette` インターフェースに `typography` セクションを追加
+- [x] `createDesignPalette()` 関数を更新してタイポグラフィ値を返す
+- [x] TypeScript エラーがないことを確認
 
 #### タスク 0.1.3: LandingPage でセマンティックフォントを適用（30分）
-- [ ] `src/components/LandingPage.tsx` を開く
-- [ ] ヒーロー見出しを `text-display` に変更
-- [ ] セクション見出しを `text-title-1` または `text-title-2` に変更
-- [ ] 本文を `text-body` に変更
-- [ ] メタデータ/タイムスタンプを `text-caption` に変更
-- [ ] ビジュアル確認（ブラウザでチェック）
+- [x] `src/components/LandingPage.tsx` を開く
+- [x] ヒーロー見出しを `text-display` に変更
+- [x] セクション見出しを `text-title-1` または `text-title-2` に変更
+- [x] 本文を `text-body` に変更
+- [x] メタデータ/タイムスタンプを `text-caption` に変更
+- [x] ビジュアル確認（ブラウザでチェック）
 
 #### タスク 0.1.4: 他のコンポーネントでフォントを標準化（30分）
-- [ ] `RepoCard.tsx`: カードタイトルを `text-title-3` に
-- [ ] `TopBar.tsx`: ボタンテキストを `text-body-sm` に
-- [ ] `TabNavigation.tsx`: タブラベルを `text-body-sm` に
-- [ ] 全体的な一貫性をビジュアル確認
+- [x] `RepoCard.tsx`: カードタイトルを `text-title-3` に
+- [x] `TopBar.tsx`: ボタンテキストを `text-body-sm` に
+- [x] `TabNavigation.tsx`: タブラベルを `text-body-sm` に
+- [x] 全体的な一貫性をビジュアル確認
 
 ---
 
 ### 0.2 厳格な8pxグリッドシステム（1時間）
 
 #### タスク 0.2.1: Tailwind Config にセマンティックスペーシングを追加（20分）
-- [ ] `tailwind.config.js` を開く
-- [ ] `spacing` オブジェクトに以下を追加:
+- [x] `tailwind.config.js` を開く
+- [x] `spacing` オブジェクトに以下を追加:
   - **Inset**: `inset-xs` (8px), `inset-sm` (12px), `inset-md` (16px), `inset-lg` (24px), `inset-xl` (32px)
   - **Stack**: `stack-xs` (8px), `stack-sm` (16px), `stack-md` (24px), `stack-lg` (48px), `stack-xl` (64px)
   - **Inline**: `inline-xs` (4px), `inline-sm` (8px), `inline-md` (12px), `inline-lg` (16px)
-- [ ] ファイルを保存
+- [x] ファイルを保存
 
 #### タスク 0.2.2: グリッド外の値を監査（15分）
-- [ ] プロジェクト全体で `p-5`, `px-2.5`, `py-2.5` などを検索
-- [ ] リスト作成（どのファイルのどの行にあるか）
-- [ ] 移行計画を決定（例: `p-5` → `p-inset-lg`）
+- [x] プロジェクト全体で `p-5`, `px-2.5`, `py-2.5` などを検索
+- [x] リスト作成（どのファイルのどの行にあるか）
+- [x] 移行計画を決定（例: `p-5` → `p-inset-lg`）
 
 #### タスク 0.2.3: RepoCard でスペーシングを移行（15分）
-- [ ] `src/components/RepoCard.tsx` を開く
-- [ ] `p-5` → `p-inset-lg` に変更
-- [ ] `gap-3` → `gap-stack-xs` または `gap-stack-sm` に変更
-- [ ] `mb-2`, `mb-3` などを `mb-stack-xs`, `mb-stack-sm` に変更
-- [ ] ビジュアル確認
+- [x] `src/components/RepoCard.tsx` を開く
+- [x] `p-5` → `p-inset-lg` に変更
+- [x] `gap-3` → `gap-stack-xs` または `gap-stack-sm` に変更
+- [x] `mb-2`, `mb-3` などを `mb-stack-xs`, `mb-stack-sm` に変更
+- [x] ビジュアル確認
 
 #### タスク 0.2.4: TopBar でスペーシングを移行（10分）
-- [ ] `src/components/TopBar.tsx` を開く
-- [ ] パディング/マージンをセマンティックトークンに置き換え
-- [ ] ボタングループの `gap` を `gap-inline-md` に
-- [ ] ビジュアル確認
+- [x] `src/components/TopBar.tsx` を開く
+- [x] パディング/マージンをセマンティックトークンに置き換え
+- [x] ボタングループの `gap` を `gap-inline-md` に
+- [x] ビジュアル確認
 
 ---
 
 ### 0.3 モーションデザインガイドライン（2時間）
 
-#### タスク 0.3.1: CSS にモーショントークン変数を追加（30分）
-- [ ] `src/index.css` を開く
-- [ ] `:root` セクションに以下を追加:
+-#### タスク 0.3.1: CSS にモーショントークン変数を追加（30分）
+- [x] `src/index.css` を開く
+- [x] `:root` セクションに以下を追加:
   ```css
   --duration-instant: 100ms;
   --duration-fast: 150ms;
@@ -91,66 +91,66 @@
   --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
   --easing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   ```
-- [ ] ファイルを保存
+- [x] ファイルを保存
 
-#### タスク 0.3.2: Design System にモーショントークンを追加（20分）
-- [ ] `src/lib/designSystem.ts` を開く
-- [ ] `transitions` オブジェクトを拡張:
+-#### タスク 0.3.2: Design System にモーショントークンを追加（20分）
+- [x] `src/lib/designSystem.ts` を開く
+- [x] `transitions` オブジェクトを拡張:
   - `duration`: instant/fast/normal/slow/lazy
   - `easing`: standard/decelerate/accelerate/spring
   - `stagger`: card (50ms), listItem (30ms)
-- [ ] TypeScript 型を更新
+- [x] TypeScript 型を更新
 
 #### タスク 0.3.3: すべてのコンポーネントに motion-reduce を追加（1時間）
-- [ ] `RepoCard.tsx`: すべての `transition-*` に `motion-reduce:transition-none` 追加
-- [ ] `TopBar.tsx`: ボタンホバー/アクティブ状態に `motion-reduce` 追加
-- [ ] `LandingPage.tsx`: アニメーションに `motion-reduce:animate-none` 追加
-- [ ] `TabNavigation.tsx`: タブ切り替えに `motion-reduce` 追加
-- [ ] `RepoColumn.tsx`: カードエントランスに `motion-reduce` 追加
-- [ ] ブラウザ設定で `prefers-reduced-motion` をテスト
+- [x] `RepoCard.tsx`: すべての `transition-*` に `motion-reduce:transition-none` 追加
+- [x] `TopBar.tsx`: ボタンホバー/アクティブ状態に `motion-reduce` 追加
+- [x] `LandingPage.tsx`: アニメーションに `motion-reduce:animate-none` 追加
+- [x] `TabNavigation.tsx`: タブ切り替えに `motion-reduce` 追加
+- [x] `RepoColumn.tsx`: カードエントランスに `motion-reduce` 追加
+- [x] ブラウザ設定で `prefers-reduced-motion` をテスト
 
 #### タスク 0.3.4: 標準トランジションパターンをドキュメント化（10分）
-- [ ] `docs/design-system-guidelines.md` 作成
-- [ ] ホバー、アクティブ、フォーカス状態の標準パターンを記述
-- [ ] コード例を追加
+- [x] `docs/design-system-guidelines.md` 作成
+- [x] ホバー、アクティブ、フォーカス状態の標準パターンを記述
+- [x] コード例を追加
 
 ---
 
 ### 0.4 アクセシビリティ標準化（1.5時間）
 
 #### タスク 0.4.1: フォーカスリングユーティリティを作成（20分）
-- [ ] `src/lib/focusRing.ts` を作成
-- [ ] 以下のプリセットを定義:
-  ```ts
-  export const focusRing = {
-    default: 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-    brand: 'focus-visible:ring-brand-purple',
-    danger: 'focus-visible:ring-brand-red',
-  };
-  ```
-- [ ] エクスポート
+- [x] `src/lib/focusRing.ts` を作成
+- [x] 以下のプリセットを定義:
+-  ```ts
+-  export const focusRing = {
+-    default: 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]',
+-    brand: 'focus-visible:ring-[var(--accent-purple)]',
+-    danger: 'focus-visible:ring-[var(--accent-red)]',
+-  };
+-  ```
+- [x] エクスポート
 
 #### タスク 0.4.2: すべてのボタンにフォーカスリングを適用（30分）
-- [ ] `TopBar.tsx`: すべての `<button>` に `${focusRing.default} ${focusRing.brand}` 追加
-- [ ] `RepoCard.tsx`: カード要素に `focus-visible:ring-*` 追加
-- [ ] `LandingPage.tsx`: CTAボタンにフォーカスリング追加
-- [ ] キーボードで Tab キーを使ってテスト
+- [x] `TopBar.tsx`: すべての `<button>` に `focusRing` クラスを追加
+- [x] `RepoCard.tsx`: カード要素に `focus-visible:ring-*` 追加
+- [x] `LandingPage.tsx`: CTAボタンにフォーカスリング追加
+- [x] キーボードで Tab キーを使ってテスト
 
 #### タスク 0.4.3: すべての入力にフォーカスリングを適用（20分）
-- [ ] `TopBar.tsx`: 検索入力に `focus-visible:ring-brand-purple` 追加
-- [ ] モーダル内の入力フィールドにフォーカスリング追加
-- [ ] キーボードナビゲーションをテスト
+- [x] `TopBar.tsx`: 検索入力に `focus-visible:ring-[var(--accent-green)]` 追加
+- [x] モーダル内の入力フィールドにフォーカスリング追加
+- [x] キーボードナビゲーションをテスト
 
 #### タスク 0.4.4: ARIA属性を追加（40分）
-- [ ] `TopBar.tsx`:
-  - [ ] ドロップダウンに `aria-expanded`, `aria-haspopup` 追加
-  - [ ] 検索に `aria-label="リポジトリを検索"` 追加
-- [ ] `TabNavigation.tsx`:
-  - [ ] `role="tablist"` をコンテナに追加
-  - [ ] 各タブに `role="tab"`, `aria-selected` 追加
-- [ ] `RepoBoard.tsx`:
-  - [ ] ステータス更新に `aria-live="polite"` 追加
-- [ ] スクリーンリーダーでテスト（macOS VoiceOver）
+- [x] `TopBar.tsx`:
+  - [x] ドロップダウンに `aria-expanded`, `aria-haspopup` 追加
+  - [x] 検索に `aria-label="リポジトリを検索"` 追加
+- [x] `TabNavigation.tsx`:
+  - [x] `role="tablist"` をコンテナに追加
+  - [x] 各タブに `role="tab"`, `aria-selected`, `tabIndex` 追加
+- [x] `RepoBoard.tsx`:
+  - [x] ステータス更新に `aria-live="polite"` 追加
+- [x] スクリーンリーダーでテスト（macOS VoiceOver）
 
 ---
 

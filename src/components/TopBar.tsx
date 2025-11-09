@@ -250,6 +250,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="リポジトリを検索（名前、言語、トピック、説明...）"
+                aria-label="リポジトリを検索"
                 className={`w-full px-inset-md py-inset-xs pl-inset-xl border border-[var(--border-subtle)] rounded-xl bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] shadow-inner transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75 focus:border-transparent`}
               />
               <svg
