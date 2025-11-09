@@ -47,6 +47,33 @@
   --accent-red-emphasis: #b91c1c;
   --accent-red-muted: rgba(220, 38, 38, 0.12);
   --accent-red-border: rgba(220, 38, 38, 0.24);
+  /* ブランドカラー */
+  --brand-red: #E53935;
+  --brand-red-emphasis: #C62828;
+  --brand-red-soft: rgba(229, 57, 53, 0.15);
+  --brand-red-muted: rgba(229, 57, 53, 0.12);
+  --brand-red-border: rgba(229, 57, 53, 0.24);
+  --brand-red-glow: rgba(229, 57, 53, 0.5);
+  --brand-purple: #673AB7;
+  --brand-purple-emphasis: #512DA8;
+  --brand-purple-soft: rgba(103, 58, 183, 0.15);
+  --brand-purple-muted: rgba(103, 58, 183, 0.12);
+  --brand-purple-border: rgba(103, 58, 183, 0.24);
+  --brand-purple-glow: rgba(103, 58, 183, 0.5);
+  --brand-gradient: linear-gradient(135deg, #E53935 0%, #673AB7 100%);
+  --brand-gradient-reverse: linear-gradient(135deg, #673AB7 0%, #E53935 100%);
+  --brand-gradient-mesh: linear-gradient(135deg,
+    #E53935 0%, #D81B60 25%, #8E24AA 50%, #673AB7 75%, #5E35B1 100%);
+  --metallic-highlight: rgba(255, 255, 255, 0.1);
+  --metallic-shimmer: rgba(255, 255, 255, 0.05);
+  --metallic-edge-top: rgba(255, 255, 255, 0.2);
+  --metallic-edge-bottom: rgba(0, 0, 0, 0.1);
+  --metallic-noise: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.02) 0%, transparent 50%);
+  --brushed-metal: linear-gradient(135deg,
+    hsl(240, 10%, 98%) 0%,
+    hsl(240, 10%, 96%) 50%,
+    hsl(240, 10%, 94%) 100%);
   --duration-instant: 100ms;
   --duration-fast: 150ms;
   --duration-normal: 250ms;
@@ -108,6 +135,18 @@
   --accent-red-emphasis: #e5484d;
   --accent-red-muted: rgba(246, 95, 95, 0.16);
   --accent-red-border: rgba(246, 95, 95, 0.32);
+  --brand-purple: #8B6FDB;
+  --brand-purple-emphasis: #7C5FCC;
+  --brand-red: #FF6B68;
+  --brand-red-emphasis: #F44336;
+  --metallic-highlight: rgba(255, 255, 255, 0.08);
+  --metallic-shimmer: rgba(255, 255, 255, 0.03);
+  --metallic-edge-top: rgba(255, 255, 255, 0.15);
+  --metallic-edge-bottom: rgba(0, 0, 0, 0.2);
+  --brushed-metal: linear-gradient(135deg,
+    hsl(240, 15%, 12%) 0%,
+    hsl(240, 15%, 10%) 50%,
+    hsl(240, 15%, 8%) 100%);
   --duration-instant: 100ms;
   --duration-fast: 150ms;
   --duration-normal: 250ms;
@@ -270,6 +309,84 @@ html {
 
 .animate-subtle-scale {
   animation: subtle-scale 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes gradient-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes gradient-pulse {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    opacity: 1;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 0.9;
+  }
+}
+
+@keyframes metallic-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes metallic-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 20px var(--brand-purple-glow),
+      inset 0 1px 0 var(--metallic-edge-top);
+  }
+  50% {
+    box-shadow:
+      0 0 40px var(--brand-red-glow),
+      inset 0 1px 0 var(--metallic-edge-top);
+  }
+}
+
+@keyframes float-gentle {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes card-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes color-bloom {
+  0% {
+    box-shadow: 0 0 0 0 var(--brand-purple-glow);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px var(--brand-purple-glow);
+  }
+  100% {
+    box-shadow: 0 0 0 0 var(--brand-purple-glow);
+  }
 }
 
 /* motion-reduce 対応 */

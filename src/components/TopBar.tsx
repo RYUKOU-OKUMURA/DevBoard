@@ -198,7 +198,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               aria-expanded={showHiddenDialog}
             >
                 非表示を管理
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-text-inverse bg-[var(--accent-red)] rounded-full shadow-sm">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-brand-red bg-brand-red-soft rounded-full shadow-sm">
                   {hiddenRepos.length}
                 </span>
               </button>

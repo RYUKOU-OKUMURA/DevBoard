@@ -159,8 +159,8 @@
 ### 1.1 CSS変数定義（1時間）
 
 #### タスク 1.1.1: ブランドカラー変数を追加（20分）
-- [ ] `src/index.css` を開く
-- [ ] `:root` セクションに以下を追加:
+- [x] `src/index.css` を開く
+- [x] `:root` セクションに以下を追加:
   ```css
   /* Red */
   --brand-red: #E53935;
@@ -180,7 +180,7 @@
   ```
 
 #### タスク 1.1.2: グラデーション変数を追加（15分）
-- [ ] 同じく `:root` に以下を追加:
+- [x] 同じく `:root` に以下を追加:
   ```css
   --brand-gradient: linear-gradient(135deg, #E53935 0%, #673AB7 100%);
   --brand-gradient-reverse: linear-gradient(135deg, #673AB7 0%, #E53935 100%);
@@ -189,7 +189,7 @@
   ```
 
 #### タスク 1.1.3: メタリック変数を追加（Light Mode）（15分）
-- [ ] `:root` に以下を追加:
+- [x] `:root` に以下を追加:
   ```css
   --metallic-highlight: rgba(255, 255, 255, 0.1);
   --metallic-shimmer: rgba(255, 255, 255, 0.05);
@@ -204,7 +204,7 @@
   ```
 
 #### タスク 1.1.4: ダークモード用の変数を追加（10分）
-- [ ] `.dark` セクションに以下を追加:
+- [x] `.dark` セクションに以下を追加:
   ```css
   --brand-purple: #8B6FDB;
   --brand-purple-emphasis: #7C5FCC;
@@ -227,7 +227,7 @@
 ### 1.2 アニメーションキーフレーム（1時間）
 
 #### タスク 1.2.1: グラデーションアニメーションを追加（20分）
-- [ ] `src/index.css` の末尾に以下を追加:
+- [x] `src/index.css` の末尾に以下を追加:
   ```css
   @keyframes gradient-flow {
     0%, 100% { background-position: 0% 50%; }
@@ -247,7 +247,7 @@
   ```
 
 #### タスク 1.2.2: メタリックアニメーションを追加（20分）
-- [ ] 以下を追加:
+- [x] 以下を追加:
   ```css
   @keyframes metallic-shimmer {
     0% { transform: translateX(-100%); }
@@ -274,7 +274,7 @@
   ```
 
 #### タスク 1.2.3: エントランスアニメーションを追加（20分）
-- [ ] 以下を追加:
+- [x] 以下を追加:
   ```css
   @keyframes card-entrance {
     from {
@@ -305,8 +305,8 @@
 ### 1.3 デザインシステム更新（1時間）
 
 #### タスク 1.3.1: DesignPalette インターフェースを拡張（20分）
-- [ ] `src/lib/designSystem.ts` を開く
-- [ ] `DesignPalette` インターフェースに以下を追加:
+- [x] `src/lib/designSystem.ts` を開く
+- [x] `DesignPalette` インターフェースに以下を追加:
   ```ts
   brandRed: string;
   brandRedEmphasis: string;
@@ -323,7 +323,7 @@
   ```
 
 #### タスク 1.3.2: createDesignPalette 関数を更新（30分）
-- [ ] `createDesignPalette()` 関数内で以下を返す:
+- [x] `createDesignPalette()` 関数内で以下を返す:
   ```ts
   brandRed: 'var(--brand-red)',
   brandRedEmphasis: 'var(--brand-red-emphasis)',
@@ -340,16 +340,16 @@
   ```
 
 #### タスク 1.3.3: TypeScript エラーを修正（10分）
-- [ ] すべてのコンポーネントで TypeScript エラーがないか確認
-- [ ] 必要に応じて型定義を調整
+- [x] すべてのコンポーネントで TypeScript エラーがないか確認
+- [x] 必要に応じて型定義を調整
 
 ---
 
 ### 1.4 Tailwind設定（1時間）
 
 #### タスク 1.4.1: Tailwind にブランドカラーを追加（30分）
-- [ ] `tailwind.config.js` を開く
-- [ ] `theme.extend.colors` に以下を追加:
+- [x] `tailwind.config.js` を開く
+- [x] `theme.extend.colors` に以下を追加:
   ```js
   'brand-red': 'var(--brand-red)',
   'brand-red-emphasis': 'var(--brand-red-emphasis)',
@@ -360,10 +360,10 @@
   ```
 
 #### タスク 1.4.2: 簡単なテスト（30分）
-- [ ] LandingPage で `bg-brand-purple` を試す
-- [ ] TopBar ボタンで `text-brand-red` を試す
-- [ ] ブラウザで色が表示されることを確認
-- [ ] ダークモードで色が変わることを確認
+- [x] LandingPage で `bg-brand-purple` を試す
+- [x] TopBar ボタンで `text-brand-red` を試す
+- [x] ブラウザで色が表示されることを確認
+- [x] ダークモードで色が変わることを確認
 
 ---
 
@@ -834,12 +834,12 @@
 各タスクにチェックボックス `[ ]` があります。完了したら `[x]` にマークしてください。
 
 ### Phase別進捗
-- Phase 0: 0/16 タスク完了
-- Phase 1: 0/13 タスク完了
+- Phase 0: 16/16 タスク完了
+- Phase 1: 13/13 タスク完了
 - Phase 2: 0/13 タスク完了
 - Phase 3: 0/21 タスク完了
 - Phase 4: 0/9 タスク完了
 - 検証: 0/6 タスク完了
 - ドキュメント: 0/2 タスク完了
 
-**全体進捗: 0/82 (0%)**
+**全体進捗: 29/82 (35%)**

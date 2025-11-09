@@ -44,6 +44,12 @@ export default {
         'accent-red-strong': 'var(--accent-red-emphasis)',
         'accent-red-muted': 'var(--accent-red-muted)',
         'accent-red-border': 'var(--accent-red-border)',
+        'brand-red': 'var(--brand-red)',
+        'brand-red-emphasis': 'var(--brand-red-emphasis)',
+        'brand-red-soft': 'var(--brand-red-soft)',
+        'brand-purple': 'var(--brand-purple)',
+        'brand-purple-emphasis': 'var(--brand-purple-emphasis)',
+        'brand-purple-soft': 'var(--brand-purple-soft)',
       },
       boxShadow: {
         sm: 'var(--shadow-sm)',

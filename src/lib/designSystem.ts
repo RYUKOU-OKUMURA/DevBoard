@@ -46,6 +46,18 @@ export interface DesignPalette {
   accent: string;
   accentGlow: string;
   accentGradient: string;
+  brandRed: string;
+  brandRedEmphasis: string;
+  brandRedSoft: string;
+  brandRedGlow: string;
+  brandPurple: string;
+  brandPurpleEmphasis: string;
+  brandPurpleSoft: string;
+  brandPurpleGlow: string;
+  brandGradient: string;
+  metallicHighlight: string;
+  metallicShimmer: string;
+  brushedMetal: string;
   callToActionText: string;
   callToActionShadow: string;
 
@@ -182,6 +194,18 @@ export function createDesignPalette(isDark: boolean): DesignPalette {
     accent: 'var(--color-1)',
     accentGlow: 'var(--color-1-glow)',
     accentGradient: 'linear-gradient(135deg, var(--color-1), #7c4dff)',
+    brandRed: 'var(--brand-red)',
+    brandRedEmphasis: 'var(--brand-red-emphasis)',
+    brandRedSoft: 'var(--brand-red-soft)',
+    brandRedGlow: 'var(--brand-red-glow)',
+    brandPurple: 'var(--brand-purple)',
+    brandPurpleEmphasis: 'var(--brand-purple-emphasis)',
+    brandPurpleSoft: 'var(--brand-purple-soft)',
+    brandPurpleGlow: 'var(--brand-purple-glow)',
+    brandGradient: 'var(--brand-gradient)',
+    metallicHighlight: 'var(--metallic-highlight)',
+    metallicShimmer: 'var(--metallic-shimmer)',
+    brushedMetal: 'var(--brushed-metal)',
 
     // Call to action button
     callToActionText: '#ffffff',

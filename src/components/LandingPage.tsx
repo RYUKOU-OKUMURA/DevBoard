@@ -71,7 +71,9 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
           <div className="pointer-events-none absolute inset-0" style={{ background: auraGradient }} />
           <div className="relative z-10 flex flex-col gap-stack-lg">
             <div className="flex items-center gap-inline-md text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: palette.textMuted }}>
-              <span>DevBoard へようこそ</span>
+              <span className="rounded-full bg-brand-purple px-inset-sm py-inset-xs text-[0.65rem] text-text-inverse">
+                DevBoard へようこそ
+              </span>
               <span aria-hidden className="h-px flex-1 rounded-full" style={{ background: palette.highlight }} />
             </div>
             <div className="space-y-4">
