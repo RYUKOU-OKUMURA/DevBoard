@@ -1,7 +1,9 @@
+import { motion } from 'framer-motion';
 import React, { useState } from 'react';
 import { SortOrder, SavedView, Repo, ViewPreset, ColumnKey } from '../types';
 import { formatLastUpdateTime } from '../utils/timeFormatter';
 import { focusRing } from '../lib/focusRing';
+import { GlassModal } from './ui/GlassModal';
 
 interface TopBarProps {
   title: string;
@@ -204,15 +206,33 @@ export const TopBar: React.FC<TopBarProps> = ({
               </button>
             )}
             {onRefresh && (
-              <button
+              <motion.button
+                type="button"
                 onClick={onRefresh}
                 disabled={isLoading}
-                className={`px-inset-md py-inset-xs bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong disabled:bg-surface-muted disabled:text-[var(--text-muted)] disabled:cursor-not-allowed transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75`}
+                className={`relative overflow-hidden px-inset-md py-inset-xs rounded-xl text-text-inverse shadow-sm transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--brand-purple)] focus-visible:ring-opacity-75 disabled:cursor-not-allowed disabled:opacity-70`}
+                style={{
+                  background: 'var(--brand-gradient)',
+                  backgroundSize: '200% 100%',
+                  color: 'var(--text-inverse)',
+                  boxShadow: 'inset 0 1px 0 var(--metallic-edge-top)',
+                }}
+                whileHover={
+                  isLoading
+                    ? undefined
+                    : {
+                        backgroundPosition: '100% 50%',
+                        boxShadow:
+                          '0 4px 12px var(--brand-purple-glow), inset 0 1px 0 var(--metallic-edge-top)',
+                      }
+                }
+                whileTap={isLoading ? undefined : { scale: 0.95 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
                 {isLoading ? (
-                  <span className="flex items-center">
+                  <span className="flex items-center gap-2">
                     <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-text-inverse"
+                      className="animate-spin h-4 w-4 text-text-inverse"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -236,7 +256,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 ) : (
                   '↻ 更新'
                 )}
-              </button>
+              </motion.button>
             )}
           </div>
         </div>
@@ -251,7 +271,13 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="リポジトリを検索（名前、言語、トピック、説明...）"
                 aria-label="リポジトリを検索"
-                className={`w-full px-inset-md py-inset-xs pl-inset-xl border border-[var(--border-subtle)] rounded-xl bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] shadow-inner transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75 focus:border-transparent`}
+                className={`
+                  w-full px-inset-md py-inset-sm pl-inset-xl border border-[var(--border-subtle)] rounded-xl
+                  bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+                  shadow-inner transition-all duration-150 motion-safe:ease-smooth motion-reduce:transition-none
+                  ${focusRing.default} focus-visible:ring-[var(--brand-purple)] focus-visible:border-[var(--brand-purple)]
+                `}
+                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}
               />
               <svg
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[var(--text-muted)]"
@@ -309,7 +335,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             {currentViewId && onDeleteView && (
               <button
                 onClick={(event) => handleDeleteClick(currentViewId, event)}
-                className={`px-inset-sm py-inset-xs bg-[var(--accent-red)] text-text-inverse rounded-xl hover:bg-[var(--accent-red-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} ${focusRing.danger}`}
+                className={`px-inset-sm py-inset-xs bg-[var(--brand-red)] text-text-inverse rounded-xl hover:bg-[var(--brand-red-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--brand-red)] focus-visible:ring-opacity-75`}
                 title="選択中のビューを削除"
               >
                 ×
@@ -332,18 +358,21 @@ export const TopBar: React.FC<TopBarProps> = ({
                 </option>
               ))}
             </select>
-            <button
+            <motion.button
+              type="button"
               onClick={() => setShowPresetDialog(true)}
               disabled={presets.length >= 5}
-              className={`px-inset-sm py-inset-xs bg-[var(--accent-purple)] text-text-inverse rounded-xl hover:bg-[var(--accent-purple-emphasis)] disabled:bg-surface-muted disabled:text-[var(--text-muted)] disabled:cursor-not-allowed transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
+              className={`px-inset-sm py-inset-xs bg-[var(--brand-purple)] text-text-inverse rounded-xl transition-all motion-reduce:transition-none shadow-sm hover:bg-[var(--brand-red)] ${focusRing.default} focus-visible:ring-[var(--brand-purple)] focus-visible:ring-opacity-75 disabled:bg-surface-muted disabled:text-[var(--text-muted)] disabled:cursor-not-allowed`}
               title="現在の状態をプリセットとして保存"
+              whileHover={{ scale: presets.length >= 5 ? 1 : 1.05 }}
+              whileTap={{ scale: presets.length >= 5 ? 1 : 0.95 }}
             >
               +
-            </button>
+            </motion.button>
             {currentPresetId && onDeletePreset && (
               <button
                 onClick={(event) => handleDeletePresetClick(currentPresetId, event)}
-                className={`px-inset-sm py-inset-xs bg-[var(--accent-red)] text-text-inverse rounded-xl hover:bg-[var(--accent-red-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} ${focusRing.danger}`}
+                className={`px-inset-sm py-inset-xs bg-[var(--brand-red)] text-text-inverse rounded-xl hover:bg-[var(--brand-red-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--brand-red)] focus-visible:ring-opacity-75`}
                 title="選択中のプリセットを削除"
               >
                 ×
@@ -364,246 +393,222 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Save View Dialog */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-surface-primary rounded-2xl p-6 max-w-md w-full mx-4 shadow-lg transition-colors">
-            <h2 className="text-xl font-bold mb-4 text-[var(--text-primary)]">現在のビューを保存</h2>
-            <p className="text-[var(--text-muted)] mb-4">
-              現在の検索キーワードと並び順を保存します。
+      <GlassModal
+        isOpen={showSaveDialog}
+        onClose={handleDialogClose}
+        title="現在のビューを保存"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-[var(--text-muted)]">
+            現在の検索キーワードと並び順を保存します。
+          </p>
+          <div className="space-y-2">
+            <label htmlFor="viewName" className="block text-sm font-medium text-[var(--text-secondary)]">
+              ビュー名
+            </label>
+            <input
+              id="viewName"
+              type="text"
+              value={viewName}
+              onChange={(event) => {
+                setViewName(event.target.value);
+                setSaveError('');
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  handleDialogClose();
+                }
+              }}
+              placeholder="例: アクティブなTypeScriptプロジェクト"
+              className={`w-full px-inset-md py-inset-xs border border-[var(--border-subtle)] rounded-xl bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75 focus:border-transparent`}
+              autoFocus
+            />
+            {saveError && <p className="text-sm text-[var(--accent-red-emphasis)]">{saveError}</p>}
+          </div>
+          <div className="bg-surface-secondary p-3 rounded-lg border border-[var(--border-subtle)]">
+            <p className="text-sm text-[var(--text-muted)]">
+              <strong>検索:</strong> {searchQuery || '（なし）'}
             </p>
-            <div className="mb-4">
-              <label htmlFor="viewName" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                ビュー名
-              </label>
-              <input
-                id="viewName"
-                type="text"
-                value={viewName}
-                onChange={(event) => {
-                  setViewName(event.target.value);
-                  setSaveError('');
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    handleDialogClose();
-                  }
-                }}
-                placeholder="例: アクティブなTypeScriptプロジェクト"
-                className={`w-full px-inset-md py-inset-xs border border-[var(--border-subtle)] rounded-xl bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75 focus:border-transparent`}
-                autoFocus
-              />
-              {saveError && (
-                <p className="mt-2 text-sm text-[var(--accent-red-emphasis)]">{saveError}</p>
-              )}
-            </div>
-            <div className="bg-surface-secondary p-3 rounded-lg mb-4 border border-[var(--border-subtle)]">
-              <p className="text-sm text-[var(--text-muted)]">
-                <strong>検索:</strong> {searchQuery || '（なし）'}
-              </p>
-              <p className="text-sm text-[var(--text-muted)]">
-                <strong>並び順:</strong>{' '}
-                {sortOrder === 'lastUpdated' && '最終更新日'}
-                {sortOrder === 'name' && '名前 (A-Z)'}
-                {sortOrder === 'stars' && 'スター数'}
-                {sortOrder === 'language' && '言語'}
-              </p>
-            </div>
-            <div className="flex gap-inline-md">
-              <button
-                onClick={handleSaveClick}
-                className={`flex-1 px-inset-md py-inset-xs bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75`}
-              >
-                保存
-              </button>
-              <button
-                onClick={handleDialogClose}
-                className={`flex-1 px-inset-md py-inset-xs bg-surface-tertiary text-[var(--text-secondary)] rounded-xl hover:bg-surface-hover transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
-              >
-                キャンセル
-              </button>
-            </div>
+            <p className="text-sm text-[var(--text-muted)]">
+              <strong>並び順:</strong>{' '}
+              {sortOrder === 'lastUpdated' && '最終更新日'}
+              {sortOrder === 'name' && '名前 (A-Z)'}
+              {sortOrder === 'stars' && 'スター数'}
+              {sortOrder === 'language' && '言語'}
+            </p>
+          </div>
+          <div className="flex gap-inline-md">
+            <button
+              onClick={handleSaveClick}
+              className={`flex-1 px-inset-md py-inset-xs bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75`}
+            >
+              保存
+            </button>
+            <button
+              onClick={handleDialogClose}
+              className={`flex-1 px-inset-md py-inset-xs bg-surface-tertiary text-[var(--text-secondary)] rounded-xl hover:bg-surface-hover transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
+            >
+              キャンセル
+            </button>
           </div>
         </div>
-      )}
+      </GlassModal>
 
       {/* Save Preset Dialog */}
-      {showPresetDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-surface-primary rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-lg transition-colors">
-            <h2 className="text-xl font-bold mb-4 text-[var(--text-primary)]">プリセットとして保存</h2>
-            <p className="text-[var(--text-muted)] mb-4">
-              現在のダッシュボードの状態（検索、並び順、カラム配置、カラム名、しきい値など）を保存します。
-            </p>
-            <div className="mb-4">
-              <label htmlFor="presetName" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                プリセット名
-              </label>
-              <input
-                id="presetName"
-                type="text"
-                value={presetName}
-                onChange={(event) => {
-                  setPresetName(event.target.value);
-                  setPresetError('');
-                }}
-                onKeyDown={(event) => {
-                  // Do not allow Enter to trigger save implicitly; require explicit click on the 保存 button
-                  if (event.key === 'Enter' && !event.isComposing) {
-                    event.preventDefault();
-                    return;
-                  }
-                  if (event.key === 'Escape') {
-                    handlePresetDialogClose();
-                  }
-                }}
-                placeholder="例: 開発中プロジェクト"
-                className={`w-full px-inset-md py-inset-xs border border-[var(--accent-purple-border)] rounded-xl bg-[var(--accent-purple-muted)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75 focus:border-transparent`}
-                autoFocus
-              />
-              {presetError && (
-                <p className="mt-2 text-sm text-[var(--accent-red-emphasis)]">{presetError}</p>
-              )}
-            </div>
-
-            <div className="bg-[var(--accent-purple-muted)] border border-[var(--accent-purple-border)] p-4 rounded-lg mb-4 space-y-2">
-              <h3 className="font-semibold text-[var(--accent-purple-emphasis)] mb-2">保存される内容:</h3>
-
-              <div className="text-sm text-[var(--text-secondary)]">
-                <strong>検索:</strong> {searchQuery || '（なし）'}
-              </div>
-
-              <div className="text-sm text-[var(--text-secondary)]">
-                <strong>並び順:</strong>{' '}
-                {sortOrder === 'lastUpdated' && '最終更新日'}
-                {sortOrder === 'name' && '名前 (A-Z)'}
-                {sortOrder === 'stars' && 'スター数'}
-                {sortOrder === 'language' && '言語'}
-              </div>
-
-              {columnTitles && (
-                <div className="text-sm text-[var(--text-secondary)]">
-                  <strong>カラム名:</strong>
-                  <ul className="ml-4 mt-1 space-y-1">
-                    {Object.entries(columnTitles).map(([key, title]) => (
-                      <li key={key}>
-                        {key}: {title}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {columnVisibility && (
-                <div className="text-sm text-[var(--text-secondary)]">
-                  <strong>表示中のカラム:</strong>{' '}
-                  {Object.entries(columnVisibility)
-                    .filter(([, visible]) => visible)
-                    .map(([key]) => key)
-                    .join(', ')}
-                </div>
-              )}
-
-              {thresholds && (
-                <div className="text-sm text-[var(--text-secondary)]">
-                  <strong>しきい値:</strong> アクティブ={thresholds.activeThreshold}日,
-                  停滞={thresholds.staleThreshold}日
-                </div>
-              )}
-
-              <div className="text-sm text-[var(--text-secondary)]">
-                <strong>カードの並び順:</strong> 現在の配置を保存
-              </div>
-
-              {hiddenRepos && hiddenRepos.length > 0 && (
-                <div className="text-sm text-[var(--text-secondary)]">
-                  <strong>非表示リポジトリ:</strong> {hiddenRepos.length}件
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-inline-md">
-              <button
-                onClick={handleSavePresetClick}
-                className={`flex-1 px-inset-md py-inset-xs bg-[var(--accent-purple)] text-text-inverse rounded-xl hover:bg-[var(--accent-purple-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
-              >
-                保存
-              </button>
-              <button
-                onClick={handlePresetDialogClose}
-                className={`flex-1 px-inset-md py-inset-xs bg-surface-tertiary text-[var(--text-secondary)] rounded-xl hover:bg-surface-hover transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
-              >
-                キャンセル
-              </button>
-            </div>
+      <GlassModal
+        isOpen={showPresetDialog}
+        onClose={handlePresetDialogClose}
+        title="プリセットとして保存"
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="space-y-4">
+          <p className="text-[var(--text-muted)]">
+            現在のダッシュボードの状態（検索、並び順、カラム配置、カラム名、しきい値など）を保存します。
+          </p>
+          <div className="space-y-2">
+            <label htmlFor="presetName" className="block text-sm font-medium text-[var(--text-secondary)]">
+              プリセット名
+            </label>
+            <input
+              id="presetName"
+              type="text"
+              value={presetName}
+              onChange={(event) => {
+                setPresetName(event.target.value);
+                setPresetError('');
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.isComposing) {
+                  event.preventDefault();
+                  return;
+                }
+                if (event.key === 'Escape') {
+                  handlePresetDialogClose();
+                }
+              }}
+              placeholder="例: 開発中プロジェクト"
+              className={`w-full px-inset-md py-inset-xs border border-[var(--accent-purple-border)] rounded-xl bg-[var(--accent-purple-muted)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75 focus:border-transparent`}
+              autoFocus
+            />
+            {presetError && <p className="text-sm text-[var(--accent-red-emphasis)]">{presetError}</p>}
           </div>
-        </div>
-      )}
-
-      {/* Hidden Repos Dialog */}
-      {showHiddenDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-surface-primary rounded-2xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col shadow-lg transition-colors">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">非表示のリポジトリ ({hiddenRepos.length})</h2>
-              <button
-                onClick={() => setShowHiddenDialog(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                aria-label="閉じる"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+          <div className="bg-[var(--accent-purple-muted)] border border-[var(--accent-purple-border)] p-4 rounded-lg space-y-2">
+            <h3 className="font-semibold text-[var(--accent-purple-emphasis)]">保存される内容:</h3>
+            <div className="text-sm text-[var(--text-secondary)]">
+              <strong>検索:</strong> {searchQuery || '（なし）'}
             </div>
-
-            {hiddenRepos.length === 0 ? (
-              <p className="text-[var(--text-muted)] text-center py-8">非表示のリポジトリはありません</p>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-                  {hiddenRepos.map((repo) => (
-                    <div
-                      key={repo.id}
-                      className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg border border-[var(--border-subtle)] shadow-sm transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[var(--text-primary)] truncate">{repo.nameWithOwner}</p>
-                        {repo.description && (
-                          <p className="text-sm text-[var(--text-muted)] truncate">{repo.description}</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => onUnhideRepo?.(repo.id)}
-                        className={`ml-inline-md px-inset-sm py-inline-xs bg-[var(--accent-blue)] text-text-inverse text-sm rounded hover:bg-[var(--accent-blue-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-75`}
-                      >
-                        表示
-                      </button>
-                    </div>
+            <div className="text-sm text-[var(--text-secondary)]">
+              <strong>並び順:</strong>{' '}
+              {sortOrder === 'lastUpdated' && '最終更新日'}
+              {sortOrder === 'name' && '名前 (A-Z)'}
+              {sortOrder === 'stars' && 'スター数'}
+              {sortOrder === 'language' && '言語'}
+            </div>
+            {columnTitles && (
+              <div className="text-sm text-[var(--text-secondary)]">
+                <strong>カラム名:</strong>
+                <ul className="ml-4 mt-1 space-y-1">
+                  {Object.entries(columnTitles).map(([key, title]) => (
+                    <li key={key}>
+                      {key}: {title}
+                    </li>
                   ))}
-                </div>
-
-                <div className="flex gap-inline-md border-t border-[var(--border-subtle)] pt-4">
-                  <button
-                    onClick={() => {
-                      onUnhideAll?.();
-                      setShowHiddenDialog(false);
-                    }}
-                    className={`flex-1 px-inset-md py-inset-xs bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75`}
-                  >
-                    すべて表示
-                  </button>
-                  <button
-                    onClick={() => setShowHiddenDialog(false)}
-                    className={`flex-1 px-inset-md py-inset-xs bg-surface-tertiary text-[var(--text-secondary)] rounded-xl hover:bg-surface-hover transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
-                  >
-                    閉じる
-                  </button>
-                </div>
-              </>
+                </ul>
+              </div>
+            )}
+            {columnVisibility && (
+              <div className="text-sm text-[var(--text-secondary)]">
+                <strong>表示中のカラム:</strong>{' '}
+                {Object.entries(columnVisibility)
+                  .filter(([, visible]) => visible)
+                  .map(([key]) => key)
+                  .join(', ')}
+              </div>
+            )}
+            {thresholds && (
+              <div className="text-sm text-[var(--text-secondary)]">
+                <strong>しきい値:</strong> アクティブ={thresholds.activeThreshold}日, 停滞={thresholds.staleThreshold}日
+              </div>
+            )}
+            <div className="text-sm text-[var(--text-secondary)]">
+              <strong>カードの並び順:</strong> 現在の配置を保存
+            </div>
+            {hiddenRepos && hiddenRepos.length > 0 && (
+              <div className="text-sm text-[var(--text-secondary)]">
+                <strong>非表示リポジトリ:</strong> {hiddenRepos.length}件
+              </div>
             )}
           </div>
+          <div className="flex gap-inline-md">
+            <button
+              onClick={handleSavePresetClick}
+              className={`flex-1 px-inset-md py-inset-xs bg-[var(--accent-purple)] text-text-inverse rounded-xl hover:bg-[var(--accent-purple-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
+            >
+              保存
+            </button>
+            <button
+              onClick={handlePresetDialogClose}
+              className={`flex-1 px-inset-md py-inset-xs bg-surface-tertiary text-[var(--text-secondary)] rounded-xl hover:bg-surface-hover transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
+            >
+              キャンセル
+            </button>
+          </div>
         </div>
-      )}
+      </GlassModal>
+
+      {/* Hidden Repos Dialog */}
+      <GlassModal
+        isOpen={showHiddenDialog}
+        onClose={() => setShowHiddenDialog(false)}
+        title={`非表示のリポジトリ (${hiddenRepos.length})`}
+        className="max-w-2xl max-h-[80vh] overflow-y-auto"
+      >
+        {hiddenRepos.length === 0 ? (
+          <p className="text-[var(--text-muted)] text-center py-8">非表示のリポジトリはありません</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {hiddenRepos.map((repo) => (
+                <div
+                  key={repo.id}
+                  className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg border border-[var(--border-subtle)] shadow-sm transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-[var(--text-primary)] truncate">{repo.nameWithOwner}</p>
+                    {repo.description && (
+                      <p className="text-sm text-[var(--text-muted)] truncate">{repo.description}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => onUnhideRepo?.(repo.id)}
+                    className={`ml-inline-md px-inset-sm py-inline-xs bg-[var(--accent-blue)] text-text-inverse text-sm rounded hover:bg-[var(--accent-blue-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-75`}
+                  >
+                    表示
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-inline-md">
+              <button
+                onClick={() => {
+                  onUnhideAll?.();
+                  setShowHiddenDialog(false);
+                }}
+                className={`flex-1 px-inset-md py-inset-xs bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75`}
+              >
+                すべて表示
+              </button>
+              <button
+                onClick={() => setShowHiddenDialog(false)}
+                className={`flex-1 px-inset-md py-inset-xs bg-surface-tertiary text-[var(--text-secondary)] rounded-xl hover:bg-surface-hover transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        )}
+      </GlassModal>
     </div>
   );
 };

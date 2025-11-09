@@ -1,5 +1,6 @@
+import { motion } from 'framer-motion';
 import React from 'react';
-import { Repo } from '../types';
+import { ColumnKey, Repo } from '../types';
 import { timeAgo } from '../lib/timeAgo';
 import { focusRing } from '../lib/focusRing';
 
@@ -11,6 +12,7 @@ interface RepoCardProps {
   isSelected?: boolean;
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
+  columnKey?: ColumnKey | string;
 }
 
 export const RepoCard: React.FC<RepoCardProps> = ({
@@ -21,6 +23,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
   isSelected = false,
   onSelect,
   onDelete,
+  columnKey,
 }) => {
   const handleClick = () => {
     window.open(repo.htmlUrl, '_blank', 'noopener,noreferrer');
@@ -68,24 +71,65 @@ export const RepoCard: React.FC<RepoCardProps> = ({
   // Get max 3 topics
   const displayTopics = repo.topics.slice(0, 3);
   const hasMoreTopics = repo.topics.length > 3;
+  const accentColor = columnKey === 'Active' ? 'var(--brand-red)' : 'var(--brand-gradient)';
+  const hoverShadowColor =
+    columnKey === 'Active' ? 'var(--brand-red-soft)' : 'var(--brand-purple-soft)';
+  const selectionClasses = isSelected
+    ? 'border-[var(--accent-green)] bg-opacity-95 ring-2 ring-[var(--accent-green)] ring-opacity-25 shadow-lg'
+    : 'border-[var(--border-subtle)] hover:border-[var(--accent-green-border)]';
 
   return (
-    <div
+    <motion.div
       role="button"
       tabIndex={0}
       aria-label={`リポジトリを開く ${repo.nameWithOwner}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}
+      whileHover={{
+        y: -4,
+        boxShadow: `0 12px 40px ${hoverShadowColor}, 0 6px 20px rgba(0,0,0,0.1)`,
+        transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+      }}
       className={`
-        bg-surface-primary border rounded-xl p-inset-lg shadow-sm 
-        hover:shadow-md hover:-translate-y-0.5 
-        motion-safe:transition-all motion-safe:duration-250 motion-safe:ease-smooth motion-reduce:transition-none 
-        cursor-pointer outline-none
-        ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-50
-        ${isSelected ? 'border-[var(--accent-green)] bg-opacity-95 ring-2 ring-[var(--accent-green)] ring-opacity-25' : 'border-[var(--border-subtle)] hover:border-[var(--accent-green-border)]'}
-        animate-fade-in
+        relative
+        group
+        overflow-hidden
+        cursor-pointer
+        bg-surface-primary
+        border
+        rounded-xl
+        p-inset-lg
+        shadow-sm
+        motion-safe:transition-all
+        motion-safe:duration-250
+        motion-safe:ease-smooth
+        motion-reduce:transition-none
+        outline-none
+        ${focusRing.default}
+        focus-visible:ring-[var(--accent-green)]
+        focus-visible:ring-opacity-50
+        ${selectionClasses}
       `}
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-0 left-0 right-0 h-0.5 opacity-80 transition-opacity duration-200 group-hover:opacity-100"
+        style={{ background: accentColor }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-xl"
+        style={{ background: 'var(--brushed-metal)' }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-xl"
+        style={{ boxShadow: 'inset 0 0 30px rgba(255,255,255,0.12)' }}
+      />
       {/* Repository Title and Actions */}
       <div className="flex items-start justify-between mb-stack-xs">
         <div className="flex-1 min-w-0 flex items-center gap-3">
@@ -207,6 +251,6 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

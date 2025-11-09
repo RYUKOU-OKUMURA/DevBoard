@@ -539,6 +539,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
                 <div key={repo.id} className="animate-fade-in">
                   <RepoCard
                     repo={repo}
+                    columnKey={columnKey}
                     showCheckbox={isDeleteMode}
                     showDeleteButton={isDeleteMode}
                     isSelected={selectedRepos.has(repo.id)}
@@ -609,4 +610,3 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     </div>
   );
 };
-

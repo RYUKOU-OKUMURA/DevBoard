@@ -337,7 +337,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
               onDrop={(e) => handleDropOnCard(e, repo.id)}
               className="animate-fade-in motion-reduce:animate-none"
             >
-              {renderRepoCard ? renderRepoCard(repo) : <RepoCard repo={repo} onHide={onHide} />}
+              {renderRepoCard ? renderRepoCard(repo) : <RepoCard repo={repo} onHide={onHide} columnKey={columnKey} />}
             </div>
           ))
         )}

@@ -512,16 +512,16 @@
 ### 3.2 RepoCard再設計（2.5時間）
 
 #### タスク 3.2.1: motion.div でカードをラップ（30分）
-- [ ] `src/components/RepoCard.tsx` を開く
-- [ ] `<div>` を `<motion.div>` に変更
-- [ ] 以下のプロップスを追加:
+- [x] `src/components/RepoCard.tsx` を開く
+- [x] `<div>` を `<motion.div>` に変更
+- [x] 以下のプロップスを追加:
   - `layout`
   - `initial={{ opacity: 0, y: 8 }}`
   - `animate={{ opacity: 1, y: 0 }}`
   - `transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}`
 
 #### タスク 3.2.2: whileHover を実装（45分）
-- [ ] `whileHover` プロップスを追加:
+- [x] `whileHover` プロップスを追加:
   ```tsx
   whileHover={{
     y: -4,
@@ -529,10 +529,10 @@
     transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
   }}
   ```
-- [ ] Active 列のカードは `--brand-red-soft` を使用
+- [x] Active 列のカードは `--brand-red-soft` を使用
 
 #### タスク 3.2.3: グラデーションアクセントバー（トップ）を追加（30分）
-- [ ] カード内に以下を追加:
+- [x] カード内に以下を追加:
   ```tsx
   <div
     className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -545,7 +545,7 @@
   ```
 
 #### タスク 3.2.4: メタリックブラッシュド背景（ホバー）を追加（30分）
-- [ ] 以下を追加:
+- [x] 以下を追加:
   ```tsx
   <div
     className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-xl"
@@ -554,17 +554,17 @@
   ```
 
 #### タスク 3.2.5: フォーカスリングを追加（15分）
-- [ ] キーボードナビゲーション用のフォーカスリングを追加
-- [ ] `tabIndex={0}`, `role="button"` を確認
-- [ ] Tab キーでテスト
+- [x] キーボードナビゲーション用のフォーカスリングを追加
+- [x] `tabIndex={0}`, `role="button"` を確認
+- [x] Tab キーでテスト
 
 ---
 
 ### 3.3 TopBar洗練（2時間）
 
 #### タスク 3.3.1: 検索入力のフォーカス状態を強化（30分）
-- [ ] `src/components/TopBar.tsx` を開く
-- [ ] 検索 `<input>` に以下を追加:
+- [x] `src/components/TopBar.tsx` を開く
+- [x] 検索 `<input>` に以下を追加:
   ```tsx
   className="
     px-inset-md py-inset-sm rounded-xl
@@ -582,8 +582,8 @@
   ```
 
 #### タスク 3.3.2: プライマリアクションボタンをグラデーションに（45分）
-- [ ] Refresh ボタンを motion.button に変更
-- [ ] 以下を実装:
+- [x] Refresh ボタンを motion.button に変更
+- [x] 以下を実装:
   ```tsx
   style={{
     background: 'var(--brand-gradient)',
@@ -598,50 +598,50 @@
   ```
 
 #### タスク 3.3.3: セカンダリボタンのホバー効果（30分）
-- [ ] Add ボタンなどのセカンダリボタンにホバー効果追加
-- [ ] Purple → Red カラーシフト
-- [ ] スケールアニメーション
+- [x] Add ボタンなどのセカンダリボタンにホバー効果追加
+- [x] Purple → Red カラーシフト
+- [x] スケールアニメーション
 
 #### タスク 3.3.4: 削除ボタンに Red 強調（15分）
-- [ ] 削除ボタンに `bg-brand-red` 適用
-- [ ] ホバーで `bg-brand-red-emphasis`
-- [ ] フォーカスリングは `focus-visible:ring-brand-red`
+- [x] 削除ボタンに `bg-brand-red` 適用
+- [x] ホバーで `bg-brand-red-emphasis`
+- [x] フォーカスリングは `focus-visible:ring-brand-red`
 
 ---
 
 ### 3.4 モーダルシステム（グラスモーフィズム）（2時間）
 
 #### タスク 3.4.1: GlassModal コンポーネントを作成（1時間）
-- [ ] `src/components/ui/GlassModal.tsx` を新規作成
-- [ ] AnimatePresence, motion をインポート
-- [ ] バックドロップを実装:
+- [x] `src/components/ui/GlassModal.tsx` を新規作成
+- [x] AnimatePresence, motion をインポート
+- [x] バックドロップを実装:
   - `backgroundColor: rgba(103, 58, 183, 0.15)`
   - `backdropFilter: blur(12px)`
   - フェードイン/アウト
-- [ ] モーダルコンテンツを実装:
+- [x] モーダルコンテンツを実装:
   - スケール 0.95 → 1
   - グラデーションボーダー
   - メタリックエッジ
   - blur(30px) バックドロップフィルター
 
 #### タスク 3.4.2: 既存モーダルを GlassModal に置き換え（45分）
-- [ ] TopBar の保存ビューモーダルを GlassModal に置き換え
-- [ ] 他のモーダルダイアログがあれば置き換え
-- [ ] プロップス（isOpen, onClose, children）を確認
+- [x] TopBar の保存ビューモーダルを GlassModal に置き換え
+- [x] 他のモーダルダイアログがあれば置き換え
+- [x] プロップス（isOpen, onClose, children）を確認
 
 #### タスク 3.4.3: フォーカストラップを実装（15分）
-- [ ] モーダル内でフォーカスがトラップされることを確認
-- [ ] Escape キーで閉じることを確認
-- [ ] キーボードナビゲーションをテスト
+- [x] モーダル内でフォーカスがトラップされることを確認
+- [x] Escape キーで閉じることを確認
+- [x] キーボードナビゲーションをテスト
 
 ---
 
 ### 3.5 TabNavigation強化（1.5時間）
 
 #### タスク 3.5.1: アニメーショングラデーション下線を追加（45分）
-- [ ] `src/components/TabNavigation.tsx` を開く
-- [ ] 各タブを motion.button に変更
-- [ ] アクティブタブに以下を追加:
+- [x] `src/components/TabNavigation.tsx` を開く
+- [x] 各タブを motion.button に変更
+- [x] アクティブタブに以下を追加:
   ```tsx
   {active === tab.id && (
     <motion.div
@@ -654,14 +654,14 @@
   ```
 
 #### タスク 3.5.2: タブバッジにグラデーションを適用（30分）
-- [ ] バッジ（count）に `bg-brand-gradient` を適用
-- [ ] テキストを白に
-- [ ] サイズとパディングを調整
+- [x] バッジ（count）に `bg-brand-gradient` を適用
+- [x] テキストを白に
+- [x] サイズとパディングを調整
 
 #### タスク 3.5.3: ホバー/タップエフェクトを追加（15分）
-- [ ] `whileHover={{ y: -1 }}`
-- [ ] `whileTap={{ scale: 0.98 }}`
-- [ ] すべてのタブで確認
+- [x] `whileHover={{ y: -1 }}`
+- [x] `whileTap={{ scale: 0.98 }}`
+- [x] すべてのタブで確認
 
 ---
 
@@ -837,9 +837,9 @@
 - Phase 0: 16/16 タスク完了
 - Phase 1: 13/13 タスク完了
 - Phase 2: 0/13 タスク完了
-- Phase 3: 0/21 タスク完了
+- Phase 3: 21/21 タスク完了
 - Phase 4: 0/9 タスク完了
 - 検証: 0/6 タスク完了
 - ドキュメント: 0/2 タスク完了
 
-**全体進捗: 29/82 (35%)**
+**全体進捗: 50/82 (61%)**
