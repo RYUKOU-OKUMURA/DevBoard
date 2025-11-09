@@ -86,7 +86,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             </span>
             {tab.badge && tab.badge > 0 && (
               <motion.span
-                className="ml-inline-sm inline-flex items-center justify-center rounded-full px-inline-sm py-inline-xs text-xs font-semibold text-text-inverse shadow-sm"
+                className="ml-inline-sm inline-flex items-center justify-center rounded-full px-inline-sm py-inline-xs text-caption font-semibold text-text-inverse shadow-sm"
                 style={BADGE_STYLE}
               >
                 {tab.badge}

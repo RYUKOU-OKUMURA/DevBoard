@@ -382,7 +382,7 @@ function AppContent() {
       {/* User Info Header */}
       <div className="bg-surface-primary border-b border-[var(--border-subtle)] px-8 py-4 shadow-md">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-inline-md">
             <svg
               className="w-8 h-8 text-[var(--text-primary)]"
               viewBox="0 0 24 24"
@@ -407,9 +407,9 @@ function AppContent() {
               <line x1="12.5" y1="10" x2="15.5" y2="10"/>
               <line x1="17.5" y1="7" x2="20.5" y2="7"/>
             </svg>
-            <h1 className="text-xl font-semibold text-[var(--text-primary)]">DevBoard</h1>
+            <h1 className="text-title-2 font-semibold text-[var(--text-primary)]">DevBoard</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-inline-md">
             <button
               onClick={() => setIsAddRepoModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors font-semibold shadow-sm motion-safe:duration-250 motion-safe:ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50"
@@ -457,36 +457,36 @@ function AppContent() {
           </div>
         </div>
         {repos.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs sm:text-sm text-[var(--text-muted)]">
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-caption sm:text-body-sm text-[var(--text-muted)]">
             <div className="flex items-center gap-2">
-              <span className="uppercase tracking-wide text-[var(--text-muted)] text-[11px] sm:text-xs">
+              <span className="uppercase tracking-wide text-[var(--text-muted)] text-[11px] sm:text-caption">
                 総数
               </span>
-              <span className="text-base font-semibold text-[var(--text-primary)]">
+              <span className="text-body font-semibold text-[var(--text-primary)]">
                 {totalReposDisplayed}
               </span>
             </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">{columnTitles.Active}</span>
-                <span className="text-sm font-semibold text-[var(--accent-green-emphasis)]">
+                <span className="text-body-sm font-semibold text-[var(--accent-green-emphasis)]">
                   {displayedCategoryCounts.Active}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">{columnTitles.Stale}</span>
-                <span className="text-sm font-semibold text-[var(--accent-yellow-emphasis)]">
+                <span className="text-body-sm font-semibold text-[var(--accent-yellow-emphasis)]">
                   {displayedCategoryCounts.Stale}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">{columnTitles.Dormant}</span>
-                <span className="text-sm font-semibold text-[var(--accent-orange-emphasis)]">
+                <span className="text-body-sm font-semibold text-[var(--accent-orange-emphasis)]">
                   {displayedCategoryCounts.Dormant}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-[var(--text-muted)]">{columnTitles.Archived}</span>
-                <span className="text-sm font-semibold text-[var(--text-secondary)]">
+                <span className="text-body-sm font-semibold text-[var(--text-secondary)]">
                   {displayedCategoryCounts.Archived}
                 </span>
               </div>
@@ -496,7 +496,7 @@ function AppContent() {
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-[var(--accent-red-muted)] border-b border-[var(--accent-red-border)] px-6 py-3 text-[var(--text-primary)]">
+        <div className="bg-[var(--accent-red-muted)] border-b border-[var(--accent-red-border)] px-inset-lg py-inset-sm text-[var(--text-primary)]">
           <div className="flex items-center">
             <svg
               className="h-5 w-5 text-[var(--accent-red)] mr-2"
@@ -511,7 +511,7 @@ function AppContent() {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="text-sm text-[var(--accent-red-emphasis)]">{error}</span>
+            <span className="text-body-sm text-[var(--accent-red-emphasis)]">{error}</span>
             <button
               onClick={() => setError(null)}
               className="ml-auto text-[var(--accent-red)] hover:text-[var(--accent-red-emphasis)] transition-colors"
@@ -532,7 +532,7 @@ function AppContent() {
 
       {/* Custom Data Banner */}
       {dataSource === 'custom' && (
-        <div className="bg-[var(--accent-green-muted)] border-b border-[var(--accent-green-border)] px-6 py-3 text-[var(--text-primary)]">
+        <div className="bg-[var(--accent-green-muted)] border-b border-[var(--accent-green-border)] px-inset-lg py-inset-sm text-[var(--text-primary)]">
           <div className="flex items-center">
             <div className="flex items-center gap-2">
               <svg
@@ -548,7 +548,7 @@ function AppContent() {
                   d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-sm text-[var(--accent-green-emphasis)]">
+              <span className="text-body-sm text-[var(--accent-green-emphasis)]">
                 指定したリポジトリ ({customRepoSources.length} 件) を表示中です。
               </span>
             </div>

@@ -435,7 +435,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+            <h2 className="text-title-1 font-bold text-[var(--text-primary)] mb-2">
               リポジトリはまだ追加されていません
             </h2>
             <p className="text-[var(--text-muted)] mb-6">
@@ -452,7 +452,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
       {/* Toolbar */}
       <div className="flex items-center justify-between px-8 py-4 bg-surface-primary border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+          <h2 className="text-title-3 font-semibold text-[var(--text-primary)]">
             追加したリポジトリ ({manualRepos.length})
           </h2>
         </div>
@@ -460,7 +460,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsSettingsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] hover:bg-[var(--accent-blue-hover)] transition-colors font-medium text-sm border border-[var(--accent-blue-border)]"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] hover:bg-[var(--accent-blue-hover)] transition-colors font-medium text-body-sm border border-[var(--accent-blue-border)]"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -482,7 +482,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
             <>
               <button
                 onClick={handleToggleDeleteMode}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-sm border ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-body-sm border ${
                   isDeleteMode
                     ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-300'
                     : 'bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] hover:bg-[var(--accent-red-hover)] border-[var(--accent-red-border)]'
@@ -502,7 +502,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
               {isDeleteMode && selectedRepos.size === manualRepos.length && (
                 <button
                   onClick={handleClearAll}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-sm border border-red-300"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-body-sm border border-red-300"
                   title="すべてのリポジトリを削除"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -522,7 +522,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
       </div>
 
       {/* Board Columns */}
-      <div className="flex-1 flex gap-4 p-4 overflow-x-auto relative">
+      <div className="flex-1 flex gap-inline-lg p-inset-md overflow-x-auto relative">
         {columnConfig.columns.map((columnKey) =>
           columnConfig.columnVisibility[columnKey] ? (
             <RepoColumn
@@ -554,8 +554,8 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
 
         {/* Floating Action Bar */}
         {selectedRepos.size > 0 && (
-          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-surface-primary border-2 border-[var(--accent-green-border)] rounded-xl shadow-2xl px-6 py-4 flex items-center gap-4 animate-fade-in">
-            <div className="flex items-center gap-2 text-[var(--accent-green-emphasis)] font-semibold">
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-surface-primary border-2 border-[var(--accent-green-border)] rounded-xl shadow-2xl px-inset-lg py-stack-sm flex items-center gap-inline-lg animate-fade-in">
+            <div className="flex items-center gap-inline-sm text-[var(--accent-green-emphasis)] font-semibold">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -569,19 +569,19 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
             <div className="h-6 w-px bg-[var(--border-subtle)]" />
             <button
               onClick={handleSelectAll}
-              className="px-4 py-2 rounded-lg bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] hover:bg-[var(--accent-blue-hover)] transition-colors font-medium text-sm border border-[var(--accent-blue-border)]"
+              className="px-inset-md py-stack-xs rounded-lg bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] hover:bg-[var(--accent-blue-hover)] transition-colors font-medium text-body-sm border border-[var(--accent-blue-border)]"
             >
               すべて選択
             </button>
             <button
               onClick={handleDeselectAll}
-              className="px-4 py-2 rounded-lg bg-surface-tertiary text-[var(--text-primary)] hover:bg-surface-hover transition-colors font-medium text-sm border border-[var(--border-subtle)]"
+              className="px-inset-md py-stack-xs rounded-lg bg-surface-tertiary text-[var(--text-primary)] hover:bg-surface-hover transition-colors font-medium text-body-sm border border-[var(--border-subtle)]"
             >
               選択解除
             </button>
             <button
               onClick={handleDeleteSelectedRepos}
-              className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-sm"
+              className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-body-sm"
             >
               <span className="inline-flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

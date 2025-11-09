@@ -57,7 +57,7 @@ export const AddRepoModal: React.FC<AddRepoModalProps> = ({
       <div className="relative bg-surface-primary rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-lg animate-modal-slide-in border border-[var(--border-subtle)] transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
-          <h2 className="text-xl font-semibold text-[var(--text-primary)]">リポジトリを追加</h2>
+          <h2 className="text-title-2 font-semibold text-[var(--text-primary)]">リポジトリを追加</h2>
           <button
             onClick={onClose}
             className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover rounded-lg transition-colors"

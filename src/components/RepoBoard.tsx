@@ -485,7 +485,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+            <h2 className="text-title-1 font-bold text-[var(--text-primary)] mb-2">
               まだリポジトリが追加されていません
             </h2>
             <p className="text-[var(--text-muted)] mb-6">
@@ -497,7 +497,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
                 const event = new CustomEvent('openAddRepoModal');
                 window.dispatchEvent(event);
               }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--accent-green)] text-text-inverse rounded-xl hover:bg-[var(--accent-green-strong)] transition-colors font-medium shadow-sm"
+              className="inline-flex items-center gap-inline-sm px-inset-lg py-inset-sm bg-[var(--accent-green)] text-text-inverse rounded-xl hover:bg-[var(--accent-green-strong)] transition-colors font-medium shadow-sm"
             >
               <svg
                 className="w-5 h-5"

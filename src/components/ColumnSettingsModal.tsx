@@ -183,7 +183,7 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
     >
       <div className="space-y-6">
         {/* Add Column Section */}
-        <div className="space-y-3">
+        <div className="space-y-stack-sm">
           <h3 className="font-semibold text-[var(--text-primary)]">新しい列を追加</h3>
           <div className="flex gap-2">
             <input
@@ -199,7 +199,7 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
               placeholder="列の名前を入力..."
               maxLength={20}
               disabled={localConfig.columns.length >= 8}
-              className="flex-1 px-3 py-2 bg-surface-tertiary border border-[var(--border-subtle)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-inline-md py-stack-xs bg-surface-tertiary border border-[var(--border-subtle)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               onClick={handleAddColumn}
@@ -210,16 +210,16 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
             </button>
           </div>
           {localConfig.columns.length >= 8 && (
-            <p className="text-xs text-[var(--accent-orange-strong)]">最大8列までしか追加できません</p>
+            <p className="text-caption text-[var(--accent-orange-strong)]">最大8列までしか追加できません</p>
           )}
         </div>
 
         {/* Columns List */}
-        <div className="space-y-3">
+          <div className="space-y-stack-sm">
           <h3 className="font-semibold text-[var(--text-primary)]">
             列の管理 ({localConfig.columns.length})
           </h3>
-          <p className="text-sm text-[var(--text-muted)]">ドラッグして並び替えることができます</p>
+          <p className="text-body-sm text-[var(--text-muted)]">ドラッグして並び替えることができます</p>
 
           <div className="space-y-2">
             {localConfig.columns.map((colName) => (
@@ -230,7 +230,7 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(colName)}
                 className={`
-                  flex items-center gap-3 p-3 rounded-lg border transition-all
+                  flex items-center gap-inline-md p-3 rounded-lg border transition-all
                   ${
                     draggedColumn === colName
                       ? 'bg-[var(--accent-blue-muted)] border-[var(--accent-blue-border)] opacity-75'
@@ -279,7 +279,7 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
                       {localConfig.columnTitles[colName]}
                     </button>
                   )}
-                  <p className="text-xs text-[var(--text-muted)]">
+                  <p className="text-caption text-[var(--text-muted)]">
                     {localConfig.columnOrder[colName]?.length || 0} リポジトリ
                   </p>
                 </div>

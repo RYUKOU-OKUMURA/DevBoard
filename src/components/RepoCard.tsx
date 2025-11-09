@@ -147,7 +147,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
       />
       {/* Repository Title and Actions */}
       <div className="flex items-start justify-between mb-stack-xs">
-        <div className="flex-1 min-w-0 flex items-center gap-3">
+        <div className="flex-1 min-w-0 flex items-center gap-inline-md">
           {/* Checkbox */}
           {showCheckbox && (
             <div onClick={handleCheckboxContainerClick} className="flex items-center">
@@ -170,11 +170,11 @@ export const RepoCard: React.FC<RepoCardProps> = ({
         <div className="flex items-center gap-inline-xs ml-inline-xs flex-wrap">
           {/* Privacy Badge */}
           {repo.isPrivate ? (
-            <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-xs font-medium bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border border-[var(--accent-yellow-border)] shadow-sm transition-colors">
+            <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-caption font-medium bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border border-[var(--accent-yellow-border)] shadow-sm transition-colors">
               Private
             </span>
           ) : (
-            <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-xs font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm transition-colors">
+            <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-caption font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm transition-colors">
               Public
             </span>
           )}
@@ -254,13 +254,13 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           {displayTopics.map((topic) => (
             <span
               key={topic}
-              className="inline-flex items-center px-inset-md py-inline-xs rounded-lg text-xs font-medium bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] border border-[var(--accent-blue-border)] shadow-sm transition-colors"
+              className="inline-flex items-center px-inset-md py-inline-xs rounded-lg text-caption font-medium bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] border border-[var(--accent-blue-border)] shadow-sm transition-colors"
             >
               #{topic}
             </span>
           ))}
           {hasMoreTopics && (
-            <span className="inline-flex items-center px-inline-md py-inline-xs rounded-lg text-xs font-medium bg-surface-tertiary text-[var(--text-muted)] border border-[var(--border-subtle)]">
+            <span className="inline-flex items-center px-inline-md py-inline-xs rounded-lg text-caption font-medium bg-surface-tertiary text-[var(--text-muted)] border border-[var(--border-subtle)]">
               +{repo.topics.length - 3}
             </span>
           )}

@@ -131,7 +131,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
           >
             <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
               {title ? (
-                <h2 className="text-xl font-semibold text-[var(--text-primary)]">{title}</h2>
+                <h2 className="text-title-2 font-semibold text-[var(--text-primary)]">{title}</h2>
               ) : (
                 <div />
               )}

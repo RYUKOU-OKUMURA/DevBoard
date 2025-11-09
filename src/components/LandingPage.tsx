@@ -93,7 +93,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
             style={{ animationDelay: '2s', zIndex: 1 }}
           />
           <div className="relative z-10 flex flex-col gap-stack-lg">
-            <div className="flex items-center gap-inline-md text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: palette.textMuted }}>
+            <div className="flex items-center gap-inline-md text-caption font-semibold uppercase tracking-[0.4em]" style={{ color: palette.textMuted }}>
               <span className="rounded-full bg-brand-purple px-inset-sm py-inset-xs text-[0.65rem] text-text-inverse">
                 DevBoard へようこそ
               </span>
@@ -219,7 +219,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
             {USE_CASES.map((useCase) => (
               <div key={useCase.label} className="flex items-start gap-inline-md">
                 <div
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-semibold"
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl text-title-3 font-semibold"
                   style={componentStyles.useCaseBadge}
                 >
                   {useCase.label}

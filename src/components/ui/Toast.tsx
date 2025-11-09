@@ -34,7 +34,7 @@ interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ toasts, onRemove }) => (
-  <div className="pointer-events-none fixed top-4 left-1/2 z-50 flex w-full max-w-xl -translate-x-1/2 flex-col gap-3 px-4">
+  <div className="pointer-events-none fixed top-4 left-1/2 z-50 flex w-full max-w-xl -translate-x-1/2 flex-col gap-stack-sm px-inset-md">
     <AnimatePresence initial={false}>
       {toasts.map((toast) => {
         const meta = VARIANT_META[toast.variant];
@@ -54,7 +54,7 @@ export const Toast: React.FC<ToastProps> = ({ toasts, onRemove }) => (
               backdropFilter: 'blur(22px)',
             }}
           >
-            <div className="flex items-center gap-3 px-5 py-3">
+            <div className="flex items-center gap-inline-md px-inset-lg py-inset-sm">
               <span
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white shadow"
                 style={{ border: `1px solid ${meta.accent}` }}
@@ -62,9 +62,9 @@ export const Toast: React.FC<ToastProps> = ({ toasts, onRemove }) => (
                 {meta.icon}
               </span>
               <div className="flex-1">
-                <p className="text-sm font-semibold tracking-tight text-white">{toast.title}</p>
+                <p className="text-body-sm font-semibold tracking-tight text-white">{toast.title}</p>
                 {toast.description && (
-                  <p className="text-xs text-white/90 opacity-90">{toast.description}</p>
+                  <p className="text-caption text-white/90 opacity-90">{toast.description}</p>
                 )}
               </div>
               <button

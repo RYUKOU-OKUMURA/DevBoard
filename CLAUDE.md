@@ -99,6 +99,22 @@ Thresholds (60/180 days) should be configurable with these as defaults.
 - CI status or Issue/PR information
 - Advanced management features
 
+## Brand & Token Guidelines
+
+- **CSS Variables**  
+  - Brand primaries live in `src/index.css` (`--brand-red`, `--brand-purple`, gradients, metallic surfaces). Always reference them through Tailwind colors (`bg-brand-purple`, `text-brand-red`) or via `useDesignSystem`.
+  - Metallic layers (`--metallic-noise`, `--metallic-edge-*`) must be confined to hero, CTA、カード hover、モーダルのみに使用する。
+- **Typography**  
+  - Use semantic classes (`text-display-lg`, `text-title-2`, `text-body`, `text-body-sm`, `text-caption`) defined in `tailwind.config.js`. 既存の `text-sm` などのユーティリティは禁止。
+- **Spacing**  
+  - Padding / margin / gap は `inset-*`, `stack-*`, `inline-*` のいずれかを使う。例: `p-inset-lg`, `gap-inline-md`, `space-y-stack-sm`。
+- **Focus & Accessibility**  
+  - `focusRing` プリセット（`src/lib/focusRing.ts`）をすべてのインタラクティブ要素に適用。  
+  - `aria-live`, `aria-label`, `role="tablist"` 等の ARIA 属性を既存実装と同じ基準で付与する。
+- **Motion**  
+  - `tokens.transitions`（`designSystem.ts`）もしくは CSS 変数を参照し、`motion-reduce:animate-none` / `motion-reduce:transition-none` を併記する。  
+  - CTA やカードの drag には spring、リスト表示には `stagger.card` / `stagger.listItem` を使用。
+
 ## Task Management
 
 When completing tasks during implementation:

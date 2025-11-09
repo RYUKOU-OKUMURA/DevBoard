@@ -51,11 +51,11 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ),
         badge: isOpen ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] rounded-lg">
+          <span className="px-inline-md py-stack-xs text-caption font-semibold uppercase tracking-wide bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] rounded-lg">
             未対応
           </span>
         ) : (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-purple-muted)] text-[var(--accent-purple-emphasis)] border border-[var(--accent-purple-border)] rounded-lg">
+          <span className="px-inline-md py-stack-xs text-caption font-semibold uppercase tracking-wide bg-[var(--accent-purple-muted)] text-[var(--accent-purple-emphasis)] border border-[var(--accent-purple-border)] rounded-lg">
             対応済み
           </span>
         ),
@@ -103,15 +103,15 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </svg>
         ),
         badge: isOpen ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] rounded-lg">
+          <span className="px-inline-md py-stack-xs text-caption font-semibold uppercase tracking-wide bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] rounded-lg">
             未対応
           </span>
         ) : isMerged ? (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-purple-muted)] text-[var(--accent-purple-emphasis)] border border-[var(--accent-purple-border)] rounded-lg">
+          <span className="px-inline-md py-stack-xs text-caption font-semibold uppercase tracking-wide bg-[var(--accent-purple-muted)] text-[var(--accent-purple-emphasis)] border border-[var(--accent-purple-border)] rounded-lg">
             マージ済み
           </span>
         ) : (
-          <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] border border-[var(--accent-red-border)] rounded-lg">
+          <span className="px-inline-md py-stack-xs text-caption font-semibold uppercase tracking-wide bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] border border-[var(--accent-red-border)] rounded-lg">
             {isClosed ? 'クローズ' : '却下'}
           </span>
         ),
@@ -128,8 +128,8 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
       <div className="flex-1 min-w-0">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--border-subtle)]">
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>
-          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-surface-tertiary text-[var(--text-secondary)]">
+          <h2 className="text-title-3 font-bold text-[var(--text-primary)]">{title}</h2>
+          <span className="px-2 py-0.5 text-caption font-semibold rounded-full bg-surface-tertiary text-[var(--text-secondary)]">
             {items.length}
           </span>
         </div>
@@ -157,10 +157,10 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
                 d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
               />
             </svg>
-            <p className="text-[var(--text-muted)] font-medium text-sm">{emptyMessage}</p>
+            <p className="text-[var(--text-muted)] font-medium text-body-sm">{emptyMessage}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-stack-sm">
             {items.map((item, index) => {
               const { icon, badge } = getStatusDisplay(item);
               return (
@@ -171,15 +171,15 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
                   rel="noopener noreferrer"
                   className="block bg-surface-primary border border-[var(--border-subtle)] rounded-lg p-4 hover:shadow-lg hover:border-[var(--accent-green)] transition-all group"
                 >
-                  <div className="flex items-start gap-3 mb-2">
+                  <div className="flex items-start gap-inline-md mb-2">
                     {icon}
-                    <h3 className="flex-1 text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-green)] transition-colors line-clamp-2">
+                    <h3 className="flex-1 text-body-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-green)] transition-colors line-clamp-2">
                       {item.title}
                     </h3>
                     {badge}
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] ml-7 flex-wrap">
+                  <div className="flex items-center gap-inline-md text-caption text-[var(--text-muted)] ml-7 flex-wrap">
                     <span className="font-medium truncate">{item.repo.nameWithOwner}</span>
                     <span>#{item.number}</span>
                     <span>{item.relativeTime}</span>
@@ -197,7 +197,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
     <div className="flex-1 flex flex-col bg-surface-app transition-colors">
       {/* Header with title */}
       <div className="px-8 py-6 bg-surface-primary border-b border-[var(--border-subtle)] transition-colors">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">最近のアクティビティ</h1>
+        <h1 className="text-title-1 font-bold text-[var(--text-primary)]">最近のアクティビティ</h1>
       </div>
 
       {/* Content */}

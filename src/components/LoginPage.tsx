@@ -14,7 +14,7 @@ export default function LoginPage({ onBack }: LoginPageProps) {
           <button
             type="button"
             onClick={onBack}
-            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+            className="mb-6 inline-flex items-center gap-2 text-body-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           >
             <svg
               className="h-4 w-4"
@@ -31,20 +31,20 @@ export default function LoginPage({ onBack }: LoginPageProps) {
           </button>
         )}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-2">
+          <h1 className="text-display-lg font-bold text-[var(--text-primary)] mb-2">
             DevBoard
           </h1>
-          <p className="text-[var(--text-muted)] text-sm">
+          <p className="text-[var(--text-muted)] text-body-sm">
             Visualize and organize your GitHub repositories
           </p>
         </div>
 
         <div className="mb-6">
           <div className="bg-surface-secondary rounded-lg p-4 mb-6 border border-[var(--border-subtle)] transition-colors">
-            <h3 className="text-[var(--text-primary)] font-semibold mb-2 text-sm">
+            <h3 className="text-[var(--text-primary)] font-semibold mb-2 text-body-sm">
               This app will request:
             </h3>
-            <ul className="text-[var(--text-secondary)] text-sm space-y-1">
+            <ul className="text-[var(--text-secondary)] text-body-sm space-y-1">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
                 <span>Access to your repositories (including private)</span>
@@ -58,7 +58,7 @@ export default function LoginPage({ onBack }: LoginPageProps) {
 
           <button
             onClick={login}
-            className="w-full bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-emphasis)] text-text-inverse font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-3 shadow-sm"
+            className="w-full bg-[var(--accent-blue)] hover:bg-[var(--accent-blue-emphasis)] text-text-inverse font-semibold py-inset-sm px-inset-lg rounded-lg transition-colors duration-200 flex items-center justify-center gap-inline-md shadow-sm"
           >
             <svg
               className="w-6 h-6"
@@ -76,7 +76,7 @@ export default function LoginPage({ onBack }: LoginPageProps) {
           </button>
         </div>
 
-        <div className="text-center text-[var(--text-muted)] text-xs">
+        <div className="text-center text-[var(--text-muted)] text-caption">
           <p>
             By signing in, you agree to allow this app to access your GitHub
             data.

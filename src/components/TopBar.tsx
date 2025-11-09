@@ -183,7 +183,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       <div className="px-inset-lg py-inset-md">
         <div className="flex items-center justify-between mb-stack-sm">
           <div className="flex items-center gap-inline-xs">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">{title}</h1>
+            <h1 className="text-title-1 font-bold text-[var(--text-primary)]">{title}</h1>
           </div>
           <div className="flex items-center gap-inline-md">
             {lastUpdateTime && (
@@ -200,7 +200,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               aria-expanded={showHiddenDialog}
             >
                 非表示を管理
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-brand-red bg-brand-red-soft rounded-full shadow-sm">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-caption font-bold text-brand-red bg-brand-red-soft rounded-full shadow-sm">
                   {hiddenRepos.length}
                 </span>
               </button>
@@ -382,7 +382,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Stats */}
-        <div className="mt-3 text-sm text-[var(--text-muted)]" aria-live="polite">
+        <div className="mt-3 text-body-sm text-[var(--text-muted)]" aria-live="polite">
           合計 {totalRepos} 件中 {filteredCount} 件を表示
           {searchQuery && (
             <span className="ml-2 text-[var(--accent-blue)]">
@@ -404,7 +404,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             現在の検索キーワードと並び順を保存します。
           </p>
           <div className="space-y-2">
-            <label htmlFor="viewName" className="block text-sm font-medium text-[var(--text-secondary)]">
+            <label htmlFor="viewName" className="block text-body-sm font-medium text-[var(--text-secondary)]">
               ビュー名
             </label>
             <input
@@ -424,13 +424,13 @@ export const TopBar: React.FC<TopBarProps> = ({
               className={`w-full px-inset-md py-inset-xs border border-[var(--border-subtle)] rounded-xl bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75 focus:border-transparent`}
               autoFocus
             />
-            {saveError && <p className="text-sm text-[var(--accent-red-emphasis)]">{saveError}</p>}
+            {saveError && <p className="text-body-sm text-[var(--accent-red-emphasis)]">{saveError}</p>}
           </div>
           <div className="bg-surface-secondary p-3 rounded-lg border border-[var(--border-subtle)]">
-            <p className="text-sm text-[var(--text-muted)]">
+            <p className="text-body-sm text-[var(--text-muted)]">
               <strong>検索:</strong> {searchQuery || '（なし）'}
             </p>
-            <p className="text-sm text-[var(--text-muted)]">
+            <p className="text-body-sm text-[var(--text-muted)]">
               <strong>並び順:</strong>{' '}
               {sortOrder === 'lastUpdated' && '最終更新日'}
               {sortOrder === 'name' && '名前 (A-Z)'}
@@ -467,7 +467,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             現在のダッシュボードの状態（検索、並び順、カラム配置、カラム名、しきい値など）を保存します。
           </p>
           <div className="space-y-2">
-            <label htmlFor="presetName" className="block text-sm font-medium text-[var(--text-secondary)]">
+            <label htmlFor="presetName" className="block text-body-sm font-medium text-[var(--text-secondary)]">
               プリセット名
             </label>
             <input
@@ -491,14 +491,14 @@ export const TopBar: React.FC<TopBarProps> = ({
               className={`w-full px-inset-md py-inset-xs border border-[var(--accent-purple-border)] rounded-xl bg-[var(--accent-purple-muted)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75 focus:border-transparent`}
               autoFocus
             />
-            {presetError && <p className="text-sm text-[var(--accent-red-emphasis)]">{presetError}</p>}
+            {presetError && <p className="text-body-sm text-[var(--accent-red-emphasis)]">{presetError}</p>}
           </div>
           <div className="bg-[var(--accent-purple-muted)] border border-[var(--accent-purple-border)] p-4 rounded-lg space-y-2">
             <h3 className="font-semibold text-[var(--accent-purple-emphasis)]">保存される内容:</h3>
-            <div className="text-sm text-[var(--text-secondary)]">
+            <div className="text-body-sm text-[var(--text-secondary)]">
               <strong>検索:</strong> {searchQuery || '（なし）'}
             </div>
-            <div className="text-sm text-[var(--text-secondary)]">
+            <div className="text-body-sm text-[var(--text-secondary)]">
               <strong>並び順:</strong>{' '}
               {sortOrder === 'lastUpdated' && '最終更新日'}
               {sortOrder === 'name' && '名前 (A-Z)'}
@@ -506,7 +506,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               {sortOrder === 'language' && '言語'}
             </div>
             {columnTitles && (
-              <div className="text-sm text-[var(--text-secondary)]">
+              <div className="text-body-sm text-[var(--text-secondary)]">
                 <strong>カラム名:</strong>
                 <ul className="ml-4 mt-1 space-y-1">
                   {Object.entries(columnTitles).map(([key, title]) => (
@@ -518,7 +518,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               </div>
             )}
             {columnVisibility && (
-              <div className="text-sm text-[var(--text-secondary)]">
+              <div className="text-body-sm text-[var(--text-secondary)]">
                 <strong>表示中のカラム:</strong>{' '}
                 {Object.entries(columnVisibility)
                   .filter(([, visible]) => visible)
@@ -527,15 +527,15 @@ export const TopBar: React.FC<TopBarProps> = ({
               </div>
             )}
             {thresholds && (
-              <div className="text-sm text-[var(--text-secondary)]">
+              <div className="text-body-sm text-[var(--text-secondary)]">
                 <strong>しきい値:</strong> アクティブ={thresholds.activeThreshold}日, 停滞={thresholds.staleThreshold}日
               </div>
             )}
-            <div className="text-sm text-[var(--text-secondary)]">
+            <div className="text-body-sm text-[var(--text-secondary)]">
               <strong>カードの並び順:</strong> 現在の配置を保存
             </div>
             {hiddenRepos && hiddenRepos.length > 0 && (
-              <div className="text-sm text-[var(--text-secondary)]">
+              <div className="text-body-sm text-[var(--text-secondary)]">
                 <strong>非表示リポジトリ:</strong> {hiddenRepos.length}件
               </div>
             )}
@@ -577,12 +577,12 @@ export const TopBar: React.FC<TopBarProps> = ({
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-[var(--text-primary)] truncate">{repo.nameWithOwner}</p>
                     {repo.description && (
-                      <p className="text-sm text-[var(--text-muted)] truncate">{repo.description}</p>
+                      <p className="text-body-sm text-[var(--text-muted)] truncate">{repo.description}</p>
                     )}
                   </div>
                   <button
                     onClick={() => onUnhideRepo?.(repo.id)}
-                    className={`ml-inline-md px-inset-sm py-inline-xs bg-[var(--accent-blue)] text-text-inverse text-sm rounded hover:bg-[var(--accent-blue-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-75`}
+                    className={`ml-inline-md px-inset-sm py-inline-xs bg-[var(--accent-blue)] text-text-inverse text-body-sm rounded hover:bg-[var(--accent-blue-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-75`}
                   >
                     表示
                   </button>

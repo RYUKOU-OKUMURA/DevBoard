@@ -248,7 +248,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
       {/* Column Header */}
       <div
         ref={headerRef}
-        className={`px-4 py-3 rounded-t-xl font-semibold flex items-center justify-between shadow-sm transition-colors ${colors.headerBg} ${colors.headerText} border border-b-0 ${colors.border}`}
+        className={`px-inset-md py-inset-sm rounded-t-xl font-semibold flex items-center justify-between shadow-sm transition-colors ${colors.headerBg} ${colors.headerText} border border-b-0 ${colors.border}`}
       >
         <div className="flex-1 pr-3">
           {canEditTitle ? (
@@ -258,7 +258,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
                 onChange={(event) => setDraftTitle(event.target.value)}
                 onBlur={handleTitleBlur}
                 onKeyDown={handleTitleKeyDown}
-                className="w-full bg-[var(--bg-primary)] px-2 py-1 rounded-lg text-base font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:ring-opacity-50 transition-all"
+                className="w-full bg-[var(--bg-primary)] px-2 py-1 rounded-lg text-body font-semibold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] focus:ring-opacity-50 transition-all"
                 aria-label="カテゴリタイトル"
                 autoFocus
               />
@@ -277,7 +277,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-1 rounded-lg text-sm border transition-colors ${colors.border} ${colors.badgeBg} ${colors.badgeText}`}>
+          <span className={`px-2 py-1 rounded-lg text-body-sm border transition-colors ${colors.border} ${colors.badgeBg} ${colors.badgeText}`}>
             {repos.length}
           </span>
           {onToggleVisibility && (
@@ -318,10 +318,10 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
       {showHelpTooltip && canEditTitle && (
         <div className="absolute top-full left-0 right-0 z-50 mt-2 mx-4 animate-subtle-scale">
           <div className="bg-[var(--accent-blue)] text-text-inverse rounded-xl p-4 shadow-lg border border-[var(--accent-blue-border)]">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-inline-md">
               <div className="flex-1">
-                <p className="text-sm font-medium mb-1">💡 カラムのカスタマイズ</p>
-                <p className="text-xs opacity-90">
+                <p className="text-body-sm font-medium mb-1">💡 カラムのカスタマイズ</p>
+                <p className="text-caption opacity-90">
                   列はドラッグ&ドロップで整理できます。列名をクリックして編集することもできます。
                 </p>
               </div>
@@ -341,7 +341,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
 
       {/* Column Content */}
       <motion.div
-        className={`bg-surface-secondary border-2 border-t-0 rounded-b-xl flex-1 overflow-y-auto p-3 space-y-3 ${colors.border} shadow-md transition-colors`}
+        className={`bg-surface-secondary border-2 border-t-0 rounded-b-xl flex-1 overflow-y-auto p-3 space-y-stack-sm ${colors.border} shadow-md transition-colors`}
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnterColumn}
         onDragLeave={handleDragLeaveColumn}
@@ -360,7 +360,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
             ))}
           </div>
         ) : repos.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-[var(--text-muted)] text-sm">
+          <div className="flex items-center justify-center h-32 text-[var(--text-muted)] text-body-sm">
             <div className="text-center">
               <svg
                 className="mx-auto h-12 w-12 mb-2 opacity-50"
