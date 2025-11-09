@@ -1,5 +1,6 @@
 import { useTheme } from '../contexts/ThemeContext';
 import { useDesignSystem } from '../lib/designSystem';
+import { focusRing } from '../lib/focusRing';
 
 interface LandingPageProps {
   onContinue: () => void;
@@ -62,47 +63,47 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8" style={{ background: palette.background }}>
-      <main className="max-w-6xl w-full grid gap-10 lg:grid-cols-[1.1fr_0.9fr]" style={{ color: palette.textPrimary }}>
+      <main className="max-w-6xl w-full grid gap-stack-lg lg:grid-cols-[1.1fr_0.9fr]" style={{ color: palette.textPrimary }}>
         <section
           className="relative overflow-hidden rounded-[32px] border p-10"
           style={componentStyles.heroSection}
         >
           <div className="pointer-events-none absolute inset-0" style={{ background: auraGradient }} />
-          <div className="relative z-10 flex flex-col gap-10">
-            <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: palette.textMuted }}>
+          <div className="relative z-10 flex flex-col gap-stack-lg">
+            <div className="flex items-center gap-inline-md text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: palette.textMuted }}>
               <span>DevBoard へようこそ</span>
               <span aria-hidden className="h-px flex-1 rounded-full" style={{ background: palette.highlight }} />
             </div>
             <div className="space-y-4">
-              <h1 className="text-4xl font-semibold leading-tight md:text-5xl" style={{ color: palette.textPrimary }}>
+              <h1 className="text-display font-semibold md:text-display-lg" style={{ color: palette.textPrimary }}>
                 リポジトリ管理を、<br />
                 簡単に・直感的に。
               </h1>
-              <p className="text-base leading-relaxed md:text-lg" style={{ color: palette.textMuted }}>
+              <p className="text-body" style={{ color: palette.textMuted }}>
                 DevBoard は、GitHub リポジトリやタスクをまとめて可視化し、開発や進捗管理をスムーズにするカンバン型の開発ダッシュボードです。アプリの使い方や主要な機能を、洗練された UI で直感的に操作できます。
               </p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-stack-sm md:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className="rounded-2xl border p-5 hover:-translate-y-0.5"
+                  className="rounded-2xl border p-inset-lg hover:-translate-y-0.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:transition-none motion-reduce:transform-none"
                   style={componentStyles.featureCard}
                 >
-                  <h3 className="text-base font-semibold" style={{ color: palette.textPrimary }}>
+                  <h3 className="text-title-2 font-semibold" style={{ color: palette.textPrimary }}>
                     {feature.title}
                   </h3>
-                  <p className="mt-3 text-sm leading-relaxed" style={{ color: palette.textMuted }}>
+                  <p className="mt-3 text-body-sm" style={{ color: palette.textMuted }}>
                     {feature.description}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-stack-sm">
               <button
                 type="button"
                 onClick={onContinue}
-                className="inline-flex items-center gap-3 rounded-full px-6 py-3 text-base font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
+                className={`inline-flex items-center gap-inline-md rounded-full px-inset-lg py-inset-sm text-title-3 font-semibold ${focusRing.default} ${focusRing.brand} motion-safe:transition-transform motion-safe:duration-200 motion-reduce:transition-none`}
                 style={componentStyles.ctaButton}
               >
                 ログインページへ進む
@@ -115,13 +116,13 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="transition-transform duration-200"
+                  className="transition-transform duration-200 motion-reduce:transition-none"
                 >
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
               </button>
-              <span className="text-sm" style={{ color: palette.textMuted }}>
+              <span className="text-caption" style={{ color: palette.textMuted }}>
                 GitHub との連携はワンクリックで完了します。
               </span>
             </div>
@@ -129,20 +130,20 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
         </section>
 
         <aside
-          className="flex h-full flex-col gap-6 rounded-[32px] border p-8"
+          className="flex h-full flex-col gap-stack-md rounded-[32px] border p-8"
           style={componentStyles.asideSection}
         >
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold" style={{ color: palette.textPrimary }}>
+            <h2 className="text-title-1 font-semibold" style={{ color: palette.textPrimary }}>
               DevBoard の主なユースケース
             </h2>
-            <p className="text-sm leading-relaxed" style={{ color: palette.textMuted }}>
+            <p className="text-body" style={{ color: palette.textMuted }}>
               スプリント計画からレビューまで、開発プロセス全体をカバーします。
             </p>
           </div>
-          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-stack-sm">
             {USE_CASES.map((useCase) => (
-              <div key={useCase.label} className="flex items-start gap-4">
+              <div key={useCase.label} className="flex items-start gap-inline-md">
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-semibold"
                   style={componentStyles.useCaseBadge}
@@ -150,10 +151,10 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
                   {useCase.label}
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold" style={{ color: palette.textPrimary }}>
+                  <h3 className="text-title-2 font-semibold" style={{ color: palette.textPrimary }}>
                     {useCase.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed" style={{ color: palette.textMuted }}>
+                  <p className="mt-2 text-body-sm" style={{ color: palette.textMuted }}>
                     {useCase.description}
                   </p>
                 </div>
@@ -165,10 +166,10 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
             className="rounded-2xl border-2 border-dashed p-6"
             style={componentStyles.futureBox}
           >
-            <h3 className="text-lg font-semibold mb-2" style={{ color: palette.textPrimary }}>
+            <h3 className="text-title-2 font-semibold mb-2" style={{ color: palette.textPrimary }}>
               今後の追加機能予定
             </h3>
-            <ul className="text-sm leading-relaxed space-y-2" style={{ color: palette.textMuted }}>
+            <ul className="text-body-sm space-y-2" style={{ color: palette.textMuted }}>
               <li>• <strong>本アプリからIssue・PullRequestを作成する機能</strong></li>
               <li>• <strong>Codex、Claude Codeをメンションで呼び出す機能</strong></li>
               <li>• <strong>ToDoや実装予定を作成する機能</strong></li>
@@ -178,7 +179,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
           <div className="pt-2">
             <a
               href="https://note.com/redcord/n/n8a9e8ba0e0f6?sub_rt=share_pb"
-              className="group inline-flex items-center gap-2 text-sm font-semibold"
+              className="group inline-flex items-center gap-inline-xs text-body-sm font-semibold"
               style={{ color: palette.accent }}
               target="_blank"
               rel="noreferrer"

@@ -47,6 +47,16 @@
   --accent-red-emphasis: #b91c1c;
   --accent-red-muted: rgba(220, 38, 38, 0.12);
   --accent-red-border: rgba(220, 38, 38, 0.24);
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-lazy: 600ms;
+
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --easing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   /* より柔らかく自然なシャドウ - ブラー値を大きく、不透明度を下げる */
   --shadow-sm: 0 2px 8px -2px rgb(15 23 42 / 0.08), 0 1px 3px -1px rgb(15 23 42 / 0.06);
   --shadow-md: 0 4px 16px -4px rgb(15 23 42 / 0.1), 0 2px 6px -2px rgb(15 23 42 / 0.08);
@@ -98,6 +108,16 @@
   --accent-red-emphasis: #e5484d;
   --accent-red-muted: rgba(246, 95, 95, 0.16);
   --accent-red-border: rgba(246, 95, 95, 0.32);
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-lazy: 600ms;
+
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --easing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   /* より柔らかく自然なシャドウ */
   --shadow-sm: 0 2px 12px -4px rgb(0 0 0 / 0.4), 0 1px 4px -2px rgb(0 0 0 / 0.3);
   --shadow-md: 0 4px 20px -6px rgb(0 0 0 / 0.5), 0 2px 8px -4px rgb(0 0 0 / 0.4);

@@ -294,7 +294,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
               onDragStart={(e) => handleDragStart(e, repo.id)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDropOnCard(e, repo.id)}
-              className="animate-fade-in"
+              className="animate-fade-in motion-reduce:animate-none"
             >
               {renderRepoCard ? renderRepoCard(repo) : <RepoCard repo={repo} onHide={onHide} />}
             </div>

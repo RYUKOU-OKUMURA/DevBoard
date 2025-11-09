@@ -1,6 +1,7 @@
 import React from 'react';
 import { Repo } from '../types';
 import { timeAgo } from '../lib/timeAgo';
+import { focusRing } from '../lib/focusRing';
 
 interface RepoCardProps {
   repo: Repo;
@@ -76,17 +77,17 @@ export const RepoCard: React.FC<RepoCardProps> = ({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={`
-        bg-surface-primary border rounded-xl p-5 shadow-sm 
+        bg-surface-primary border rounded-xl p-inset-lg shadow-sm 
         hover:shadow-md hover:-translate-y-0.5 
         motion-safe:transition-all motion-safe:duration-250 motion-safe:ease-smooth motion-reduce:transition-none 
-        cursor-pointer outline-none 
-        focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)] focus-visible:ring-opacity-50
+        cursor-pointer outline-none
+        ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-50
         ${isSelected ? 'border-[var(--accent-green)] bg-opacity-95 ring-2 ring-[var(--accent-green)] ring-opacity-25' : 'border-[var(--border-subtle)] hover:border-[var(--accent-green-border)]'}
         animate-fade-in
       `}
     >
       {/* Repository Title and Actions */}
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-stack-xs">
         <div className="flex-1 min-w-0 flex items-center gap-3">
           {/* Checkbox */}
           {showCheckbox && (
@@ -96,25 +97,25 @@ export const RepoCard: React.FC<RepoCardProps> = ({
                 checked={isSelected}
                 onChange={handleCheckboxChange}
                 onClick={handleCheckboxClick}
-                className="w-5 h-5 rounded border-[var(--border-subtle)] cursor-pointer accent-[var(--accent-green)]"
+                className={`w-5 h-5 rounded border-[var(--border-subtle)] cursor-pointer accent-[var(--accent-green)] ${focusRing.default} ${focusRing.brand}`}
                 aria-label={`${repo.nameWithOwner} を選択`}
               />
             </div>
           )}
-          <h3 className="text-base font-semibold text-[var(--text-primary)] truncate">
+          <h3 className="text-title-3 font-semibold text-[var(--text-primary)] truncate">
             <span className="text-[var(--accent-green)]">{repoName}</span>
             <span className="text-[var(--text-muted)]"> / {owner}</span>
           </h3>
         </div>
 
-        <div className="flex items-center gap-1 ml-2 flex-wrap">
+        <div className="flex items-center gap-inline-xs ml-inline-xs flex-wrap">
           {/* Privacy Badge */}
           {repo.isPrivate ? (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border border-[var(--accent-yellow-border)] shadow-sm transition-colors">
+            <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-xs font-medium bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border border-[var(--accent-yellow-border)] shadow-sm transition-colors">
               Private
             </span>
           ) : (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm transition-colors">
+            <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-xs font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm transition-colors">
               Public
             </span>
           )}
@@ -123,7 +124,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           {showDeleteButton && onDelete && (
             <button
               onClick={handleDeleteClick}
-              className="inline-flex items-center justify-center w-5 h-5 rounded-lg hover:bg-[var(--accent-red-muted)] hover:text-[var(--accent-red-emphasis)] text-[var(--text-muted)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-red)] focus-visible:ring-offset-1"
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-lg hover:bg-[var(--accent-red-muted)] hover:text-[var(--accent-red-emphasis)] text-[var(--text-muted)] transition-colors ${focusRing.default} ${focusRing.danger}`}
               title="削除する"
               aria-label="このリポジトリを削除する"
             >
@@ -137,7 +138,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           {onHide && !showDeleteButton && (
             <button
               onClick={handleHideClick}
-              className="inline-flex items-center justify-center w-5 h-5 rounded-lg hover:bg-surface-hover text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-1"
+              className={`inline-flex items-center justify-center w-5 h-5 rounded-lg hover:bg-surface-hover text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-50`}
               title="非表示にする"
               aria-label="このカードを非表示にする"
             >
@@ -151,16 +152,16 @@ export const RepoCard: React.FC<RepoCardProps> = ({
 
       {/* Description */}
       {repo.description && (
-        <p className="text-sm text-[var(--text-muted)] mb-3 line-clamp-2">
+        <p className="text-body-sm text-[var(--text-muted)] mb-stack-sm line-clamp-2">
           {repo.description}
         </p>
       )}
 
       {/* Metadata */}
-      <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] mb-2 flex-wrap">
+      <div className="flex items-center gap-inline-md text-caption text-[var(--text-muted)] mb-stack-xs flex-wrap">
         {/* Primary Language */}
         {repo.primaryLanguage && (
-          <div className="flex items-center gap-1.5 font-medium">
+          <div className="flex items-center gap-inline-xs font-medium">
             <span className="w-3 h-3 rounded-full bg-[var(--accent-blue)]"></span>
             <span>{repo.primaryLanguage}</span>
           </div>
@@ -168,7 +169,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
 
         {/* Stars */}
         {repo.stargazers_count !== undefined && repo.stargazers_count > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-inline-xs">
             <svg
               className="w-3.5 h-3.5 text-[var(--accent-yellow)]"
               fill="currentColor"
@@ -183,24 +184,24 @@ export const RepoCard: React.FC<RepoCardProps> = ({
         )}
 
         {/* Last Updated */}
-        <div className="flex items-center gap-1.5 text-[var(--text-muted)] text-xs">
+        <div className="flex items-center gap-inline-xs text-caption text-[var(--text-muted)]">
           <span>{timeAgo(repo.pushedAt)}</span>
         </div>
       </div>
 
       {/* Topics */}
       {displayTopics.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-inline-sm">
           {displayTopics.map((topic) => (
             <span
               key={topic}
-              className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] border border-[var(--accent-blue-border)] shadow-sm transition-colors"
+              className="inline-flex items-center px-inset-md py-inline-xs rounded-lg text-xs font-medium bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] border border-[var(--accent-blue-border)] shadow-sm transition-colors"
             >
               #{topic}
             </span>
           ))}
           {hasMoreTopics && (
-            <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-surface-tertiary text-[var(--text-muted)] border border-[var(--border-subtle)]">
+            <span className="inline-flex items-center px-inline-md py-inline-xs rounded-lg text-xs font-medium bg-surface-tertiary text-[var(--text-muted)] border border-[var(--border-subtle)]">
               +{repo.topics.length - 3}
             </span>
           )}

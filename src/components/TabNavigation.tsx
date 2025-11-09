@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { focusRing } from '../lib/focusRing';
 
 export type TabType = 'board' | 'updates' | 'manual';
 
@@ -30,18 +31,25 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   };
 
   return (
-    <nav className="flex gap-2 px-8 bg-surface-primary border-b border-[var(--border-subtle)] transition-colors">
+    <nav
+      className="flex gap-inline-md px-inset-xl bg-surface-primary border-b border-[var(--border-subtle)] transition-colors"
+      role="tablist"
+      aria-label="ビュー切り替え"
+    >
       <button
         onClick={() => handleTabChange('board')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-250 motion-safe:ease-smooth
+          flex items-center gap-inline-md px-inset-lg py-inset-md border-b-2 transition-all duration-250 motion-safe:ease-smooth motion-reduce:transition-none text-body-sm
           ${
             activeTab === 'board'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-semibold'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50
+          ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75
         `}
+        role="tab"
+        aria-selected={activeTab === 'board'}
+        tabIndex={activeTab === 'board' ? 0 : -1}
       >
         <svg
           width="20"
@@ -64,14 +72,17 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       <button
         onClick={() => handleTabChange('updates')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-250 motion-safe:ease-smooth relative
+          flex items-center gap-inline-md px-inset-lg py-inset-md border-b-2 transition-all duration-250 motion-safe:ease-smooth motion-reduce:transition-none relative text-body-sm
           ${
             activeTab === 'updates'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-semibold'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50
+          ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75
         `}
+        role="tab"
+        aria-selected={activeTab === 'updates'}
+        tabIndex={activeTab === 'updates' ? 0 : -1}
       >
         <svg
           width="20"
@@ -88,7 +99,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </svg>
         <span>最近の更新</span>
         {updateCount > 0 && (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-lg shadow-sm">
+          <span className="inline-flex items-center justify-center px-inline-sm py-inline-xs text-xs font-semibold text-text-inverse bg-accent-green rounded-lg shadow-sm">
             {updateCount}
           </span>
         )}
@@ -97,14 +108,17 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       <button
         onClick={() => handleTabChange('manual')}
         className={`
-          flex items-center gap-2 px-6 py-4 border-b-2 transition-all duration-250 motion-safe:ease-smooth relative
+          flex items-center gap-inline-md px-inset-lg py-inset-md border-b-2 transition-all duration-250 motion-safe:ease-smooth motion-reduce:transition-none relative text-body-sm
           ${
             activeTab === 'manual'
               ? 'border-[var(--accent-green)] text-[var(--accent-green)] font-semibold'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-surface-hover'
           }
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50
+          ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75
         `}
+        role="tab"
+        aria-selected={activeTab === 'manual'}
+        tabIndex={activeTab === 'manual' ? 0 : -1}
       >
         <svg
           width="20"
@@ -120,7 +134,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </svg>
         <span>追加したリポジトリ</span>
         {manualRepoCount > 0 && (
-          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-text-inverse bg-accent-green rounded-lg shadow-sm">
+          <span className="inline-flex items-center justify-center px-inline-sm py-inline-xs text-xs font-semibold text-text-inverse bg-accent-green rounded-lg shadow-sm">
             {manualRepoCount}
           </span>
         )}

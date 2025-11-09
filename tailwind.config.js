@@ -62,6 +62,23 @@ export default {
         '8': '2rem',          // 32px
         '12': '3rem',         // 48px
         '16': '4rem',         // 64px
+        // Inset tokens (uniform padding/margin)
+        'inset-xs': '0.5rem',  // 8px
+        'inset-sm': '0.75rem', // 12px
+        'inset-md': '1rem',    // 16px
+        'inset-lg': '1.5rem',  // 24px
+        'inset-xl': '2rem',    // 32px
+        // Stack tokens (vertical rhythm)
+        'stack-xs': '0.5rem',  // 8px
+        'stack-sm': '1rem',    // 16px
+        'stack-md': '1.5rem',  // 24px
+        'stack-lg': '3rem',    // 48px
+        'stack-xl': '4rem',    // 64px
+        // Inline tokens (horizontal rhythm)
+        'inline-xs': '0.25rem', // 4px
+        'inline-sm': '0.5rem',  // 8px
+        'inline-md': '0.75rem', // 12px
+        'inline-lg': '1rem',    // 16px
       },
       // ボーダー半径の統一（3段階）
       borderRadius: {
@@ -78,6 +95,16 @@ export default {
         'xl': ['1.5rem', { lineHeight: '1.4' }],       // 24px
         '2xl': ['1.875rem', { lineHeight: '1.3' }],    // 30px
         '3xl': ['2.25rem', { lineHeight: '1.2' }],     // 36px
+        // セマンティックフォントサイズ
+        'display-lg': ['3.75rem', { lineHeight: '1.1', letterSpacing: '-0.04em' }], // 60px
+        'display': ['3rem', { lineHeight: '1.15', letterSpacing: '-0.03em' }],     // 48px
+        'title-1': ['2.25rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],   // 36px
+        'title-2': ['1.75rem', { lineHeight: '1.3', letterSpacing: '-0.01em' }],   // 28px
+        'title-3': ['1.25rem', { lineHeight: '1.4', letterSpacing: '0em' }],       // 20px
+        'body': ['1rem', { lineHeight: '1.6', letterSpacing: '0em' }],            // 16px
+        'body-sm': ['0.875rem', { lineHeight: '1.5', letterSpacing: '0em' }],     // 14px
+        'caption': ['0.75rem', { lineHeight: '1.4', letterSpacing: '0.02em' }],   // 12px
+        'label': ['0.875rem', { lineHeight: '1', letterSpacing: '0.4em' }],        // 14px
       },
       fontWeight: {
         'normal': '400',

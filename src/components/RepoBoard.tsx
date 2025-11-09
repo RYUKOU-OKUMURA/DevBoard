@@ -501,7 +501,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex gap-4 p-4 overflow-x-auto">
+        <div className="flex-1 flex gap-4 p-4 overflow-x-auto" aria-live="polite">
           {COLUMN_ORDER.map((columnKey) =>
             columnVisibility[columnKey] ? (
               <RepoColumn

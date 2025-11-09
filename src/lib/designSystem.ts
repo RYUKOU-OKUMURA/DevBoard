@@ -7,6 +7,28 @@ import { useMemo } from 'react';
  * defined in index.css and provides type-safe access to design tokens.
  */
 
+export interface TypographyMetrics {
+  fontSize: string;
+  lineHeight: number;
+  letterSpacing: string;
+}
+
+export interface TypographyHierarchy {
+  displayLg: TypographyMetrics;
+  display: TypographyMetrics;
+  title1: TypographyMetrics;
+  title2: TypographyMetrics;
+  title3: TypographyMetrics;
+  body: TypographyMetrics;
+  bodySm: TypographyMetrics;
+  caption: TypographyMetrics;
+  label: TypographyMetrics;
+}
+
+export interface TypographyPalette extends TypographyHierarchy {
+  fontFamily: string;
+}
+
 // ============================================================================
 // Color Palette Interface
 // ============================================================================
@@ -31,6 +53,7 @@ export interface DesignPalette {
   asideBg: string;
   asideBorder: string;
   asideHighlight: string;
+  typography: TypographyPalette;
 }
 
 // ============================================================================
@@ -91,20 +114,40 @@ export interface DesignTokens {
       wider: string;
       widest: string;
     };
+    hierarchy: TypographyHierarchy;
   };
   transitions: {
     duration: {
+      instant: string;
       fast: string;
       normal: string;
       slow: string;
+      lazy: string;
     };
-    timing: {
-      easeInOut: string;
-      easeOut: string;
-      easeIn: string;
+    easing: {
+      standard: string;
+      decelerate: string;
+      accelerate: string;
+      spring: string;
+    };
+    stagger: {
+      card: string;
+      listItem: string;
     };
   };
 }
+
+const SEMANTIC_FONTS: TypographyHierarchy = {
+  displayLg: { fontSize: '3.75rem', lineHeight: 1.1, letterSpacing: '-0.04em' },
+  display: { fontSize: '3rem', lineHeight: 1.15, letterSpacing: '-0.03em' },
+  title1: { fontSize: '2.25rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
+  title2: { fontSize: '1.75rem', lineHeight: 1.3, letterSpacing: '-0.01em' },
+  title3: { fontSize: '1.25rem', lineHeight: 1.4, letterSpacing: '0em' },
+  body: { fontSize: '1rem', lineHeight: 1.6, letterSpacing: '0em' },
+  bodySm: { fontSize: '0.875rem', lineHeight: 1.5, letterSpacing: '0em' },
+  caption: { fontSize: '0.75rem', lineHeight: 1.4, letterSpacing: '0.02em' },
+  label: { fontSize: '0.875rem', lineHeight: 1, letterSpacing: '0.4em' },
+};
 
 // ============================================================================
 // Palette Generation Function
@@ -150,6 +193,11 @@ export function createDesignPalette(isDark: boolean): DesignPalette {
     asideBg: isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.95)',
     asideBorder: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(148, 163, 184, 0.2)',
     asideHighlight: isDark ? 'rgba(81, 45, 168, 0.08)' : 'rgba(81, 45, 168, 0.08)',
+    typography: {
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
+      ...SEMANTIC_FONTS,
+    },
   };
 }
 
@@ -211,17 +259,25 @@ export const designTokens: DesignTokens = {
       wider: '0.05em',
       widest: '0.4em',
     },
+    hierarchy: SEMANTIC_FONTS,
   },
   transitions: {
     duration: {
+      instant: '100ms',
       fast: '150ms',
-      normal: '200ms',
-      slow: '300ms',
+      normal: '250ms',
+      slow: '400ms',
+      lazy: '600ms',
     },
-    timing: {
-      easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
-      easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+    easing: {
+      standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      decelerate: 'cubic-bezier(0, 0, 0.2, 1)',
+      accelerate: 'cubic-bezier(0.4, 0, 1, 1)',
+      spring: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    },
+    stagger: {
+      card: '50ms',
+      listItem: '30ms',
     },
   },
 };
@@ -243,7 +299,7 @@ export function createComponentStyles(palette: DesignPalette, tokens: DesignToke
     featureCard: {
       background: palette.featureBg,
       borderColor: palette.featureBorder,
-      transition: `transform ${tokens.transitions.duration.normal} ${tokens.transitions.timing.easeInOut}`,
+      transition: `transform ${tokens.transitions.duration.normal} ${tokens.transitions.easing.standard}`,
     },
 
     // Aside section
@@ -258,7 +314,7 @@ export function createComponentStyles(palette: DesignPalette, tokens: DesignToke
       background: palette.accentGradient,
       color: palette.callToActionText,
       boxShadow: palette.callToActionShadow,
-      transition: `transform ${tokens.transitions.duration.normal} ${tokens.transitions.timing.easeInOut}`,
+      transition: `transform ${tokens.transitions.duration.normal} ${tokens.transitions.easing.standard}`,
     },
 
     // Use case number badge
