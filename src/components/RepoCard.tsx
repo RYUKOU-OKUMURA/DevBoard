@@ -88,7 +88,22 @@ export const RepoCard: React.FC<RepoCardProps> = ({
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}
+      drag="y"
+      dragConstraints={{ top: 0, bottom: 0 }}
+      dragElastic={0.1}
+      whileDrag={{
+        scale: 1.05,
+        boxShadow: `0 20px 60px var(--brand-purple-glow), 0 10px 30px rgba(0,0,0,0.2)`,
+        backgroundColor: 'rgba(var(--bg-surface-rgb), 0.8)',
+        backdropFilter: 'blur(8px)',
+        cursor: 'grabbing',
+        transition: { type: 'spring', stiffness: 300, damping: 30 },
+      }}
+      transition={{
+        opacity: { duration: 0.3, ease: [0, 0, 0.2, 1] },
+        y: { duration: 0.3, ease: [0, 0, 0.2, 1] },
+        layout: { type: 'spring', stiffness: 300, damping: 30 },
+      }}
       whileHover={{
         y: -4,
         boxShadow: `0 12px 40px ${hoverShadowColor}, 0 6px 20px rgba(0,0,0,0.1)`,

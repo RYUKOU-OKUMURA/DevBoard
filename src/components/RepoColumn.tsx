@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Repo, ColumnKey } from '../types';
 import { RepoCard } from './RepoCard';
+import { SkeletonCard } from './ui/SkeletonCard';
 
 interface RepoColumnProps {
   title: string;
@@ -18,6 +20,7 @@ interface RepoColumnProps {
   isVisible?: boolean;
   onToggleVisibility?: (columnKey: ColumnKey | string) => void;
   renderRepoCard?: (repo: Repo) => React.ReactNode;
+  isLoading?: boolean;
 }
 
 const COLUMN_CUSTOMIZATION_HELP_KEY = 'column-customization-help-shown';
@@ -30,6 +33,7 @@ const COLUMN_COLORS: Record<
     border: string;
     badgeBg: string;
     badgeText: string;
+    borderColorToken: string;
   }
 > = {
   Active: {
@@ -38,6 +42,7 @@ const COLUMN_COLORS: Record<
     border: 'border-accent-green-border',
     badgeBg: 'bg-accent-green-muted',
     badgeText: 'text-accent-green-strong',
+    borderColorToken: 'var(--accent-green-border)',
   },
   Stale: {
     headerBg: 'bg-accent-yellow-muted',
@@ -45,6 +50,7 @@ const COLUMN_COLORS: Record<
     border: 'border-accent-yellow-border',
     badgeBg: 'bg-accent-yellow-muted',
     badgeText: 'text-accent-yellow-strong',
+    borderColorToken: 'var(--accent-yellow-border)',
   },
   Dormant: {
     headerBg: 'bg-accent-orange-muted',
@@ -52,6 +58,7 @@ const COLUMN_COLORS: Record<
     border: 'border-accent-orange-border',
     badgeBg: 'bg-accent-orange-muted',
     badgeText: 'text-accent-orange-strong',
+    borderColorToken: 'var(--accent-orange-border)',
   },
   Archived: {
     headerBg: 'bg-accent-red-muted',
@@ -59,6 +66,7 @@ const COLUMN_COLORS: Record<
     border: 'border-accent-red-border',
     badgeBg: 'bg-accent-red-muted',
     badgeText: 'text-accent-red-strong',
+    borderColorToken: 'var(--accent-red-border)',
   },
 };
 
@@ -69,6 +77,7 @@ const DEFAULT_COLUMN_COLORS = {
   border: 'border-accent-blue-border',
   badgeBg: 'bg-accent-blue-muted',
   badgeText: 'text-accent-blue-strong',
+  borderColorToken: 'var(--accent-blue-border)',
 };
 
 export const RepoColumn: React.FC<RepoColumnProps> = ({
@@ -82,6 +91,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
   isVisible = true,
   onToggleVisibility,
   renderRepoCard,
+  isLoading = false,
 }) => {
   if (!isVisible) {
     return null;
@@ -89,12 +99,15 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
 
   // Use default colors if columnKey is not in COLUMN_COLORS (for custom columns)
   const colors = COLUMN_COLORS[columnKey] || DEFAULT_COLUMN_COLORS;
+  const baseBorderColor = colors.borderColorToken ?? 'var(--border-subtle)';
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState(title);
   const shouldCommitOnBlur = useRef(true);
   const canEditTitle = Boolean(onTitleChange);
   const [showHelpTooltip, setShowHelpTooltip] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
+  const [isOverColumn, setIsOverColumn] = useState(false);
+  const dragCounter = useRef(0);
 
   // Show help tooltip on first visit
   useEffect(() => {
@@ -168,6 +181,28 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
     e.dataTransfer.effectAllowed = 'move';
   };
 
+  const handleDragEnterColumn = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+    setIsOverColumn(true);
+  };
+
+  const handleDragLeaveColumn = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setIsOverColumn(false);
+    }
+  };
+
+  const handleDropColumn = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setIsOverColumn(false);
+    handleDropOnColumnEnd(e);
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -178,6 +213,8 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
     targetRepoId: string
   ) => {
     e.preventDefault();
+    dragCounter.current = 0;
+    setIsOverColumn(false);
     const text = e.dataTransfer.getData('text/plain');
     try {
       const payload = JSON.parse(text) as { repoId: string; fromCol: ColumnKey };
@@ -303,12 +340,26 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
       )}
 
       {/* Column Content */}
-      <div
+      <motion.div
         className={`bg-surface-secondary border-2 border-t-0 rounded-b-xl flex-1 overflow-y-auto p-3 space-y-3 ${colors.border} shadow-md transition-colors`}
         onDragOver={handleDragOver}
-        onDrop={handleDropOnColumnEnd}
+        onDragEnter={handleDragEnterColumn}
+        onDragLeave={handleDragLeaveColumn}
+        onDrop={handleDropColumn}
+        animate={{
+          borderColor: isOverColumn ? 'var(--brand-purple)' : baseBorderColor,
+          backgroundColor: isOverColumn ? 'var(--brand-purple-soft)' : 'transparent',
+          boxShadow: isOverColumn ? '0 0 30px var(--brand-purple-glow)' : '0 0 0 transparent',
+        }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
       >
-        {repos.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-stack-sm">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <SkeletonCard key={`skeleton-${columnKey}-${index}`} />
+            ))}
+          </div>
+        ) : repos.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-[var(--text-muted)] text-sm">
             <div className="text-center">
               <svg
@@ -341,7 +392,7 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
             </div>
           ))
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -8,6 +8,7 @@
   --color-1-soft: rgba(81, 45, 168, 0.15);
   --color-1-glow: rgba(81, 45, 168, 0.35);
   --bg-app: #f6f8fa;
+  --bg-surface-rgb: 255, 255, 255;
   --bg-primary: #ffffff;
   --bg-secondary: #f6f8fa;
   --bg-tertiary: #f3f4f6;
@@ -96,6 +97,7 @@
   --color-1-soft: rgba(108, 99, 255, 0.18);
   --color-1-glow: rgba(108, 99, 255, 0.35);
   --bg-app: #0d1117;
+  --bg-surface-rgb: 22, 27, 34;
   --bg-primary: #161b22;
   --bg-secondary: #1c2128;
   --bg-tertiary: #21262d;

@@ -670,7 +670,7 @@
 ### 4.1 ドラッグ&ドロップ強化（2時間）
 
 #### タスク 4.1.1: RepoCard にドラッグプロップスを追加（1時間）
-- [ ] RepoCard に以下を追加:
+- [x] RepoCard に以下を追加:
   ```tsx
   drag="y"
   dragConstraints={{ top: 0, bottom: 0 }}
@@ -686,9 +686,9 @@
   ```
 
 #### タスク 4.1.2: ドロップゾーンに Purple グローを追加（45分）
-- [ ] `RepoColumn.tsx` を開く
-- [ ] ドロップゾーンを motion.div に
-- [ ] `isOver` 状態で以下をアニメート:
+- [x] `RepoColumn.tsx` を開く
+- [x] ドロップゾーンを motion.div に
+- [x] `isOver` 状態で以下をアニメート:
   ```tsx
   animate={{
     borderColor: isOver ? 'var(--brand-purple)' : 'var(--border)',
@@ -707,8 +707,8 @@
 ### 4.2 ローディング状態（グラデーションスケルトン）（1時間）
 
 #### タスク 4.2.1: SkeletonCard コンポーネントを作成（40分）
-- [ ] `src/components/ui/SkeletonCard.tsx` を新規作成
-- [ ] 以下を実装:
+- [x] `src/components/ui/SkeletonCard.tsx` を新規作成
+- [x] 以下を実装:
   ```tsx
   <div className="bg-surface rounded-xl p-inset-lg">
     <div
@@ -733,19 +733,19 @@
   ```
 
 #### タスク 4.2.2: ローディング時に SkeletonCard を表示（20分）
-- [ ] RepoBoard でローディング状態を確認
-- [ ] `isLoading ? <SkeletonCard /> : <RepoCard />` を実装
-- [ ] 複数のスケルトンカードを表示（3-5枚）
-- [ ] グラデーションアニメーションを確認
+- [x] RepoBoard でローディング状態を確認
+- [x] `isLoading ? <SkeletonCard /> : <RepoCard />` を実装
+- [x] 複数のスケルトンカードを表示（3-5枚）
+- [x] グラデーションアニメーションを確認
 
 ---
 
 ### 4.3 通知システム（Dynamic Islandスタイル）（1.5時間）
 
 #### タスク 4.3.1: Toast コンポーネントを作成（1時間）
-- [ ] `src/components/ui/Toast.tsx` を新規作成
-- [ ] AnimatePresence, motion をインポート
-- [ ] 以下を実装:
+- [x] `src/components/ui/Toast.tsx` を新規作成
+- [x] AnimatePresence, motion をインポート
+- [x] 以下を実装:
   - 固定位置: `top-4 left-1/2 -translate-x-1/2`
   - スプリングアニメーション: y -100 → 0
   - グラデーション背景（success）または Red（error）
@@ -753,10 +753,10 @@
   - ブラー効果
 
 #### タスク 4.3.2: Toast をアプリに統合（30分）
-- [ ] グローバル Toast コンテキストまたは状態を作成
-- [ ] 成功/エラーメッセージで Toast を表示
-- [ ] 自動で3秒後に消えるようにタイマー設定
-- [ ] 複数の Toast を表示テスト
+- [x] グローバル Toast コンテキストまたは状態を作成
+- [x] 成功/エラーメッセージで Toast を表示
+- [x] 自動で3秒後に消えるようにタイマー設定
+- [x] 複数の Toast を表示テスト
 
 ---
 
@@ -838,8 +838,8 @@
 - Phase 1: 13/13 タスク完了
 - Phase 2: 0/13 タスク完了
 - Phase 3: 21/21 タスク完了
-- Phase 4: 0/9 タスク完了
+- Phase 4: 7/9 タスク完了
 - 検証: 0/6 タスク完了
 - ドキュメント: 0/2 タスク完了
 
-**全体進捗: 50/82 (61%)**
+**全体進捗: 57/82 (69%)**

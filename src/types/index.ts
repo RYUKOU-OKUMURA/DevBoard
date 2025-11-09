@@ -76,3 +76,13 @@ export interface RecentItem {
   // Actual state from GitHub API
   state?: IssueState | PullRequestState;
 }
+
+export type ToastVariant = 'success' | 'error';
+
+export interface ToastMessage {
+  id: string;
+  variant: ToastVariant;
+  title: string;
+  description?: string;
+  duration?: number;
+}

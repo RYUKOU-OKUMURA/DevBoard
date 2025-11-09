@@ -531,6 +531,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
                 onHide={handleHideRepo}
                 isVisible={columnVisibility[columnKey]}
                 onToggleVisibility={handleToggleColumnVisibility}
+                isLoading={isLoading}
               />
             ) : null
           )}

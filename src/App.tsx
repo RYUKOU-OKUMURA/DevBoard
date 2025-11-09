@@ -5,6 +5,8 @@ import LandingPage from './components/LandingPage';
 import AccountSwitcher from './components/AccountSwitcher';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { useToast } from './hooks/useToast';
 import { Repo, ColumnKey } from './types';
 import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
 import type { TabType } from './components/TabNavigation';
@@ -21,6 +23,7 @@ function AppContent() {
   const [isRepoLoading, setIsRepoLoading] = useState(false);
   const [isSavingManualRepos, setIsSavingManualRepos] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [dataSource, setDataSource] = useState<DataSource>('viewer');
   const [customInput, setCustomInput] = useState('');
   const [customRepoSources, setCustomRepoSources] = useState<string[]>([]);
@@ -101,66 +104,122 @@ function AppContent() {
     updateManualRepoStateFromList(updatedRepos);
   }, [updateManualRepoStateFromList]);
 
-  const loadCustomRepos = useCallback(async (sources: string[], forceRefresh = false) => {
-    setIsRepoLoading(true);
-    setError(null);
-    try {
-      const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, forceRefresh);
-      if (fetched.length === 0) {
-        const message = failed.length
-          ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
-          : '有効なリポジトリを入力してください。';
+  const loadCustomRepos = useCallback(
+    async (
+      sources: string[],
+      forceRefresh = false,
+      options: { notify?: boolean } = {}
+    ) => {
+      const { notify = false } = options;
+      setIsRepoLoading(true);
+      setError(null);
+      try {
+        const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, forceRefresh);
+        if (fetched.length === 0) {
+          const message = failed.length
+            ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
+            : '有効なリポジトリを入力してください。';
+          setError(message);
+          if (notify) {
+            showToast({
+              variant: 'error',
+              title: 'カスタムリポジトリの読み込みに失敗しました',
+              description: message,
+            });
+          }
+          return false;
+        }
+
+        const uniqueNames = Array.from(new Set(fetched.map((repo) => repo.nameWithOwner)));
+        setRepos(fetched);
+        setDataSource('custom');
+        setCustomRepoSources(uniqueNames);
+        setCustomInput(uniqueNames.join('\n'));
+
+        // Update last update time
+        const timestamp = getCustomReposTimestamp();
+        setLastUpdateTime(timestamp);
+
+        if (failed.length > 0) {
+          setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
+        }
+
+        if (notify) {
+          showToast({
+            variant: 'success',
+            title: 'カスタムリポジトリを更新しました',
+            description: `${fetched.length} 件のリポジトリを読み込みました`,
+          });
+        }
+
+        return true;
+      } catch (err) {
+        console.error('Failed to load custom repositories:', err);
+        const message = err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました';
         setError(message);
-        return;
+        if (notify) {
+          showToast({
+            variant: 'error',
+            title: 'カスタムリポジトリの読み込みに失敗しました',
+            description: message,
+          });
+        }
+        return false;
+      } finally {
+        setIsRepoLoading(false);
       }
+    },
+    [showToast]
+  );
 
-      const uniqueNames = Array.from(new Set(fetched.map((repo) => repo.nameWithOwner)));
-      setRepos(fetched);
-      setDataSource('custom');
-      setCustomRepoSources(uniqueNames);
-      setCustomInput(uniqueNames.join('\n'));
+  const loadRepos = useCallback(
+    async (forceRefresh = false, options: { notify?: boolean } = {}) => {
+      const { notify = false } = options;
+      setIsRepoLoading(true);
+      setError(null);
+      try {
+        const realRepos = await fetchUserRepos(false, forceRefresh);
+        setRepos(realRepos);
+        setDataSource('viewer');
 
-      // Update last update time
-      const timestamp = getCustomReposTimestamp();
-      setLastUpdateTime(timestamp);
+        // Update last update time
+        const timestamp = getViewerReposTimestamp();
+        setLastUpdateTime(timestamp);
 
-      if (failed.length > 0) {
-        setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
+        if (notify) {
+          showToast({
+            variant: 'success',
+            title: '最新のリポジトリを取得しました',
+            description: `${realRepos.length} 件を表示しています`,
+          });
+        }
+
+        return true;
+      } catch (err) {
+        console.error('Failed to load repositories:', err);
+        const message = err instanceof Error ? err.message : 'Failed to load repositories';
+        setError(message);
+        if (notify) {
+          showToast({
+            variant: 'error',
+            title: 'リポジトリの読み込みに失敗しました',
+            description: message,
+          });
+        }
+        return false;
+      } finally {
+        setIsRepoLoading(false);
       }
-    } catch (err) {
-      console.error('Failed to load custom repositories:', err);
-      setError(err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました');
-    } finally {
-      setIsRepoLoading(false);
-    }
-  }, []);
+    },
+    [showToast]
+  );
 
-  const loadRepos = useCallback(async (forceRefresh = false) => {
-    setIsRepoLoading(true);
-    setError(null);
-    try {
-      const realRepos = await fetchUserRepos(false, forceRefresh);
-      setRepos(realRepos);
-      setDataSource('viewer');
-
-      // Update last update time
-      const timestamp = getViewerReposTimestamp();
-      setLastUpdateTime(timestamp);
-    } catch (err) {
-      console.error('Failed to load repositories:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load repositories');
-    } finally {
-      setIsRepoLoading(false);
-    }
-  }, []);
-
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     if (dataSource === 'viewer') {
-      // Reload from API with force refresh
-      loadRepos(true);
+      await loadRepos(true, { notify: true });
     } else if (dataSource === 'custom') {
       if (customRepoSources.length > 0) {
-        loadCustomRepos(customRepoSources, true);
+        await loadCustomRepos(customRepoSources, true, { notify: true });
       }
     }
     // Trigger activity refresh
@@ -185,6 +244,11 @@ function AppContent() {
           ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
           : '有効なリポジトリを入力してください。';
         setError(message);
+        showToast({
+          variant: 'error',
+          title: 'リポジトリの追加に失敗しました',
+          description: message,
+        });
         return;
       }
 
@@ -200,7 +264,13 @@ function AppContent() {
       // Save to manualRepoStorage
       const success = addMultipleManualRepos(reposWithSource);
       if (!success) {
-        setError('リポジトリの保存に失敗しました');
+        const message = 'リポジトリの保存に失敗しました';
+        setError(message);
+        showToast({
+          variant: 'error',
+          title: 'リポジトリの追加に失敗しました',
+          description: message,
+        });
         return;
       }
 
@@ -212,13 +282,24 @@ function AppContent() {
 
       // Close modal
       setIsAddRepoModalOpen(false);
+      showToast({
+        variant: 'success',
+        title: 'リポジトリを保存しました',
+        description: `${reposWithSource.length} 件を追加しました`,
+      });
 
       if (failed.length > 0) {
         setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
       }
     } catch (err) {
       console.error('Failed to add manual repositories:', err);
-      setError(err instanceof Error ? err.message : 'リポジトリの追加に失敗しました');
+      const message = err instanceof Error ? err.message : 'リポジトリの追加に失敗しました';
+      setError(message);
+      showToast({
+        variant: 'error',
+        title: 'リポジトリの追加に失敗しました',
+        description: message,
+      });
     } finally {
       setIsSavingManualRepos(false);
     }
@@ -542,7 +623,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );
