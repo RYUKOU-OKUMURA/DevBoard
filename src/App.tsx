@@ -8,8 +8,8 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Repo, ColumnKey } from './types';
 import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
 import type { TabType } from './components/TabNavigation';
-import { getManualRepoCount, getManualRepos, addMultipleManualRepos } from './utils/manualRepoStorage';
-import { getManualColumnConfig, ManualColumnKey } from './utils/manualColumnStorage';
+import { getManualRepos, addMultipleManualRepos } from './utils/manualRepoStorage';
+import { getManualColumnConfig } from './utils/manualColumnStorage';
 import { getViewerReposTimestamp, getCustomReposTimestamp } from './utils/repoStorage';
 
 type DataSource = 'viewer' | 'custom';

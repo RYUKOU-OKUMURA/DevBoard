@@ -285,6 +285,7 @@ function getRepoTimestamp(key: string): number | null {
 
     return parsed.timestamp;
   } catch (error) {
+    console.warn("Failed to read repo timestamp from localStorage:", error);
     return null;
   }
 }

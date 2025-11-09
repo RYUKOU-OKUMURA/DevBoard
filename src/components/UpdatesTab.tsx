@@ -112,7 +112,7 @@ export const UpdatesTab: React.FC<UpdatesTabProps> = ({
           </span>
         ) : (
           <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] border border-[var(--accent-red-border)] rounded-lg">
-            却下
+            {isClosed ? 'クローズ' : '却下'}
           </span>
         ),
       };

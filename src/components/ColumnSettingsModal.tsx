@@ -231,7 +231,7 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
             <p className="text-sm text-[var(--text-muted)]">ドラッグして並び替えることができます</p>
 
             <div className="space-y-2">
-              {localConfig.columns.map((colName, index) => (
+              {localConfig.columns.map((colName) => (
                 <div
                   key={colName}
                   draggable
@@ -370,4 +370,3 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
     </div>
   );
 };
-

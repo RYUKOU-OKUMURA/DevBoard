@@ -357,7 +357,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           合計 {totalRepos} 件中 {filteredCount} 件を表示
           {searchQuery && (
             <span className="ml-2 text-[var(--accent-blue)]">
-              （フィルター: "{searchQuery}"）
+              （フィルター: &quot;{searchQuery}&quot;）
             </span>
           )}
         </div>

@@ -372,8 +372,8 @@
 ### 2.1 ヒーローセクション背景（1.5時間）
 
 #### タスク 2.1.1: アニメーションメッシュグラデーション背景を追加（30分）
-- [ ] `src/components/LandingPage.tsx` を開く
-- [ ] ヒーローセクション内に以下を追加:
+- [x] `src/components/LandingPage.tsx` を開く
+- [x] ヒーローセクション内に以下を追加:
   ```tsx
   <div
     className="absolute inset-0 opacity-40"
@@ -384,36 +384,36 @@
     }}
   />
   ```
-- [ ] ブラウザで確認（グラデーションが流れるか）
+- [x] ブラウザで確認（グラデーションが流れるか）
 
 #### タスク 2.1.2: メタリックノイズオーバーレイを追加（20分）
-- [ ] 以下を追加:
+- [x] 以下を追加:
   ```tsx
   <div
     className="absolute inset-0 opacity-30"
     style={{ backgroundImage: 'var(--metallic-noise)' }}
   />
   ```
-- [ ] 透明度を調整（控えめに）
+- [x] 透明度を調整（控えめに）
 
 #### タスク 2.1.3: フローティング幾何学図形を追加（30分）
-- [ ] 以下を追加:
+- [x] 以下を追加:
   ```tsx
   <div className="absolute top-20 left-10 w-64 h-64 bg-brand-purple-soft rounded-full blur-3xl animate-float-gentle" />
   <div className="absolute bottom-20 right-10 w-80 h-80 bg-brand-red-soft rounded-full blur-3xl animate-float-gentle" style={{ animationDelay: '2s' }} />
   ```
-- [ ] 位置とサイズを調整
+- [x] 位置とサイズを調整
 
 #### タスク 2.1.4: reduced motion 対応（10分）
-- [ ] すべてのアニメーションに `motion-reduce:animate-none` 追加
-- [ ] ブラウザ設定でテスト
+- [x] すべてのアニメーションに `motion-reduce:animate-none` 追加
+- [x] ブラウザ設定でテスト
 
 ---
 
 ### 2.2 メインヘッドライン（1時間）
 
 #### タスク 2.2.1: テキストグラデーションを適用（30分）
-- [ ] ヒーロー見出し（`<h1>`）に以下を追加:
+- [x] ヒーロー見出し（`<h1>`）に以下を追加:
   ```tsx
   <h1
     className="text-display-lg font-bold mb-stack-md motion-reduce:animate-none"
@@ -431,22 +431,22 @@
   ```
 
 #### タスク 2.2.2: フォールバックカラーを追加（Safari対応）（15分）
-- [ ] `color` プロパティをフォールバックとして追加
-- [ ] Safari でテスト
+- [x] `color` プロパティをフォールバックとして追加
+- [x] Safari でテスト
 
 #### タスク 2.2.3: アニメーション速度を調整（15分）
-- [ ] 3秒が自然か確認
-- [ ] 必要に応じて調整（2.5秒〜4秒）
-- [ ] reduced motion でアニメーション停止を確認
+- [x] 3秒が自然か確認
+- [x] 必要に応じて調整（2.5秒〜4秒）
+- [x] reduced motion でアニメーション停止を確認
 
 ---
 
 ### 2.3 CTAボタン - メタリック+グラデーション（2時間）
 
 #### タスク 2.3.1: PremiumButton コンポーネントを作成（1時間）
-- [ ] `src/components/ui/PremiumButton.tsx` を新規作成
-- [ ] Framer Motion をインポート: `import { motion } from 'framer-motion';`
-- [ ] 以下の構造を実装:
+- [x] `src/components/ui/PremiumButton.tsx` を新規作成
+- [x] Framer Motion をインポート: `import { motion } from 'framer-motion';`
+- [x] 以下の構造を実装:
   - グラデーション背景（200% width）
   - メタリックエッジ（inset shadow）
   - シマーエフェクト（`metallic-shimmer` アニメーション）
@@ -455,32 +455,32 @@
   - whileTap: scale 0.98
 
 #### タスク 2.3.2: LandingPage でPremiumButtonを使用（30分）
-- [ ] LandingPage で PremiumButton をインポート
-- [ ] 既存のCTAボタンを PremiumButton に置き換え
-- [ ] プロップスを渡す（onClick、children など）
-- [ ] ビジュアル確認
+- [x] LandingPage で PremiumButton をインポート
+- [x] 既存のCTAボタンを PremiumButton に置き換え
+- [x] プロップスを渡す（onClick、children など）
+- [x] ビジュアル確認
 
 #### タスク 2.3.3: ホバー/タップ効果を微調整（30分）
-- [ ] ホバー時のグラデーション移動速度を調整
-- [ ] グロー強度を調整（派手すぎないか確認）
-- [ ] タップ時のスケールダウンを確認
-- [ ] 感情チェック: 「触りたくなる」「高級感」
+- [x] ホバー時のグラデーション移動速度を調整
+- [x] グロー強度を調整（派手すぎないか確認）
+- [x] タップ時のスケールダウンを確認
+- [x] 感情チェック: 「触りたくなる」「高級感」
 
 ---
 
 ### 2.4 フィーチャーカード（1.5時間）
 
 #### タスク 2.4.1: カードにホバーグラデーションボーダーを追加（45分）
-- [ ] フィーチャーカードコンポーネントを見つける
-- [ ] Framer Motion でラップ
-- [ ] 以下を実装:
+- [x] フィーチャーカードコンポーネントを見つける
+- [x] Framer Motion でラップ
+- [x] 以下を実装:
   - whileInView: opacity 0→1, y 20→0
   - transition: delay staggered (index * 0.05)
   - whileHover: y -4
-  - グラデーションボーダー（::before 疑似要素、opacity 0→1 on hover）
+  - グラデーションボーダー（outer gradient + glow）
 
 #### タスク 2.4.2: メタリックノイズをホバー時に追加（30分）
-- [ ] カード内に以下を追加:
+- [x] カード内に以下を追加:
   ```tsx
   <div
     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
@@ -489,9 +489,9 @@
   ```
 
 #### タスク 2.4.3: カラーブルームエフェクトを追加（15分）
-- [ ] `color-bloom` アニメーションをホバー時に適用
-- [ ] 強度を調整（控えめに）
-- [ ] 複数カードで確認
+- [x] `color-bloom` アニメーションをホバー時に適用
+- [x] 強度を調整（控えめに）
+- [x] 複数カードで確認
 
 ---
 
@@ -500,12 +500,12 @@
 ### 3.1 Framer Motionインストール（15分）
 
 #### タスク 3.1.1: Framer Motionをインストール（10分）
-- [ ] ターミナルで `npm install framer-motion` 実行
-- [ ] インストール完了を確認
+- [x] ターミナルで `npm install framer-motion` 実行
+- [x] インストール完了を確認
 
 #### タスク 3.1.2: 簡単なテスト（5分）
-- [ ] 任意のコンポーネントで `import { motion } from 'framer-motion';` 試す
-- [ ] エラーがないことを確認
+- [x] 任意のコンポーネントで `import { motion } from 'framer-motion';` 試す
+- [x] エラーがないことを確認
 
 ---
 

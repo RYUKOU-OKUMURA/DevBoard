@@ -70,7 +70,9 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string>>;
         return { ...COLUMN_TITLES, ...parsed };
       }
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to restore column titles', error);
+    }
     return { ...COLUMN_TITLES };
   });
   const [columnAssignments, setColumnAssignments] = useState<Record<string, ColumnKey>>(() => {
@@ -79,7 +81,9 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       if (raw) {
         return JSON.parse(raw) as Record<string, ColumnKey>;
       }
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to restore column assignments', error);
+    }
     return {};
   });
   const [orderMap, setOrderMap] = useState<Record<ColumnKey, string[]>>({
@@ -95,7 +99,9 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         const arr = JSON.parse(raw) as string[];
         return new Set(arr);
       }
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to restore hidden repo ids', error);
+    }
     return new Set();
   });
 
@@ -110,7 +116,9 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         const parsed = JSON.parse(raw) as Record<ColumnKey, string[]>;
         setOrderMap((prev) => ({ ...prev, ...parsed }));
       }
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to restore column order map', error);
+    }
   }, [user?.userId]);
 
   const filteredRepos = useMemo(() => {
@@ -163,20 +171,26 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   useEffect(() => {
     try {
       localStorage.setItem(COLUMN_TITLES_STORAGE_KEY, JSON.stringify(columnTitles));
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to persist column titles', error);
+    }
   }, [columnTitles]);
 
   useEffect(() => {
     try {
       localStorage.setItem(COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(columnAssignments));
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to persist column assignments', error);
+    }
   }, [columnAssignments]);
 
   // Persist hidden repos
   useEffect(() => {
     try {
       localStorage.setItem(HIDDEN_REPOS_STORAGE_KEY, JSON.stringify(Array.from(hiddenRepoIds)));
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to persist hidden repos', error);
+    }
   }, [hiddenRepoIds]);
 
   // Sync order map with current repos per column
@@ -196,7 +210,9 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   useEffect(() => {
     try {
       localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orderMap));
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to persist column order map', error);
+    }
   }, [orderMap]);
 
   // Calculate total counts

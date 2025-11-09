@@ -29,7 +29,7 @@ describe('transformRepository topics fallback', () => {
   });
 
   it('handles missing nodes array', () => {
-    const repo = makeRepo({ repositoryTopics: { nodes: null } as any });
+    const repo = makeRepo({ repositoryTopics: { nodes: null } });
     const result = transformRepository(repo);
     expect(result.topics).toEqual([]);
   });
@@ -37,7 +37,7 @@ describe('transformRepository topics fallback', () => {
   it('handles null nodes entries', () => {
     const repo = makeRepo({
       repositoryTopics: {
-        nodes: [null, { topic: { name: 'valid' } }, null] as any,
+        nodes: [null, { topic: { name: 'valid' } }, null],
       },
     });
     const result = transformRepository(repo);
@@ -48,8 +48,8 @@ describe('transformRepository topics fallback', () => {
     const repo = makeRepo({
       repositoryTopics: {
         nodes: [
-          { topic: null } as any,
-          { topic: { name: null } as any } as any,
+          { topic: null },
+          { topic: { name: null } },
           { topic: { name: 'ok' } },
         ],
       },
@@ -60,8 +60,8 @@ describe('transformRepository topics fallback', () => {
 
   it('transformRepositories filters out null repository nodes', () => {
     const repo1 = makeRepo({ id: '1' });
-    const repo2 = makeRepo({ id: '2', repositoryTopics: { nodes: [null] as any } });
-    const result = transformRepositories([repo1, null as any, repo2, undefined as any]);
+    const repo2 = makeRepo({ id: '2', repositoryTopics: { nodes: [null] } });
+    const result = transformRepositories([repo1, null, repo2, undefined]);
     expect(result.map((r) => r.id)).toEqual(['1', '2']);
   });
 });

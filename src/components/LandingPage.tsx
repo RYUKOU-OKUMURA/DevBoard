@@ -1,6 +1,7 @@
 import { useTheme } from '../contexts/ThemeContext';
 import { useDesignSystem } from '../lib/designSystem';
-import { focusRing } from '../lib/focusRing';
+import { motion } from 'framer-motion';
+import { PremiumButton } from './ui/PremiumButton';
 
 interface LandingPageProps {
   onContinue: () => void;
@@ -69,6 +70,28 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
           style={componentStyles.heroSection}
         >
           <div className="pointer-events-none absolute inset-0" style={{ background: auraGradient }} />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40 motion-reduce:animate-none"
+            style={{
+              background: 'var(--brand-gradient-mesh)',
+              backgroundSize: '200% 200%',
+              animation: 'gradient-flow 8s ease infinite',
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-30 motion-reduce:animate-none"
+            style={{ backgroundImage: 'var(--metallic-noise)' }}
+          />
+          <div
+            className="pointer-events-none absolute top-20 left-10 w-64 h-64 rounded-full bg-brand-purple-soft blur-3xl opacity-90 animate-float-gentle motion-reduce:animate-none"
+            aria-hidden
+            style={{ zIndex: 1 }}
+          />
+          <div
+            className="pointer-events-none absolute bottom-20 right-10 w-80 h-80 rounded-full bg-brand-red-soft blur-3xl opacity-90 animate-float-gentle motion-reduce:animate-none"
+            aria-hidden
+            style={{ animationDelay: '2s', zIndex: 1 }}
+          />
           <div className="relative z-10 flex flex-col gap-stack-lg">
             <div className="flex items-center gap-inline-md text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: palette.textMuted }}>
               <span className="rounded-full bg-brand-purple px-inset-sm py-inset-xs text-[0.65rem] text-text-inverse">
@@ -77,7 +100,18 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
               <span aria-hidden className="h-px flex-1 rounded-full" style={{ background: palette.highlight }} />
             </div>
             <div className="space-y-4">
-              <h1 className="text-display font-semibold md:text-display-lg" style={{ color: palette.textPrimary }}>
+              <h1
+                className="text-display-lg font-bold mb-stack-md motion-reduce:animate-none"
+                style={{
+                  background: 'var(--brand-gradient)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  animation: 'gradient-pulse 3s ease-in-out infinite',
+                  backgroundSize: '200% auto',
+                  color: palette.textPrimary,
+                }}
+              >
                 リポジトリ管理を、<br />
                 簡単に・直感的に。
               </h1>
@@ -86,28 +120,66 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
               </p>
             </div>
             <div className="grid gap-stack-sm md:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map((feature) => (
-                <div
+              {FEATURES.map((feature, index) => (
+                <motion.div
                   key={feature.title}
-                  className="rounded-2xl border p-inset-lg hover:-translate-y-0.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-in-out motion-reduce:transition-none motion-reduce:transform-none"
-                  style={componentStyles.featureCard}
+                  className="group relative rounded-[26px] p-[1px]"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  whileHover={{ y: -4 }}
+                  viewport={{ once: true, amount: 0.25 }}
+                  transition={{
+                    delay: index * 0.05,
+                    duration: 0.45,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(229,57,53,0.85), rgba(103,58,183,0.85))',
+                    boxShadow: '0 25px 60px rgba(103,58,183,0.25)',
+                  }}
                 >
-                  <h3 className="text-title-2 font-semibold" style={{ color: palette.textPrimary }}>
-                    {feature.title}
-                  </h3>
-                  <p className="mt-3 text-body-sm" style={{ color: palette.textMuted }}>
-                    {feature.description}
-                  </p>
-                </div>
+                  <div
+                    className="relative rounded-[24px] border p-inset-lg overflow-hidden"
+                    style={componentStyles.featureCard}
+                  >
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-[24px] opacity-0 transition duration-500 group-hover:opacity-70"
+                      style={{
+                        background:
+                          'linear-gradient(140deg, rgba(229,57,53,0.4), rgba(103,58,183,0.35))',
+                        mixBlendMode: 'screen',
+                      }}
+                    />
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-[24px] opacity-0 transition duration-500 group-hover:opacity-60"
+                      style={{
+                        backgroundImage: 'var(--metallic-noise)',
+                      }}
+                    />
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-[24px] opacity-0 transition duration-500 group-hover:opacity-90"
+                      style={{
+                        animation: 'color-bloom 3s ease-in-out infinite',
+                        boxShadow: '0 0 40px var(--brand-purple-glow)',
+                      }}
+                    />
+                    <div className="relative z-10 flex flex-col gap-stack-sm">
+                      <h3 className="text-title-2 font-semibold" style={{ color: palette.textPrimary }}>
+                        {feature.title}
+                      </h3>
+                      <p className="mt-3 text-body-sm" style={{ color: palette.textMuted }}>
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-stack-sm">
-              <button
-                type="button"
-                onClick={onContinue}
-                className={`inline-flex items-center gap-inline-md rounded-full px-inset-lg py-inset-sm text-title-3 font-semibold ${focusRing.default} ${focusRing.brand} motion-safe:transition-transform motion-safe:duration-200 motion-reduce:transition-none`}
-                style={componentStyles.ctaButton}
-              >
+              <PremiumButton onClick={onContinue}>
                 ログインページへ進む
                 <svg
                   width="20"
@@ -123,7 +195,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
-              </button>
+              </PremiumButton>
               <span className="text-caption" style={{ color: palette.textMuted }}>
                 GitHub との連携はワンクリックで完了します。
               </span>
