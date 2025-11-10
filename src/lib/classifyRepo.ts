@@ -1,4 +1,4 @@
-import type { Repo, ColumnKey } from "../types";
+import type { Repo, ColumnKey, AppConfig } from "../types";
 import { differenceInDays, isValidDate } from "../utils/date";
 
 export type ClassifyOptions = {
@@ -12,6 +12,14 @@ export type ClassifyOptions = {
 
 const DEFAULT_ACTIVE_THRESHOLD = 60;
 const DEFAULT_STALE_THRESHOLD = 180;
+
+/**
+ * デフォルトの分類設定
+ */
+export const DEFAULT_CLASSIFY_CONFIG: AppConfig = {
+  activeThreshold: DEFAULT_ACTIVE_THRESHOLD,
+  staleThreshold: DEFAULT_STALE_THRESHOLD,
+};
 
 function getThresholdValue(value: number | undefined, fallback: number): number {
   if (typeof value !== "number" || Number.isNaN(value) || !Number.isFinite(value)) {
@@ -57,4 +65,14 @@ export function classifyRepo(repo: Repo, options: ClassifyOptions = {}): ColumnK
   }
 
   return "Dormant";
+}
+
+/**
+ * AppConfig から ClassifyOptions に変換するヘルパー関数
+ */
+export function configToOptions(config: AppConfig): ClassifyOptions {
+  return {
+    activeThreshold: config.activeThreshold,
+    staleThreshold: config.staleThreshold,
+  };
 }

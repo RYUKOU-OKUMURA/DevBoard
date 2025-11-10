@@ -1,5 +1,4 @@
 import { ViewPreset, ColumnKey } from '../types';
-import { DEFAULT_CONFIG } from './classify';
 
 const PRESET_STORAGE_KEY_PREFIX = 'github-dashboard-presets';
 const PRESET_STORAGE_KEY_LEGACY = 'github-dashboard-presets'; // Legacy key without account ID
@@ -78,13 +77,6 @@ function migrateLegacyPresets(accountId: string): void {
     console.error('Failed to migrate legacy presets:', error);
   }
 }
-
-const DEFAULT_COLUMN_TITLES: Record<ColumnKey, string> = {
-  Active: 'アクティブ',
-  Stale: '停滞',
-  Dormant: '休眠',
-  Archived: 'アーカイブ',
-};
 
 /**
  * Get all presets from localStorage for a specific account

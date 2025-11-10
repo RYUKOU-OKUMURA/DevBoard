@@ -1,6 +1,6 @@
 import { Repo, ColumnKey, AppConfig } from '../types';
 import { differenceInDays } from './date';
-import { classifyRepo as classifyRepoCore } from '../lib/classifyRepo';
+import { classifyRepo as classifyRepoCore, DEFAULT_CLASSIFY_CONFIG, configToOptions } from '../lib/classifyRepo';
 
 /**
  * アダプタ層: UIコード用の分類ユーティリティ
@@ -9,10 +9,7 @@ import { classifyRepo as classifyRepoCore } from '../lib/classifyRepo';
  * このモジュールは以前のAPI表面を維持するためのアダプタです。
  * 新しいコードでは `src/lib/classifyRepo` を直接インポートすることを推奨します。
  */
-export const DEFAULT_CONFIG: AppConfig = {
-  activeThreshold: 60,    // days
-  staleThreshold: 180,    // days
-};
+export const DEFAULT_CONFIG: AppConfig = DEFAULT_CLASSIFY_CONFIG;
 
 /**
  * 指定された日付からの経過日数を計算（切り上げ、未来日付は0にクランプ）
@@ -31,10 +28,7 @@ export function classifyRepo(
   repo: Repo,
   config: AppConfig = DEFAULT_CONFIG
 ): ColumnKey {
-  return classifyRepoCore(repo, {
-    activeThreshold: config.activeThreshold,
-    staleThreshold: config.staleThreshold,
-  });
+  return classifyRepoCore(repo, configToOptions(config));
 }
 
 /**

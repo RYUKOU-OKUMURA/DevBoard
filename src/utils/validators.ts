@@ -1,4 +1,4 @@
-import type { Repo, ColumnKey, SortOrder } from "../types";
+import type { Repo } from "../types";
 
 /**
  * 値が文字列かどうかをチェック
@@ -49,25 +49,6 @@ export function isRepo(value: unknown): value is Repo {
   }
 
   return true;
-}
-
-/**
- * ColumnKey 型のバリデーション（内部使用のみ）
- */
-function isColumnKey(value: unknown): value is ColumnKey {
-  return (
-    value === "Active" ||
-    value === "Stale" ||
-    value === "Dormant" ||
-    value === "Archived"
-  );
-}
-
-/**
- * SortOrder 型のバリデーション（内部使用のみ）
- */
-function isSortOrder(value: unknown): value is SortOrder {
-  return value === "lastUpdated" || value === "name";
 }
 
 /**

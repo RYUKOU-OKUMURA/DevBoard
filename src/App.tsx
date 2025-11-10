@@ -7,28 +7,34 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { useToast } from './hooks/useToast';
+import { useRepositories } from './hooks/useRepositories';
+import { useRecentActivities } from './hooks/useRecentActivities';
 import { Repo, ColumnKey } from './types';
-import { fetchUserRepos, fetchRepositoriesByUrls, fetchLatestIssues, fetchLatestPullRequests, RecentItem } from './api/repos';
+import { fetchRepositoriesByUrls } from './api/repos';
 import type { TabType } from './components/TabNavigation';
 import { getManualRepos, addMultipleManualRepos } from './utils/manualRepoStorage';
 import { getManualColumnConfig } from './utils/manualColumnStorage';
-import { getViewerReposTimestamp, getCustomReposTimestamp } from './utils/repoStorage';
-
-type DataSource = 'viewer' | 'custom';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const [repos, setRepos] = useState<Repo[]>([]);
-  const [isRepoLoading, setIsRepoLoading] = useState(false);
-  const [isSavingManualRepos, setIsSavingManualRepos] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
-  const [dataSource, setDataSource] = useState<DataSource>('viewer');
+  
+  // リポジトリ読み込み管理
+  const {
+    repos,
+    isLoading: isRepoLoading,
+    error,
+    dataSource,
+    customRepoSources,
+    lastUpdateTime,
+    loadRepos,
+    refresh: refreshRepos,
+    setError,
+  } = useRepositories({ autoLoad: false });
+
+  const [isSavingManualRepos, setIsSavingManualRepos] = useState(false);
   const [customInput, setCustomInput] = useState('');
-  const [customRepoSources, setCustomRepoSources] = useState<string[]>([]);
-  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
-  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [displayedRepoCount, setDisplayedRepoCount] = useState<number | null>(null);
   const [displayedCategoryCounts, setDisplayedCategoryCounts] = useState<Record<ColumnKey, number>>({
     Active: 0,
@@ -44,8 +50,13 @@ function AppContent() {
   });
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
   const [manualRepoCount, setManualRepoCount] = useState(0);
-  const [lastUpdateTime, setLastUpdateTime] = useState<number | null>(null);
   const totalReposDisplayed = displayedRepoCount ?? repos.length;
+
+  // 最近のアクティビティ読み込み
+  const { recentItems, isLoading: isLoadingActivities } = useRecentActivities(user, {
+    enabled: true,
+    refreshToken: activityRefreshToken,
+  });
 
   // Manual repository state management
   const [manualRepos, setManualRepos] = useState<Repo[]>([]);
@@ -104,127 +115,11 @@ function AppContent() {
     updateManualRepoStateFromList(updatedRepos);
   }, [updateManualRepoStateFromList]);
 
-  const loadCustomRepos = useCallback(
-    async (
-      sources: string[],
-      forceRefresh = false,
-      options: { notify?: boolean } = {}
-    ) => {
-      const { notify = false } = options;
-      setIsRepoLoading(true);
-      setError(null);
-      try {
-        const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, forceRefresh);
-        if (fetched.length === 0) {
-          const message = failed.length
-            ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
-            : '有効なリポジトリを入力してください。';
-          setError(message);
-          if (notify) {
-            showToast({
-              variant: 'error',
-              title: 'カスタムリポジトリの読み込みに失敗しました',
-              description: message,
-            });
-          }
-          return false;
-        }
-
-        const uniqueNames = Array.from(new Set(fetched.map((repo) => repo.nameWithOwner)));
-        setRepos(fetched);
-        setDataSource('custom');
-        setCustomRepoSources(uniqueNames);
-        setCustomInput(uniqueNames.join('\n'));
-
-        // Update last update time
-        const timestamp = getCustomReposTimestamp();
-        setLastUpdateTime(timestamp);
-
-        if (failed.length > 0) {
-          setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
-        }
-
-        if (notify) {
-          showToast({
-            variant: 'success',
-            title: 'カスタムリポジトリを更新しました',
-            description: `${fetched.length} 件のリポジトリを読み込みました`,
-          });
-        }
-
-        return true;
-      } catch (err) {
-        console.error('Failed to load custom repositories:', err);
-        const message = err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました';
-        setError(message);
-        if (notify) {
-          showToast({
-            variant: 'error',
-            title: 'カスタムリポジトリの読み込みに失敗しました',
-            description: message,
-          });
-        }
-        return false;
-      } finally {
-        setIsRepoLoading(false);
-      }
-    },
-    [showToast]
-  );
-
-  const loadRepos = useCallback(
-    async (forceRefresh = false, options: { notify?: boolean } = {}) => {
-      const { notify = false } = options;
-      setIsRepoLoading(true);
-      setError(null);
-      try {
-        const realRepos = await fetchUserRepos(false, forceRefresh);
-        setRepos(realRepos);
-        setDataSource('viewer');
-
-        // Update last update time
-        const timestamp = getViewerReposTimestamp();
-        setLastUpdateTime(timestamp);
-
-        if (notify) {
-          showToast({
-            variant: 'success',
-            title: '最新のリポジトリを取得しました',
-            description: `${realRepos.length} 件を表示しています`,
-          });
-        }
-
-        return true;
-      } catch (err) {
-        console.error('Failed to load repositories:', err);
-        const message = err instanceof Error ? err.message : 'Failed to load repositories';
-        setError(message);
-        if (notify) {
-          showToast({
-            variant: 'error',
-            title: 'リポジトリの読み込みに失敗しました',
-            description: message,
-          });
-        }
-        return false;
-      } finally {
-        setIsRepoLoading(false);
-      }
-    },
-    [showToast]
-  );
-
-  const handleRefresh = async () => {
-    if (dataSource === 'viewer') {
-      await loadRepos(true, { notify: true });
-    } else if (dataSource === 'custom') {
-      if (customRepoSources.length > 0) {
-        await loadCustomRepos(customRepoSources, true, { notify: true });
-      }
-    }
+  const handleRefresh = useCallback(async () => {
+    await refreshRepos();
     // Trigger activity refresh
     setActivityRefreshToken((prev) => prev + 1);
-  };
+  }, [refreshRepos]);
 
   // Handle manual repository addition from AddRepoModal
   const handleManualRepoSubmit = async () => {
@@ -305,41 +200,12 @@ function AppContent() {
     }
   };
 
-  // Load latest Issues/PRs when user is authenticated
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (user) {
-        setIsLoadingActivities(true);
-        try {
-          const [issues, pullRequests] = await Promise.all([
-            fetchLatestIssues(),
-            fetchLatestPullRequests(),
-          ]);
-          const combined = [...issues, ...pullRequests];
-          if (!cancelled) setRecentItems(combined);
-        } catch (err) {
-          console.error('Failed to fetch latest items:', err);
-          if (!cancelled) setRecentItems([]);
-        } finally {
-          if (!cancelled) setIsLoadingActivities(false);
-        }
-      } else {
-        setRecentItems([]);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, [user, dataSource, activityRefreshToken]);
-
   // Auto-load repos when user logs in
-  const hasRepos = repos.length > 0;
-
   useEffect(() => {
-    if (user && !hasRepos && !isRepoLoading) {
+    if (user && repos.length === 0 && !isRepoLoading) {
       loadRepos();
     }
-  }, [user, hasRepos, isRepoLoading, loadRepos]);
+  }, [user, repos.length, isRepoLoading, loadRepos]);
 
   // Load manual repos from localStorage on mount
   useEffect(() => {

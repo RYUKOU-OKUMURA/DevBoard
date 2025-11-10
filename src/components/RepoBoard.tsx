@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Repo, ColumnKey, SortOrder, AppConfig, ViewPreset } from '../types';
-import { classifyRepo, DEFAULT_CONFIG } from '../utils/classify';
+import { classifyRepo, DEFAULT_CLASSIFY_CONFIG, configToOptions } from '../lib/classifyRepo';
 import { searchAndSortRepos } from '../utils/search';
 import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapshot } from '../utils/presetStorage';
 import { RepoColumn } from './RepoColumn';
@@ -34,7 +34,7 @@ const COLUMN_DISPLAY_ORDER_KEY = 'github-dashboard-column-display-order';
 
 export const RepoBoard: React.FC<RepoBoardProps> = ({
   repos,
-  config = DEFAULT_CONFIG,
+  config = DEFAULT_CLASSIFY_CONFIG,
   isLoading = false,
   onRefresh,
   onStatsUpdate,
@@ -50,8 +50,8 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   // Dynamic thresholds
   const [thresholds, setThresholds] = useState({
-    activeThreshold: DEFAULT_CONFIG.activeThreshold,
-    staleThreshold: DEFAULT_CONFIG.staleThreshold,
+    activeThreshold: DEFAULT_CLASSIFY_CONFIG.activeThreshold,
+    staleThreshold: DEFAULT_CLASSIFY_CONFIG.staleThreshold,
   });
 
   const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>(() => {
@@ -139,7 +139,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   // Apply search and sort, then classify into columns with manual overrides
   const classifiedRepos = useMemo(() => {
     // Initialize all columns (fixed + custom)
-    const columns: Record<ColumnKey, Repo[]> = {} as Record<ColumnKey, Repo[]>;
+    const columns: Partial<Record<ColumnKey, Repo[]>> = {};
     
     // Initialize fixed columns
     columns.Active = [];
@@ -163,22 +163,22 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
     filteredRepos.forEach((repo) => {
       const override = columnAssignments[repo.id];
-      const column = override ?? classifyRepo(repo, dynamicConfig);
+      const column = override ?? classifyRepo(repo, configToOptions(dynamicConfig));
       if (!columns[column]) {
         columns[column] = [];
       }
-      columns[column].push(repo);
+      columns[column]!.push(repo);
     });
 
-    return columns;
+    return columns as Record<ColumnKey, Repo[]>;
   }, [filteredRepos, columnAssignments, config, thresholds, columnDisplayOrder]);
 
   const categoryCounts: Record<ColumnKey, number> = useMemo(() => {
-    const counts: Record<ColumnKey, number> = {} as Record<ColumnKey, number>;
+    const counts: Partial<Record<ColumnKey, number>> = {};
     columnDisplayOrder.forEach((col) => {
       counts[col] = classifiedRepos[col]?.length || 0;
     });
-    return counts;
+    return counts as Record<ColumnKey, number>;
   }, [classifiedRepos, columnDisplayOrder]);
 
   // Notify parent of stats updates
@@ -327,7 +327,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
     setColumnAssignments((prev) => {
       const next = { ...prev };
-      const defaultColumn = classifyRepo(repo, config);
+      const defaultColumn = classifyRepo(repo, configToOptions(config));
       if (toCol === defaultColumn) {
         delete next[fromId];
       } else {
