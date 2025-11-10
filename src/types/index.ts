@@ -15,7 +15,7 @@ export type Repo = {
   };
 };
 
-export type ColumnKey = "Active" | "Stale" | "Dormant" | "Archived";
+export type ColumnKey = string; // "Active" | "Stale" | "Dormant" | "Archived" | custom columns
 
 export type SortOrder = "lastUpdated" | "name" | "stars" | "language";
 

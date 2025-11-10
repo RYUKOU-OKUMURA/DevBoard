@@ -5,6 +5,7 @@ import { searchAndSortRepos } from '../utils/search';
 import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapshot } from '../utils/presetStorage';
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
+import { MainColumnSettingsModal } from './MainColumnSettingsModal';
 import { useAuth } from '../contexts/AuthContext';
 
 interface RepoBoardProps {
@@ -29,6 +30,7 @@ const ORDER_STORAGE_KEY = 'github-dashboard-column-order';
 const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
 const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
 const HIDDEN_REPOS_STORAGE_KEY = 'github-dashboard-hidden-repos';
+const COLUMN_DISPLAY_ORDER_KEY = 'github-dashboard-column-display-order';
 
 export const RepoBoard: React.FC<RepoBoardProps> = ({
   repos,
@@ -64,6 +66,23 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     }
     return { ...COLUMN_TITLES };
   });
+  const [columnDisplayOrder, setColumnDisplayOrder] = useState<ColumnKey[]>(() => {
+    try {
+      const raw = localStorage.getItem(COLUMN_DISPLAY_ORDER_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as ColumnKey[];
+        // Validate that all columns are present
+        const allColumns = COLUMN_ORDER;
+        const validOrder = allColumns.filter(col => parsed.includes(col));
+        const missingColumns = allColumns.filter(col => !parsed.includes(col));
+        return [...validOrder, ...missingColumns];
+      }
+    } catch (error) {
+      console.warn('Failed to restore column display order', error);
+    }
+    return [...COLUMN_ORDER];
+  });
+  const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
   const [columnAssignments, setColumnAssignments] = useState<Record<string, ColumnKey>>(() => {
     try {
       const raw = localStorage.getItem(COLUMN_ASSIGNMENTS_STORAGE_KEY);
@@ -119,12 +138,21 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   // Apply search and sort, then classify into columns with manual overrides
   const classifiedRepos = useMemo(() => {
-    const columns: Record<ColumnKey, Repo[]> = {
-      Active: [],
-      Stale: [],
-      Dormant: [],
-      Archived: [],
-    };
+    // Initialize all columns (fixed + custom)
+    const columns: Record<ColumnKey, Repo[]> = {} as Record<ColumnKey, Repo[]>;
+    
+    // Initialize fixed columns
+    columns.Active = [];
+    columns.Stale = [];
+    columns.Dormant = [];
+    columns.Archived = [];
+    
+    // Initialize custom columns
+    columnDisplayOrder.forEach((col) => {
+      if (!columns[col]) {
+        columns[col] = [];
+      }
+    });
 
     // Use dynamic thresholds for classification
     const dynamicConfig = {
@@ -136,25 +164,30 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     filteredRepos.forEach((repo) => {
       const override = columnAssignments[repo.id];
       const column = override ?? classifyRepo(repo, dynamicConfig);
+      if (!columns[column]) {
+        columns[column] = [];
+      }
       columns[column].push(repo);
     });
 
     return columns;
-  }, [filteredRepos, columnAssignments, config, thresholds]);
+  }, [filteredRepos, columnAssignments, config, thresholds, columnDisplayOrder]);
+
+  const categoryCounts: Record<ColumnKey, number> = useMemo(() => {
+    const counts: Record<ColumnKey, number> = {} as Record<ColumnKey, number>;
+    columnDisplayOrder.forEach((col) => {
+      counts[col] = classifiedRepos[col]?.length || 0;
+    });
+    return counts;
+  }, [classifiedRepos, columnDisplayOrder]);
 
   // Notify parent of stats updates
   useEffect(() => {
     if (onStatsUpdate) {
       const totalVisible = Object.values(classifiedRepos).reduce((sum, repos) => sum + repos.length, 0);
-      const categoryCounts: Record<ColumnKey, number> = {
-        Active: classifiedRepos.Active.length,
-        Stale: classifiedRepos.Stale.length,
-        Dormant: classifiedRepos.Dormant.length,
-        Archived: classifiedRepos.Archived.length,
-      };
       onStatsUpdate(totalVisible, categoryCounts, columnTitles);
     }
-  }, [classifiedRepos, onStatsUpdate, columnTitles]);
+  }, [classifiedRepos, onStatsUpdate, columnTitles, categoryCounts]);
 
   useEffect(() => {
     try {
@@ -163,6 +196,25 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       console.warn('Failed to persist column titles', error);
     }
   }, [columnTitles]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLUMN_DISPLAY_ORDER_KEY, JSON.stringify(columnDisplayOrder));
+      
+      // Ensure all columns in display order have titles
+      setColumnTitles((prev) => {
+        const updated = { ...prev };
+        columnDisplayOrder.forEach((col) => {
+          if (!updated[col]) {
+            updated[col] = col;
+          }
+        });
+        return updated;
+      });
+    } catch (error) {
+      console.warn('Failed to persist column display order', error);
+    }
+  }, [columnDisplayOrder]);
 
   useEffect(() => {
     try {
@@ -183,16 +235,16 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   // Sync order map with current repos per column
   useEffect(() => {
-    const next: Record<ColumnKey, string[]> = { Active: [], Stale: [], Dormant: [], Archived: [] };
-    (Object.keys(classifiedRepos) as ColumnKey[]).forEach((col) => {
-      const ids = classifiedRepos[col].map((r) => r.id);
+    const next: Record<ColumnKey, string[]> = {} as Record<ColumnKey, string[]>;
+    columnDisplayOrder.forEach((col) => {
+      const ids = classifiedRepos[col]?.map((r) => r.id) || [];
       const existing = orderMap[col] || [];
       // keep existing order, append any new ids
       const ordered = [...existing.filter((id) => ids.includes(id)), ...ids.filter((id) => !existing.includes(id))];
       next[col] = ordered;
     });
     setOrderMap(next);
-  }, [classifiedRepos]);
+  }, [classifiedRepos, columnDisplayOrder]);
 
   // Persist order map
   useEffect(() => {
@@ -329,18 +381,19 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       return;
     }
 
-    const preset = getPresetById(presetId, user?.userId);
-    if (preset) {
-      // Load all state from preset
-      setSearchQuery(preset.searchQuery);
-      setSortOrder(preset.sortOrder);
-      setColumnTitles(preset.columnTitles);
-      setOrderMap(preset.columnOrder);
-      setThresholds(preset.thresholds);
-      setColumnAssignments(preset.columnAssignments);
-      setHiddenRepoIds(new Set(preset.hiddenRepoIds));
-      setCurrentPresetId(presetId);
-    }
+      const preset = getPresetById(presetId, user?.userId);
+      if (preset) {
+        // Load all state from preset
+        setSearchQuery(preset.searchQuery);
+        setSortOrder(preset.sortOrder);
+        setColumnTitles(preset.columnTitles);
+        setOrderMap(preset.columnOrder);
+        setThresholds(preset.thresholds);
+        setColumnAssignments(preset.columnAssignments);
+        setHiddenRepoIds(new Set(preset.hiddenRepoIds));
+        // Note: columnDisplayOrder is not stored in preset, keep current order
+        setCurrentPresetId(presetId);
+      }
   };
 
   const handleSavePreset = (name: string) => {
@@ -375,6 +428,29 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return false;
   };
 
+  const handleColumnSettingsSave = (newTitles: Record<ColumnKey, string>, newOrder: ColumnKey[]) => {
+    // Find deleted columns
+    const deletedColumns = columnDisplayOrder.filter((col) => !newOrder.includes(col));
+    
+    // Reassign repos from deleted columns to their default classification
+    if (deletedColumns.length > 0) {
+      const updatedAssignments = { ...columnAssignments };
+      deletedColumns.forEach((deletedCol) => {
+        // Find repos assigned to deleted column
+        Object.keys(columnAssignments).forEach((repoId) => {
+          if (columnAssignments[repoId] === deletedCol) {
+            // Remove assignment to let it use default classification
+            delete updatedAssignments[repoId];
+          }
+        });
+      });
+      setColumnAssignments(updatedAssignments);
+    }
+    
+    setColumnTitles(newTitles);
+    setColumnDisplayOrder(newOrder);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-surface-app transition-colors">
       <TopBar
@@ -398,6 +474,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
         lastUpdateTime={lastUpdateTime}
+        onOpenColumnSettings={() => setIsColumnSettingsModalOpen(true)}
       />
 
       {filteredRepos.length === 0 && !isLoading ? (
@@ -450,10 +527,10 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         </div>
       ) : (
         <div className="flex-1 flex gap-4 p-4 overflow-x-auto" aria-live="polite">
-          {COLUMN_ORDER.map((columnKey) => (
+          {columnDisplayOrder.map((columnKey) => (
             <RepoColumn
               key={columnKey}
-              title={columnTitles[columnKey]}
+              title={columnTitles[columnKey] || columnKey}
               repos={getOrderedRepos(columnKey)}
               columnKey={columnKey}
               onReorder={handleReorderWithinColumn}
@@ -464,6 +541,17 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
             />
           ))}
         </div>
+      )}
+
+      {/* Column Settings Modal */}
+      {isColumnSettingsModalOpen && (
+        <MainColumnSettingsModal
+          columnTitles={columnTitles}
+          columnOrder={columnDisplayOrder}
+          onSave={handleColumnSettingsSave}
+          onClose={() => setIsColumnSettingsModalOpen(false)}
+          columnCounts={categoryCounts}
+        />
       )}
     </div>
   );
