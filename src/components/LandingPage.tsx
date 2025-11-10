@@ -10,16 +10,19 @@ interface LandingPageProps {
 const FEATURES = [
   {
     title: 'GitHub リポジトリ連携',
+    titleWithBreak: true,
     description:
       '重要なリポジトリをピン留めして一元管理。Pull Request や Issue の状況を即座に把握できます。',
   },
   {
     title: 'ボードビュー',
+    titleWithBreak: false,
     description:
       'ドラッグ＆ドロップでタスクを整理。進行状況や担当者を見ながらボトルネックを発見できます。',
   },
   {
     title: 'セキュリティ対応',
+    titleWithBreak: false,
     description:
       '最小権限のアクセスと監査ログで、信頼できる運用体制をサポートします。',
   },
@@ -64,7 +67,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8" style={{ background: palette.background }}>
-      <main className="max-w-6xl w-full grid gap-stack-lg lg:grid-cols-[1.1fr_0.9fr]" style={{ color: palette.textPrimary }}>
+      <main className="max-w-[1400px] w-full grid gap-stack-lg lg:grid-cols-[1.1fr_0.9fr]" style={{ color: palette.textPrimary }}>
         <section
           className="relative overflow-hidden rounded-[32px] border p-10"
           style={componentStyles.heroSection}
@@ -167,8 +170,15 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
                       }}
                     />
                     <div className="relative z-10 flex flex-col gap-stack-sm">
-                      <h3 className="text-title-2 font-semibold" style={{ color: palette.textPrimary }}>
-                        {feature.title}
+                      <h3 className={`text-title-3 font-semibold ${feature.title === 'セキュリティ対応' ? 'whitespace-nowrap' : ''}`} style={{ color: palette.textPrimary }}>
+                        {feature.titleWithBreak ? (
+                          <>
+                            GitHub<br />
+                            リポジトリ連携
+                          </>
+                        ) : (
+                          feature.title
+                        )}
                       </h3>
                       <p className="mt-3 text-body-sm" style={{ color: palette.textMuted }}>
                         {feature.description}
