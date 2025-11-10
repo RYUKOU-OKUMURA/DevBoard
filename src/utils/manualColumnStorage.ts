@@ -9,7 +9,6 @@ export interface ManualColumnConfig {
   columns: ManualColumnKey[];
   columnTitles: Record<ManualColumnKey, string>;
   columnOrder: Record<ManualColumnKey, string[]>; // リポジトリIDの順序
-  columnVisibility: Record<ManualColumnKey, boolean>;
 }
 
 export interface ManualColumnAssignments {
@@ -40,12 +39,6 @@ const DEFAULT_COLUMN_CONFIG: ManualColumnConfig = {
     '学習用': [],
     'フォーク済み': [],
     'その他': [],
-  },
-  columnVisibility: {
-    '気になる': true,
-    '学習用': true,
-    'フォーク済み': true,
-    'その他': true,
   },
 };
 
@@ -108,7 +101,6 @@ export function addManualColumn(columnName: ManualColumnKey): boolean {
     config.columns.push(columnName);
     config.columnTitles[columnName] = columnName;
     config.columnOrder[columnName] = [];
-    config.columnVisibility[columnName] = true;
 
     return saveManualColumnConfig(config);
   } catch (error) {
@@ -139,7 +131,6 @@ export function removeManualColumn(columnName: ManualColumnKey): boolean {
     config.columns = config.columns.filter((col) => col !== columnName);
     delete config.columnTitles[columnName];
     delete config.columnOrder[columnName];
-    delete config.columnVisibility[columnName];
 
     // このカラムに割り当てられたリポジトリを削除
     const assignments = getManualColumnAssignments();
@@ -185,9 +176,6 @@ export function renameManualColumn(oldName: ManualColumnKey, newName: ManualColu
     config.columnOrder[newName] = config.columnOrder[oldName];
     delete config.columnOrder[oldName];
 
-    config.columnVisibility[newName] = config.columnVisibility[oldName];
-    delete config.columnVisibility[oldName];
-
     // 割り当てを更新
     const assignments = getManualColumnAssignments();
     const updatedAssignments: ManualColumnAssignments = {};
@@ -199,26 +187,6 @@ export function renameManualColumn(oldName: ManualColumnKey, newName: ManualColu
     return saveManualColumnConfig(config);
   } catch (error) {
     console.error('カラムの名前変更に失敗しました:', error);
-    return false;
-  }
-}
-
-/**
- * カラムの表示・非表示を切り替え
- */
-export function toggleManualColumnVisibility(columnName: ManualColumnKey): boolean {
-  try {
-    const config = getManualColumnConfig();
-
-    if (!config.columns.includes(columnName)) {
-      console.warn(`カラム "${columnName}" は見つかりません`);
-      return false;
-    }
-
-    config.columnVisibility[columnName] = !config.columnVisibility[columnName];
-    return saveManualColumnConfig(config);
-  } catch (error) {
-    console.error('表示状態の切り替えに失敗しました:', error);
     return false;
   }
 }

@@ -27,7 +27,6 @@ interface TopBarProps {
   onSavePreset?: (name: string) => boolean;
   onDeletePreset?: (presetId: string) => boolean;
   columnTitles?: Record<ColumnKey, string>;
-  columnVisibility?: Record<ColumnKey, boolean>;
   thresholds?: { activeThreshold: number; staleThreshold: number };
   // Other props
   hiddenRepos?: Repo[];
@@ -57,7 +56,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   onSavePreset,
   onDeletePreset,
   columnTitles,
-  columnVisibility,
   thresholds,
   hiddenRepos = [],
   onUnhideRepo,
@@ -515,15 +513,6 @@ export const TopBar: React.FC<TopBarProps> = ({
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-            {columnVisibility && (
-              <div className="text-body-sm text-[var(--text-secondary)]">
-                <strong>表示中のカラム:</strong>{' '}
-                {Object.entries(columnVisibility)
-                  .filter(([, visible]) => visible)
-                  .map(([key]) => key)
-                  .join(', ')}
               </div>
             )}
             {thresholds && (

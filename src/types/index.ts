@@ -39,7 +39,6 @@ export type ViewPreset = {
   // Column customization
   columnTitles: Record<ColumnKey, string>;
   columnOrder: Record<ColumnKey, string[]>; // Drag-and-drop order
-  columnVisibility: Record<ColumnKey, boolean>; // Show/hide columns
   // Classification thresholds
   thresholds: {
     activeThreshold: number; // days

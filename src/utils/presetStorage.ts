@@ -86,13 +86,6 @@ const DEFAULT_COLUMN_TITLES: Record<ColumnKey, string> = {
   Archived: 'アーカイブ',
 };
 
-const DEFAULT_COLUMN_VISIBILITY: Record<ColumnKey, boolean> = {
-  Active: true,
-  Stale: true,
-  Dormant: true,
-  Archived: true,
-};
-
 /**
  * Get all presets from localStorage for a specific account
  * Automatically migrates legacy presets on first access
@@ -271,7 +264,6 @@ export function migrateFromSavedView(savedView: SavedView): Omit<ViewPreset, 'id
       Dormant: [],
       Archived: [],
     },
-    columnVisibility: { ...DEFAULT_COLUMN_VISIBILITY },
     thresholds: {
       activeThreshold: DEFAULT_CONFIG.activeThreshold,
       staleThreshold: DEFAULT_CONFIG.staleThreshold,
@@ -290,7 +282,6 @@ export function createPresetSnapshot(params: {
   sortOrder: ViewPreset['sortOrder'];
   columnTitles: Record<ColumnKey, string>;
   columnOrder: Record<ColumnKey, string[]>;
-  columnVisibility: Record<ColumnKey, boolean>;
   thresholds: { activeThreshold: number; staleThreshold: number };
   columnAssignments: Record<string, ColumnKey>;
   hiddenRepoIds: string[];
@@ -301,7 +292,6 @@ export function createPresetSnapshot(params: {
     sortOrder: params.sortOrder,
     columnTitles: { ...params.columnTitles },
     columnOrder: { ...params.columnOrder },
-    columnVisibility: { ...params.columnVisibility },
     thresholds: { ...params.thresholds },
     columnAssignments: { ...params.columnAssignments },
     hiddenRepoIds: [...params.hiddenRepoIds],

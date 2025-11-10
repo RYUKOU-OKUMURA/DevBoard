@@ -122,7 +122,6 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
         newColumns.forEach(col => {
           updatedConfig.columnTitles[col] = col;
           updatedConfig.columnOrder[col] = [];
-          updatedConfig.columnVisibility[col] = true;
         });
         setColumnConfig(updatedConfig);
         if (onColumnsChange) {
@@ -395,16 +394,6 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     });
   };
 
-  const handleToggleColumnVisibility = (columnKey: ManualColumnKey) => {
-    setColumnConfig((prev) => ({
-      ...prev,
-      columnVisibility: {
-        ...prev.columnVisibility,
-        [columnKey]: !prev.columnVisibility[columnKey],
-      },
-    }));
-  };
-
   const handleColumnTitleChange = (col: ManualColumnKey, newTitle: string) => {
     setColumnConfig((prev) => ({
       ...prev,
@@ -523,34 +512,30 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
 
       {/* Board Columns */}
       <div className="flex-1 flex gap-inline-lg p-inset-md overflow-x-auto relative">
-        {columnConfig.columns.map((columnKey) =>
-          columnConfig.columnVisibility[columnKey] ? (
-            <RepoColumn
-              key={columnKey}
-              title={columnConfig.columnTitles[columnKey]}
-              repos={getOrderedRepos(columnKey)}
-              columnKey={columnKey}
-              onReorder={handleReorderWithinColumn}
-              onReorderBetween={handleReorderBetween}
-              onTitleChange={handleColumnTitleChange}
-              isVisible={columnConfig.columnVisibility[columnKey]}
-              onToggleVisibility={handleToggleColumnVisibility}
-              renderRepoCard={(repo) => (
-                <div key={repo.id} className="animate-fade-in">
-                  <RepoCard
-                    repo={repo}
-                    columnKey={columnKey}
-                    showCheckbox={isDeleteMode}
-                    showDeleteButton={isDeleteMode}
-                    isSelected={selectedRepos.has(repo.id)}
-                    onSelect={handleToggleRepoSelection}
-                    onDelete={handleDeleteRepo}
-                  />
-                </div>
-              )}
-            />
-          ) : null
-        )}
+        {columnConfig.columns.map((columnKey) => (
+          <RepoColumn
+            key={columnKey}
+            title={columnConfig.columnTitles[columnKey]}
+            repos={getOrderedRepos(columnKey)}
+            columnKey={columnKey}
+            onReorder={handleReorderWithinColumn}
+            onReorderBetween={handleReorderBetween}
+            onTitleChange={handleColumnTitleChange}
+            renderRepoCard={(repo) => (
+              <div key={repo.id} className="animate-fade-in">
+                <RepoCard
+                  repo={repo}
+                  columnKey={columnKey}
+                  showCheckbox={isDeleteMode}
+                  showDeleteButton={isDeleteMode}
+                  isSelected={selectedRepos.has(repo.id)}
+                  onSelect={handleToggleRepoSelection}
+                  onDelete={handleDeleteRepo}
+                />
+              </div>
+            )}
+          />
+        ))}
 
         {/* Floating Action Bar */}
         {selectedRepos.size > 0 && (

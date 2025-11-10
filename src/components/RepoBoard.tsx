@@ -49,14 +49,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   const [presets, setPresets] = useState<ViewPreset[]>([]);
   const [currentPresetId, setCurrentPresetId] = useState<string>('');
 
-  // Column visibility state
-  const [columnVisibility, setColumnVisibility] = useState<Record<ColumnKey, boolean>>({
-    Active: true,
-    Stale: true,
-    Dormant: true,
-    Archived: true,
-  });
-
   // Dynamic thresholds
   const [thresholds, setThresholds] = useState({
     activeThreshold: DEFAULT_CONFIG.activeThreshold,
@@ -386,7 +378,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       setSortOrder(preset.sortOrder);
       setColumnTitles(preset.columnTitles);
       setOrderMap(preset.columnOrder);
-      setColumnVisibility(preset.columnVisibility);
       setThresholds(preset.thresholds);
       setColumnAssignments(preset.columnAssignments);
       setHiddenRepoIds(new Set(preset.hiddenRepoIds));
@@ -401,7 +392,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       sortOrder,
       columnTitles,
       columnOrder: orderMap,
-      columnVisibility,
       thresholds,
       columnAssignments,
       hiddenRepoIds: Array.from(hiddenRepoIds),
@@ -427,13 +417,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return false;
   };
 
-  const handleToggleColumnVisibility = (columnKey: ColumnKey) => {
-    setColumnVisibility((prev) => ({
-      ...prev,
-      [columnKey]: !prev[columnKey],
-    }));
-  };
-
   return (
     <div className="h-screen flex flex-col bg-surface-app transition-colors">
       <TopBar
@@ -457,7 +440,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         onSavePreset={handleSavePreset}
         onDeletePreset={handleDeletePreset}
         columnTitles={columnTitles}
-        columnVisibility={columnVisibility}
         thresholds={thresholds}
         hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
         onUnhideRepo={handleUnhideRepo}
@@ -515,23 +497,19 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         </div>
       ) : (
         <div className="flex-1 flex gap-4 p-4 overflow-x-auto" aria-live="polite">
-          {COLUMN_ORDER.map((columnKey) =>
-            columnVisibility[columnKey] ? (
-              <RepoColumn
-                key={columnKey}
-                title={columnTitles[columnKey]}
-                repos={getOrderedRepos(columnKey)}
-                columnKey={columnKey}
-                onReorder={handleReorderWithinColumn}
-                onReorderBetween={handleReorderBetween}
-                onTitleChange={handleColumnTitleChange}
-                onHide={handleHideRepo}
-                isVisible={columnVisibility[columnKey]}
-                onToggleVisibility={handleToggleColumnVisibility}
-                isLoading={isLoading}
-              />
-            ) : null
-          )}
+          {COLUMN_ORDER.map((columnKey) => (
+            <RepoColumn
+              key={columnKey}
+              title={columnTitles[columnKey]}
+              repos={getOrderedRepos(columnKey)}
+              columnKey={columnKey}
+              onReorder={handleReorderWithinColumn}
+              onReorderBetween={handleReorderBetween}
+              onTitleChange={handleColumnTitleChange}
+              onHide={handleHideRepo}
+              isLoading={isLoading}
+            />
+          ))}
         </div>
       )}
     </div>

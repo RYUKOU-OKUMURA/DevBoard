@@ -17,8 +17,6 @@ interface RepoColumnProps {
   ) => void;
   onTitleChange?: (column: ColumnKey | string, newTitle: string) => void;
   onHide?: (repoId: string) => void;
-  isVisible?: boolean;
-  onToggleVisibility?: (columnKey: ColumnKey | string) => void;
   renderRepoCard?: (repo: Repo) => React.ReactNode;
   isLoading?: boolean;
 }
@@ -88,14 +86,9 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
   onReorderBetween,
   onTitleChange,
   onHide,
-  isVisible = true,
-  onToggleVisibility,
   renderRepoCard,
   isLoading = false,
 }) => {
-  if (!isVisible) {
-    return null;
-  }
 
   // Use default colors if columnKey is not in COLUMN_COLORS (for custom columns)
   const colors = COLUMN_COLORS[columnKey] || DEFAULT_COLUMN_COLORS;
@@ -280,37 +273,6 @@ export const RepoColumn: React.FC<RepoColumnProps> = ({
           <span className={`px-2 py-1 rounded-lg text-body-sm border transition-colors ${colors.border} ${colors.badgeBg} ${colors.badgeText}`}>
             {repos.length}
           </span>
-          {onToggleVisibility && (
-            <button
-              type="button"
-              onClick={() => onToggleVisibility(columnKey)}
-              className="p-1 rounded-lg hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 transition-colors"
-              aria-label="この列を非表示にする"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-                <line
-                  x1="3"
-                  y1="21"
-                  x2="21"
-                  y2="3"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          )}
         </div>
       </div>
 
