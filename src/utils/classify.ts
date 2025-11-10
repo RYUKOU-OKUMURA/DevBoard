@@ -3,13 +3,11 @@ import { differenceInDays } from './date';
 import { classifyRepo as classifyRepoCore } from '../lib/classifyRepo';
 
 /**
- * NOTE: Adapter layer for UI code
- * - Source of truth for classification is `src/lib/classifyRepo.ts` (pure/domain logic)
- * - This utils module preserves the previous utils API surface and can be
- *   gradually phased out. New application code should prefer importing
- *   from `src/lib/classifyRepo` directly.
- *
- * Default configuration for repository classification
+ * アダプタ層: UIコード用の分類ユーティリティ
+ * 
+ * 実装の真実の源は `src/lib/classifyRepo.ts`（純粋なドメインロジック）。
+ * このモジュールは以前のAPI表面を維持するためのアダプタです。
+ * 新しいコードでは `src/lib/classifyRepo` を直接インポートすることを推奨します。
  */
 export const DEFAULT_CONFIG: AppConfig = {
   activeThreshold: 60,    // days
@@ -18,19 +16,17 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 /**
- * Calculate the number of days since the given date (rounded up),
- * clamping future dates to 0.
+ * 指定された日付からの経過日数を計算（切り上げ、未来日付は0にクランプ）
  */
 export function daysSince(dateString: string): number {
   const date = new Date(dateString);
   const now = new Date();
   const diff = differenceInDays(now, date, { clampToZero: true });
-  // Round up to align with historical expectations in utils tests
   return Math.ceil(Math.abs(diff));
 }
 
 /**
- * Adapter to the core classification logic to preserve the utils API surface.
+ * コア分類ロジックへのアダプタ（utils API表面を維持）
  */
 export function classifyRepo(
   repo: Repo,
@@ -43,7 +39,7 @@ export function classifyRepo(
 }
 
 /**
- * Classify multiple repositories into columns
+ * 複数のリポジトリを列に分類
  */
 export function classifyRepos(
   repos: Repo[],

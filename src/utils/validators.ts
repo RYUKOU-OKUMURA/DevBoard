@@ -52,9 +52,9 @@ export function isRepo(value: unknown): value is Repo {
 }
 
 /**
- * ColumnKey 型のバリデーション
+ * ColumnKey 型のバリデーション（内部使用のみ）
  */
-export function isColumnKey(value: unknown): value is ColumnKey {
+function isColumnKey(value: unknown): value is ColumnKey {
   return (
     value === "Active" ||
     value === "Stale" ||
@@ -64,16 +64,16 @@ export function isColumnKey(value: unknown): value is ColumnKey {
 }
 
 /**
- * SortOrder 型のバリデーション
+ * SortOrder 型のバリデーション（内部使用のみ）
  */
-export function isSortOrder(value: unknown): value is SortOrder {
+function isSortOrder(value: unknown): value is SortOrder {
   return value === "lastUpdated" || value === "name";
 }
 
 /**
- * SavedView 型のバリデーション
+ * SavedView 型のバリデーション（内部使用のみ）
  */
-export function isSavedView(value: unknown): value is SavedView {
+function isSavedView(value: unknown): value is SavedView {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -122,9 +122,9 @@ export function validateRepos(data: unknown): Repo[] {
 }
 
 /**
- * SavedView 配列のバリデーション
+ * SavedView 配列のバリデーション（内部使用のみ）
  */
-export function validateSavedViews(data: unknown): SavedView[] {
+function validateSavedViews(data: unknown): SavedView[] {
   if (!Array.isArray(data)) {
     console.warn("Invalid saved views data: expected an array");
     return [];
