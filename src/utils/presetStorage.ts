@@ -1,4 +1,4 @@
-import { ViewPreset, ColumnKey, SavedView } from '../types';
+import { ViewPreset, ColumnKey } from '../types';
 import { DEFAULT_CONFIG } from './classify';
 
 const PRESET_STORAGE_KEY_PREFIX = 'github-dashboard-presets';
@@ -246,31 +246,6 @@ export function clearAllPresets(accountId?: string): boolean {
     console.error('Failed to clear presets:', error);
     return false;
   }
-}
-
-/**
- * Migrate old SavedView to ViewPreset format
- * This is a helper for backward compatibility
- */
-export function migrateFromSavedView(savedView: SavedView): Omit<ViewPreset, 'id' | 'createdAt'> {
-  return {
-    name: savedView.name,
-    searchQuery: savedView.searchQuery,
-    sortOrder: savedView.sortOrder,
-    columnTitles: { ...DEFAULT_COLUMN_TITLES },
-    columnOrder: {
-      Active: [],
-      Stale: [],
-      Dormant: [],
-      Archived: [],
-    },
-    thresholds: {
-      activeThreshold: DEFAULT_CONFIG.activeThreshold,
-      staleThreshold: DEFAULT_CONFIG.staleThreshold,
-    },
-    columnAssignments: {},
-    hiddenRepoIds: [],
-  };
 }
 
 /**

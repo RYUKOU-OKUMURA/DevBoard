@@ -1,8 +1,2 @@
-export {
-  getSavedViews,
-  saveView,
-  deleteView,
-  updateView,
-  getViewById,
-  clearAllViews,
-} from './savedViews';
+// Storage module exports
+// All storage functions are now in their respective modules

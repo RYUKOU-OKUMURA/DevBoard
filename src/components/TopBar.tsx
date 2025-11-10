@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import React, { useState } from 'react';
-import { SortOrder, SavedView, Repo, ViewPreset, ColumnKey } from '../types';
+import { SortOrder, Repo, ViewPreset, ColumnKey } from '../types';
 import { formatLastUpdateTime } from '../utils/timeFormatter';
 import { focusRing } from '../lib/focusRing';
 import { GlassModal } from './ui/GlassModal';
@@ -15,11 +15,6 @@ interface TopBarProps {
   filteredCount: number;
   isLoading?: boolean;
   onRefresh?: () => void;
-  savedViews?: SavedView[];
-  currentViewId?: string;
-  onViewSelect?: (viewId: string) => void;
-  onSaveView?: (name: string) => boolean;
-  onDeleteView?: (viewId: string) => boolean;
   // Preset props
   presets?: ViewPreset[];
   currentPresetId?: string;
@@ -45,11 +40,6 @@ export const TopBar: React.FC<TopBarProps> = ({
   filteredCount,
   isLoading = false,
   onRefresh,
-  savedViews = [],
-  currentViewId = '',
-  onViewSelect,
-  onSaveView,
-  onDeleteView,
   presets = [],
   currentPresetId = '',
   onPresetSelect,
@@ -62,66 +52,11 @@ export const TopBar: React.FC<TopBarProps> = ({
   onUnhideAll,
   lastUpdateTime,
 }) => {
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showPresetDialog, setShowPresetDialog] = useState(false);
   const [showHiddenDialog, setShowHiddenDialog] = useState(false);
-  const [viewName, setViewName] = useState('');
   const [presetName, setPresetName] = useState('');
-  const [saveError, setSaveError] = useState('');
   const [presetError, setPresetError] = useState('');
 
-  const handleViewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    if (onViewSelect) {
-      onViewSelect(event.target.value);
-    }
-  };
-
-  const handleSaveClick = () => {
-    const trimmedName = viewName.trim();
-    setSaveError('');
-
-    if (!trimmedName) {
-      setSaveError('ビュー名を入力してください');
-      return;
-    }
-
-    if (!onSaveView) {
-      setSaveError('保存機能が利用できません');
-      return;
-    }
-
-    try {
-      const success = onSaveView(trimmedName);
-      if (success) {
-        setViewName('');
-        setShowSaveDialog(false);
-      } else {
-        setSaveError('保存に失敗しました。名前が重複しているか、上限（5件）に達しています。');
-      }
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : '保存に失敗しました');
-    }
-  };
-
-  const handleDeleteClick = (viewId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    if (!onDeleteView) {
-      return;
-    }
-
-    if (window.confirm('この保存済みビューを削除してもよろしいですか？')) {
-      const success = onDeleteView(viewId);
-      if (!success) {
-        setSaveError('削除に失敗しました。');
-      }
-    }
-  };
-
-  const handleDialogClose = () => {
-    setShowSaveDialog(false);
-    setViewName('');
-    setSaveError('');
-  };
 
   const handlePresetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     if (onPresetSelect) {
@@ -307,40 +242,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             </select>
           </div>
 
-          {/* Saved Views Selector */}
-          <div className="sm:w-64 flex gap-inline-md">
-            <select
-              value={currentViewId}
-              onChange={handleViewChange}
-              disabled={!onViewSelect}
-              className={`flex-1 px-inset-md py-inset-xs border border-[var(--border-subtle)] rounded-xl bg-surface-secondary text-[var(--text-primary)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75 focus:border-transparent disabled:opacity-70`}
-            >
-              <option value="">保存済みビュー ({savedViews.length}/5)</option>
-              {savedViews.map((view) => (
-                <option key={view.id} value={view.id}>
-                  {view.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => setShowSaveDialog(true)}
-              disabled={savedViews.length >= 5}
-              className={`px-inset-sm py-inset-xs bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong disabled:bg-surface-muted disabled:text-[var(--text-muted)] disabled:cursor-not-allowed transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75`}
-              title="現在のビューを保存"
-            >
-              +
-            </button>
-            {currentViewId && onDeleteView && (
-              <button
-                onClick={(event) => handleDeleteClick(currentViewId, event)}
-                className={`px-inset-sm py-inset-xs bg-[var(--brand-red)] text-text-inverse rounded-xl hover:bg-[var(--brand-red-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--brand-red)] focus-visible:ring-opacity-75`}
-                title="選択中のビューを削除"
-              >
-                ×
-              </button>
-            )}
-          </div>
-
           {/* Preset Selector */}
           <div className="sm:w-64 flex gap-inline-md">
             <select
@@ -389,69 +290,6 @@ export const TopBar: React.FC<TopBarProps> = ({
           )}
         </div>
       </div>
-
-      {/* Save View Dialog */}
-      <GlassModal
-        isOpen={showSaveDialog}
-        onClose={handleDialogClose}
-        title="現在のビューを保存"
-        className="max-w-md"
-      >
-        <div className="space-y-4">
-          <p className="text-[var(--text-muted)]">
-            現在の検索キーワードと並び順を保存します。
-          </p>
-          <div className="space-y-2">
-            <label htmlFor="viewName" className="block text-body-sm font-medium text-[var(--text-secondary)]">
-              ビュー名
-            </label>
-            <input
-              id="viewName"
-              type="text"
-              value={viewName}
-              onChange={(event) => {
-                setViewName(event.target.value);
-                setSaveError('');
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                  handleDialogClose();
-                }
-              }}
-              placeholder="例: アクティブなTypeScriptプロジェクト"
-              className={`w-full px-inset-md py-inset-xs border border-[var(--border-subtle)] rounded-xl bg-surface-secondary text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75 focus:border-transparent`}
-              autoFocus
-            />
-            {saveError && <p className="text-body-sm text-[var(--accent-red-emphasis)]">{saveError}</p>}
-          </div>
-          <div className="bg-surface-secondary p-3 rounded-lg border border-[var(--border-subtle)]">
-            <p className="text-body-sm text-[var(--text-muted)]">
-              <strong>検索:</strong> {searchQuery || '（なし）'}
-            </p>
-            <p className="text-body-sm text-[var(--text-muted)]">
-              <strong>並び順:</strong>{' '}
-              {sortOrder === 'lastUpdated' && '最終更新日'}
-              {sortOrder === 'name' && '名前 (A-Z)'}
-              {sortOrder === 'stars' && 'スター数'}
-              {sortOrder === 'language' && '言語'}
-            </p>
-          </div>
-          <div className="flex gap-inline-md">
-            <button
-              onClick={handleSaveClick}
-              className={`flex-1 px-inset-md py-inset-xs bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75`}
-            >
-              保存
-            </button>
-            <button
-              onClick={handleDialogClose}
-              className={`flex-1 px-inset-md py-inset-xs bg-surface-tertiary text-[var(--text-secondary)] rounded-xl hover:bg-surface-hover transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75`}
-            >
-              キャンセル
-            </button>
-          </div>
-        </div>
-      </GlassModal>
 
       {/* Save Preset Dialog */}
       <GlassModal

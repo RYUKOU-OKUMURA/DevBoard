@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Repo, ColumnKey, SortOrder, AppConfig, SavedView, ViewPreset } from '../types';
+import { Repo, ColumnKey, SortOrder, AppConfig, ViewPreset } from '../types';
 import { classifyRepo, DEFAULT_CONFIG } from '../utils/classify';
 import { searchAndSortRepos } from '../utils/search';
-import { getSavedViews, saveView, deleteView, getViewById } from '../utils/storage';
 import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapshot } from '../utils/presetStorage';
 import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
@@ -42,8 +41,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   const { user } = useAuth(); // Get current user for account-scoped presets
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
-  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
-  const [currentViewId, setCurrentViewId] = useState<string>('');
 
   // Preset management
   const [presets, setPresets] = useState<ViewPreset[]>([]);
@@ -97,9 +94,8 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return new Set();
   });
 
-  // Load saved views and presets on mount and when user changes
+  // Load presets on mount and when user changes
   useEffect(() => {
-    setSavedViews(getSavedViews());
     setPresets(getPresets(user?.userId));
     // Load order map
     try {
@@ -240,44 +236,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     });
   };
 
-  // Handlers for view selection
-  const handleViewSelect = (viewId: string) => {
-    if (viewId === '') {
-      // Clear view selection
-      setCurrentViewId('');
-      return;
-    }
-
-    const view = getViewById(viewId);
-    if (view) {
-      setSearchQuery(view.searchQuery);
-      setSortOrder(view.sortOrder);
-      setCurrentViewId(viewId);
-    }
-  };
-
-  // Handle save current view
-  const handleSaveView = (name: string) => {
-    const newView = saveView(name, searchQuery, sortOrder);
-    if (newView) {
-      setSavedViews(getSavedViews());
-      setCurrentViewId(newView.id);
-      return true;
-    }
-    return false;
-  };
-
-  // Handle delete view
-  const handleDeleteView = (viewId: string) => {
-    if (deleteView(viewId)) {
-      setSavedViews(getSavedViews());
-      if (currentViewId === viewId) {
-        setCurrentViewId('');
-      }
-      return true;
-    }
-    return false;
-  };
 
   const handleReorderWithinColumn = (col: ColumnKey, fromId: string, toId?: string) => {
     setOrderMap((prev) => {
@@ -429,11 +387,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         filteredCount={filteredCount}
         isLoading={isLoading}
         onRefresh={onRefresh}
-        savedViews={savedViews}
-        currentViewId={currentViewId}
-        onViewSelect={handleViewSelect}
-        onSaveView={handleSaveView}
-        onDeleteView={handleDeleteView}
         presets={presets}
         currentPresetId={currentPresetId}
         onPresetSelect={handlePresetSelect}

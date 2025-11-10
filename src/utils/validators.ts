@@ -1,4 +1,4 @@
-import type { Repo, ColumnKey, SavedView, SortOrder } from "../types";
+import type { Repo, ColumnKey, SortOrder } from "../types";
 
 /**
  * 値が文字列かどうかをチェック
@@ -71,25 +71,6 @@ function isSortOrder(value: unknown): value is SortOrder {
 }
 
 /**
- * SavedView 型のバリデーション（内部使用のみ）
- */
-function isSavedView(value: unknown): value is SavedView {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const obj = value as Record<string, unknown>;
-
-  if (!isString(obj.id)) return false;
-  if (!isString(obj.name)) return false;
-  if (!isString(obj.searchQuery)) return false;
-  if (!isSortOrder(obj.sortOrder)) return false;
-  if (!isString(obj.createdAt)) return false;
-
-  return true;
-}
-
-/**
  * Repo 配列のバリデーション
  */
 export function validateRepos(data: unknown): Repo[] {
@@ -119,28 +100,6 @@ export function validateRepos(data: unknown): Repo[] {
   }
 
   return validRepos;
-}
-
-/**
- * SavedView 配列のバリデーション（内部使用のみ）
- */
-function validateSavedViews(data: unknown): SavedView[] {
-  if (!Array.isArray(data)) {
-    console.warn("Invalid saved views data: expected an array");
-    return [];
-  }
-
-  const validViews: SavedView[] = [];
-
-  data.forEach((item, index) => {
-    if (isSavedView(item)) {
-      validViews.push(item);
-    } else {
-      console.warn(`Invalid saved view at index ${index}:`, item);
-    }
-  });
-
-  return validViews;
 }
 
 /**

@@ -17,14 +17,6 @@ export type Repo = {
 
 export type ColumnKey = "Active" | "Stale" | "Dormant" | "Archived";
 
-export type SavedView = {
-  id: string;
-  name: string;
-  searchQuery: string;
-  sortOrder: SortOrder;
-  createdAt: string;
-};
-
 export type SortOrder = "lastUpdated" | "name" | "stars" | "language";
 
 // Enhanced preset type that includes all dashboard state
@@ -33,7 +25,7 @@ export type ViewPreset = {
   name: string;
   // Account association for multi-account support
   accountId?: string; // GitHub user ID who owns this preset
-  // Search and sort (from SavedView)
+  // Search and sort
   searchQuery: string;
   sortOrder: SortOrder;
   // Column customization
@@ -54,7 +46,6 @@ export type ViewPreset = {
 export type AppConfig = {
   activeThreshold: number; // days
   staleThreshold: number; // days
-  maxSavedViews: number;
 };
 
 // Recent Activity Types

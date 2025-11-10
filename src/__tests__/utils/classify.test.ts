@@ -66,7 +66,6 @@ describe('classifyRepo', () => {
     const customConfig = {
       activeThreshold: 30,
       staleThreshold: 90,
-      maxSavedViews: 5,
     };
     
     expect(classifyRepo(repo, customConfig)).toBe('Stale');

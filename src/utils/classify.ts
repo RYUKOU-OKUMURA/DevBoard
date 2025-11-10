@@ -12,7 +12,6 @@ import { classifyRepo as classifyRepoCore } from '../lib/classifyRepo';
 export const DEFAULT_CONFIG: AppConfig = {
   activeThreshold: 60,    // days
   staleThreshold: 180,    // days
-  maxSavedViews: 5,
 };
 
 /**
