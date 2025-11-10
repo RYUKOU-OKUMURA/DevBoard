@@ -9,6 +9,7 @@ interface GlassModalProps {
   className?: string;
   children: React.ReactNode;
   closeLabel?: string;
+  tone?: 'dark' | 'light';
 }
 
 export const GlassModal: React.FC<GlassModalProps> = ({
@@ -18,8 +19,10 @@ export const GlassModal: React.FC<GlassModalProps> = ({
   className = 'max-w-3xl',
   children,
   closeLabel = '閉じる',
+  tone = 'dark',
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const isLightTone = tone === 'light';
 
   useEffect(() => {
     if (!isOpen || typeof document === 'undefined') {
@@ -101,8 +104,8 @@ export const GlassModal: React.FC<GlassModalProps> = ({
           <motion.div
             className="absolute inset-0"
             style={{
-              backgroundColor: 'rgba(103, 58, 183, 0.25)',
-              backdropFilter: 'blur(12px)',
+              backgroundColor: isLightTone ? 'rgba(247, 242, 255, 0.75)' : 'rgba(103, 58, 183, 0.25)',
+              backdropFilter: isLightTone ? 'blur(8px)' : 'blur(12px)',
             }}
             onClick={onClose}
             initial={{ opacity: 0 }}
@@ -112,12 +115,20 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
           <motion.div
             ref={dialogRef}
-            className={`relative w-full ${className} rounded-3xl border border-transparent shadow-2xl`}
+            className={`relative w-full ${className} rounded-3xl border ${
+              isLightTone ? 'border-[var(--border-subtle)] bg-surface-primary' : 'border-transparent'
+            } shadow-2xl`}
             style={{
-              background: 'linear-gradient(135deg, rgba(15,15,15,0.95), rgba(25,25,25,0.9))',
-              borderImage: 'linear-gradient(135deg, rgba(229,57,53,0.75), rgba(103,58,183,0.6)) 1',
-              boxShadow: '0 35px 80px rgba(0,0,0,0.45), inset 0 1px 0 var(--metallic-edge-top)',
-              backdropFilter: 'blur(30px)',
+              background: isLightTone
+                ? 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(250,248,255,0.95))'
+                : 'linear-gradient(135deg, rgba(15,15,15,0.95), rgba(25,25,25,0.9))',
+              borderImage: isLightTone
+                ? undefined
+                : 'linear-gradient(135deg, rgba(229,57,53,0.75), rgba(103,58,183,0.6)) 1',
+              boxShadow: isLightTone
+                ? '0 40px 70px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.9)'
+                : '0 35px 80px rgba(0,0,0,0.45), inset 0 1px 0 var(--metallic-edge-top)',
+              backdropFilter: 'blur(24px)',
             }}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -129,7 +140,11 @@ export const GlassModal: React.FC<GlassModalProps> = ({
             tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+            <div
+              className={`flex items-center justify-between px-6 py-5 border-b ${
+                isLightTone ? 'border-[var(--border-subtle)]' : 'border-white/10'
+              }`}
+            >
               {title ? (
                 <h2 className="text-title-2 font-semibold text-[var(--text-primary)]">{title}</h2>
               ) : (
@@ -138,7 +153,11 @@ export const GlassModal: React.FC<GlassModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className={`ml-2 inline-flex items-center justify-center rounded-full p-2 text-[var(--text-muted)] transition-colors ${focusRing.default} ${focusRing.brand}`}
+                className={`ml-2 inline-flex items-center justify-center rounded-full p-2 transition-colors ${
+                  isLightTone
+                    ? 'text-[var(--text-secondary)] hover:text-[var(--brand-purple)]'
+                    : 'text-[var(--text-muted)]'
+                } ${focusRing.default} ${focusRing.brand}`}
                 aria-label={closeLabel}
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

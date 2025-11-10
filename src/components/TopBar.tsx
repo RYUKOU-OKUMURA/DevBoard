@@ -194,13 +194,13 @@ export const TopBar: React.FC<TopBarProps> = ({
             {hiddenRepos.length > 0 && (
             <button
               onClick={() => setShowHiddenDialog(true)}
-              className={`px-inset-md py-inset-xs bg-[var(--accent-blue)] text-text-inverse rounded-xl hover:bg-[var(--accent-blue-emphasis)] transition-colors motion-reduce:transition-none relative shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-75`}
+              className={`px-inset-md py-inset-xs bg-[var(--accent-blue)] text-white rounded-xl hover:bg-[var(--accent-blue-emphasis)] transition-colors motion-reduce:transition-none relative shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-75`}
               title="非表示のリポジトリを管理"
               aria-haspopup="dialog"
               aria-expanded={showHiddenDialog}
             >
                 非表示を管理
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-caption font-bold text-brand-red bg-brand-red-soft rounded-full shadow-sm">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-caption font-bold text-white bg-white/20 rounded-full shadow-sm">
                   {hiddenRepos.length}
                 </span>
               </button>
@@ -562,34 +562,121 @@ export const TopBar: React.FC<TopBarProps> = ({
         isOpen={showHiddenDialog}
         onClose={() => setShowHiddenDialog(false)}
         title={`非表示のリポジトリ (${hiddenRepos.length})`}
-        className="max-w-2xl max-h-[80vh] overflow-y-auto"
+        className="max-w-4xl max-h-[90vh]"
+        tone="light"
       >
         {hiddenRepos.length === 0 ? (
           <p className="text-[var(--text-muted)] text-center py-8">非表示のリポジトリはありません</p>
         ) : (
-          <div className="space-y-4">
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {hiddenRepos.map((repo) => (
-                <div
-                  key={repo.id}
-                  className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg border border-[var(--border-subtle)] shadow-sm transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[var(--text-primary)] truncate">{repo.nameWithOwner}</p>
-                    {repo.description && (
-                      <p className="text-body-sm text-[var(--text-muted)] truncate">{repo.description}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => onUnhideRepo?.(repo.id)}
-                    className={`ml-inline-md px-inset-sm py-inline-xs bg-[var(--accent-blue)] text-text-inverse text-body-sm rounded hover:bg-[var(--accent-blue-emphasis)] transition-colors motion-reduce:transition-none shadow-sm ${focusRing.default} focus-visible:ring-[var(--accent-blue)] focus-visible:ring-opacity-75`}
+          <div className="flex flex-col gap-6 max-h-[70vh]">
+            <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pr-2 pb-inset-sm">
+              {hiddenRepos.map((repo) => {
+                const topicHighlights = (repo.topics || []).slice(0, 3);
+                return (
+                  <motion.div
+                    key={repo.id}
+                    layout
+                    whileHover={{
+                      translateY: -2,
+                      borderColor: 'var(--brand-purple)',
+                      boxShadow: '0 25px 45px rgba(15,23,42,0.15)',
+                    }}
+                    transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                    className="group relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-surface-primary px-5 py-5 shadow-sm"
                   >
-                    表示
-                  </button>
-                </div>
-              ))}
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      style={{
+                        background:
+                          'linear-gradient(135deg, rgba(255,255,255,0.35), rgba(103,58,183,0.18))',
+                      }}
+                      aria-hidden="true"
+                    />
+                    <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="flex-1 min-w-0 space-y-2 text-[var(--text-primary)]">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <a
+                            href={repo.htmlUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`truncate text-title-3 font-semibold transition-colors hover:text-[var(--brand-purple)] ${focusRing.default} focus-visible:ring-[var(--brand-purple)] focus-visible:ring-opacity-75`}
+                            aria-label={`${repo.nameWithOwner} をGitHubで開く`}
+                          >
+                            {repo.nameWithOwner}
+                          </a>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-surface-secondary px-2 py-0.5 text-caption font-semibold uppercase tracking-[0.2em] ${
+                              repo.isPrivate ? 'text-[var(--brand-red)]' : 'text-[var(--accent-green)]'
+                            }`}
+                          >
+                            {repo.isPrivate ? 'Private' : 'Public'}
+                          </span>
+                          {repo.isArchived && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-surface-secondary px-2 py-0.5 text-caption font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">
+                              Archived
+                            </span>
+                          )}
+                        </div>
+                        {repo.description && (
+                          <p className="text-body-sm text-[var(--text-muted)]">
+                            {repo.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 text-body-sm">
+                          {repo.primaryLanguage && (
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-surface-secondary px-3 py-1">
+                              <span className="h-2 w-2 rounded-full bg-[var(--brand-red)]" aria-hidden="true" />
+                              {repo.primaryLanguage}
+                            </span>
+                          )}
+                          {typeof repo.stargazers_count === 'number' && (
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-surface-secondary px-3 py-1">
+                              <svg className="h-4 w-4 text-[var(--accent-yellow)]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M12 3.5 14.45 9h5.55l-4.5 3.3 1.7 5.2L12 14.7 6.8 17.5 8.5 12.3 4 9h5.55z" />
+                              </svg>
+                              {repo.stargazers_count.toLocaleString()} Stars
+                            </span>
+                          )}
+                          {topicHighlights.map((topic) => (
+                            <span
+                              key={topic}
+                              className="inline-flex items-center rounded-full border border-[var(--border-subtle)] bg-surface-secondary px-3 py-1 text-caption uppercase tracking-[0.2em] text-[var(--text-secondary)]"
+                            >
+                              #{topic}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                        <a
+                          href={repo.htmlUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-surface-secondary px-4 py-2 text-body-sm text-[var(--text-primary)] transition-colors hover:border-[var(--brand-purple)] hover:text-[var(--brand-purple)] ${focusRing.default} focus-visible:ring-[var(--brand-purple)] focus-visible:ring-opacity-75`}
+                        >
+                          GitHubで開く
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M7 17 17 7M7 7h10v10" />
+                          </svg>
+                        </a>
+                        <button
+                          onClick={() => onUnhideRepo?.(repo.id)}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-body-sm text-text-inverse transition-all motion-reduce:transition-none shadow-md ${focusRing.default} focus-visible:ring-[var(--brand-purple)] focus-visible:ring-opacity-75`}
+                          style={{
+                            background: 'var(--brand-gradient)',
+                            boxShadow: '0 18px 35px rgba(103,58,183,0.3)',
+                          }}
+                          aria-label={`${repo.nameWithOwner} をリストに戻す`}
+                        >
+                          リストに戻す
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
-            <div className="flex gap-inline-md">
+            <div className="flex gap-inline-md shrink-0">
               <button
                 onClick={() => {
                   onUnhideAll?.();

@@ -3,6 +3,7 @@
 import { encryptToken, decryptToken } from './crypto';
 import type { Env, SessionData, MultiAccountSession, AccountMetadata } from './types';
 import { MAX_ACCOUNTS } from './types';
+import type { CookieOptions } from '../utils/security';
 
 // Session expiration: 30 days in seconds
 const SESSION_TTL = 30 * 24 * 60 * 60;
@@ -193,10 +194,12 @@ export async function getSessionIdFromCookie(request: Request, env: Env): Promis
 export async function createSessionCookie(
   sessionId: string,
   env: Env,
-  maxAge: number = SESSION_TTL
+  options: CookieOptions & { maxAge?: number } = {}
 ): Promise<string> {
+  const { maxAge = SESSION_TTL, secure = true } = options;
   const signed = await signSessionId(sessionId, env);
-  return `session_id=${encodeURIComponent(signed)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+  const secureSuffix = secure ? '; Secure' : '';
+  return `session_id=${encodeURIComponent(signed)}; Path=/; HttpOnly; SameSite=Lax${secureSuffix}; Max-Age=${maxAge}`;
 }
 
 /**

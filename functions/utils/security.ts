@@ -46,21 +46,37 @@ export interface SessionCookie {
   maxAge: number;
 }
 
+export interface CookieOptions {
+  secure?: boolean;
+}
+
+const buildCookieAttributes = (secure: boolean): string => {
+  return `Path=/; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
+};
+
 /** 複数クッキーを設定（正しい実装） */
-export const setCookies = (headers: Headers, cookies: SessionCookie[]): void => {
+export const setCookies = (
+  headers: Headers,
+  cookies: SessionCookie[],
+  options: CookieOptions = {}
+): void => {
+  const secure = options.secure ?? true;
+  const base = buildCookieAttributes(secure);
   cookies.forEach(({ name, value, maxAge }) => {
     headers.append(
       'Set-Cookie',
-      `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`
+      `${name}=${encodeURIComponent(value)}; ${base}; Max-Age=${maxAge}`
     );
   });
 };
 
 /** クッキー削除 */
-export const clearCookie = (headers: Headers, name: string): void => {
+export const clearCookie = (headers: Headers, name: string, options: CookieOptions = {}): void => {
+  const secure = options.secure ?? true;
+  const base = buildCookieAttributes(secure);
   headers.append(
     'Set-Cookie',
-    `${name}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+    `${name}=; ${base}; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
   );
 };
 
@@ -224,4 +240,3 @@ export const createRateLimitResponse = (
     credentials: false,
   });
 };
-

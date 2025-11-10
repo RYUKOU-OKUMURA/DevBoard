@@ -436,7 +436,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   return (
     <div className="h-screen flex flex-col bg-surface-app transition-colors">
-      {/* Top Bar */}
       <TopBar
         title={user?.username ? `${user.username} の DevBoard` : 'DevBoard'}
         searchQuery={searchQuery}
@@ -466,7 +465,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         lastUpdateTime={lastUpdateTime}
       />
 
-      {/* Board Columns */}
       {filteredRepos.length === 0 && !isLoading ? (
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center max-w-md">
@@ -493,7 +491,6 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
             </p>
             <button
               onClick={() => {
-                // Trigger modal open - this will be handled by parent App component
                 const event = new CustomEvent('openAddRepoModal');
                 window.dispatchEvent(event);
               }}

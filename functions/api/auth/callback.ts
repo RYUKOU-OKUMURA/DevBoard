@@ -9,7 +9,6 @@ import {
 } from '../../lib/session';
 import {
   getCookie,
-  setCookies,
   clearCookie
 } from '../../utils/security';
 
@@ -18,6 +17,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   try {
     const url = new URL(request.url);
+    const cookieOptions = { secure: url.protocol === 'https:' };
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
 
@@ -147,11 +147,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // Set session cookie and redirect to dashboard
     const origin = url.origin;
-    const sessionCookie = await createSessionCookie(masterSessionId, env);
+    const sessionCookie = await createSessionCookie(masterSessionId, env, {
+      secure: cookieOptions.secure,
+    });
     
     // oauth_sessionクッキーを削除し、session_idクッキーを設定（Set-Cookieのappend使用）
     const headers = new Headers({ 'Location': origin });
-    clearCookie(headers, 'oauth_session');
+    clearCookie(headers, 'oauth_session', cookieOptions);
     headers.append('Set-Cookie', sessionCookie);
 
     return new Response(null, {

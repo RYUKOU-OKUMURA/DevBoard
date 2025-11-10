@@ -179,170 +179,158 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
       isOpen
       onClose={onClose}
       title="列の管理"
-      className="max-w-3xl max-h-[90vh] overflow-y-auto"
+      className="max-w-4xl max-h-[90vh]"
+      tone="light"
     >
-      <div className="space-y-6">
-        {/* Add Column Section */}
-        <div className="space-y-stack-sm">
-          <h3 className="font-semibold text-[var(--text-primary)]">新しい列を追加</h3>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newColumnName}
-              onChange={(e) => setNewColumnName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddColumn();
-                }
-              }}
-              placeholder="列の名前を入力..."
-              maxLength={20}
-              disabled={localConfig.columns.length >= 8}
-              className="flex-1 px-inline-md py-stack-xs bg-surface-tertiary border border-[var(--border-subtle)] rounded-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <button
-              onClick={handleAddColumn}
-              disabled={localConfig.columns.length >= 8}
-              className="px-4 py-2 bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] rounded-lg font-medium hover:bg-[var(--accent-green-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              追加
-            </button>
-          </div>
-          {localConfig.columns.length >= 8 && (
-            <p className="text-caption text-[var(--accent-orange-strong)]">最大8列までしか追加できません</p>
-          )}
-        </div>
-
-        {/* Columns List */}
-          <div className="space-y-stack-sm">
-          <h3 className="font-semibold text-[var(--text-primary)]">
-            列の管理 ({localConfig.columns.length})
-          </h3>
-          <p className="text-body-sm text-[var(--text-muted)]">ドラッグして並び替えることができます</p>
-
-          <div className="space-y-2">
-            {localConfig.columns.map((colName) => (
-              <div
-                key={colName}
-                draggable
-                onDragStart={() => handleDragStart(colName)}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(colName)}
-                className={`
-                  flex items-center gap-inline-md p-3 rounded-lg border transition-all
-                  ${
-                    draggedColumn === colName
-                      ? 'bg-[var(--accent-blue-muted)] border-[var(--accent-blue-border)] opacity-75'
-                      : 'bg-surface-secondary border-[var(--border-subtle)] hover:border-[var(--accent-blue-border)]'
+      <div className="flex flex-col gap-6 max-h-[65vh]">
+        <div className="flex-1 min-h-0 space-y-6 overflow-y-auto pr-2 pb-inset-sm">
+          {/* Add Column Section */}
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-surface-primary px-6 py-5 shadow-sm space-y-4">
+            <div>
+              <h3 className="font-semibold text-[var(--text-primary)]">新しい列を追加</h3>
+              <p className="text-body-sm text-[var(--text-muted)]">最大8列まで追加できます</p>
+            </div>
+            <div className="flex gap-3 flex-col sm:flex-row">
+              <input
+                type="text"
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddColumn();
                   }
-                  ${localConfig.columns.length === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-move'}
-                `}
+                }}
+                placeholder="列の名前を入力..."
+                maxLength={20}
+                disabled={localConfig.columns.length >= 8}
+                className="flex-1 px-inset-md py-inset-sm bg-surface-secondary border border-[var(--border-subtle)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <button
+                onClick={handleAddColumn}
+                disabled={localConfig.columns.length >= 8}
+                className="px-inset-md py-inset-sm rounded-xl text-text-inverse font-medium shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: 'var(--brand-gradient)',
+                  boxShadow: '0 12px 25px rgba(103,58,183,0.25)',
+                }}
               >
-                {/* Drag Handle */}
-                <svg className="w-5 h-5 text-[var(--text-muted)]" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="9" cy="5" r="1.5" />
-                  <circle cx="9" cy="12" r="1.5" />
-                  <circle cx="9" cy="19" r="1.5" />
-                  <circle cx="15" cy="5" r="1.5" />
-                  <circle cx="15" cy="12" r="1.5" />
-                  <circle cx="15" cy="19" r="1.5" />
-                </svg>
+                列を追加
+              </button>
+            </div>
+            {localConfig.columns.length >= 8 && (
+              <p className="text-caption text-[var(--accent-orange-strong)]">最大8列までしか追加できません</p>
+            )}
+          </div>
 
-                {/* Column Info */}
-                <div className="flex-1 min-w-0">
-                  {editingColumn === colName ? (
-                    <input
-                      autoFocus
-                      type="text"
-                      value={editingTitle}
-                      onChange={(e) => setEditingTitle(e.target.value)}
-                      onBlur={() => handleRenameColumn(colName, editingTitle)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleRenameColumn(colName, editingTitle);
-                        } else if (e.key === 'Escape') {
-                          setEditingColumn(null);
-                        }
-                      }}
-                      className="w-full px-2 py-1 bg-[var(--bg-primary)] border border-[var(--accent-blue-border)] rounded text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
-                      maxLength={20}
-                    />
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setEditingColumn(colName);
-                        setEditingTitle(colName);
-                      }}
-                      className="text-left w-full font-medium text-[var(--text-primary)] hover:text-[var(--accent-blue)] transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
-                    >
-                      {localConfig.columnTitles[colName]}
-                    </button>
-                  )}
-                  <p className="text-caption text-[var(--text-muted)]">
-                    {localConfig.columnOrder[colName]?.length || 0} リポジトリ
-                  </p>
-                </div>
-
-                {/* Visibility Toggle */}
-                <button
-                  onClick={() => handleToggleVisibility(colName)}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-surface-hover text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                  title={localConfig.columnVisibility[colName] ? '非表示にする' : '表示する'}
+          {/* Columns List */}
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-surface-primary px-6 py-5 shadow-sm space-y-4">
+            <div>
+              <h3 className="font-semibold text-[var(--text-primary)]">列の管理 ({localConfig.columns.length})</h3>
+              <p className="text-body-sm text-[var(--text-muted)]">ドラッグで並び替え、右側アイコンで表示・削除を操作できます</p>
+            </div>
+            <div className="space-y-3">
+              {localConfig.columns.map((colName) => (
+                <div
+                  key={colName}
+                  draggable
+                  onDragStart={() => handleDragStart(colName)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(colName)}
+                  className={`flex items-center gap-inline-md rounded-2xl border px-4 py-4 shadow-sm transition-all ${
+                    draggedColumn === colName
+                      ? 'bg-[var(--accent-blue-muted)] border-[var(--accent-blue-border)] opacity-80'
+                      : 'bg-surface-secondary border-[var(--border-subtle)] hover:border-[var(--accent-blue-border)]'
+                  } ${localConfig.columns.length === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-move'}`}
                 >
-                  {localConfig.columnVisibility[colName] ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                      />
-                    </svg>
-                  )}
-                </button>
-
-                {/* Delete Button */}
-                <button
-                  onClick={() => handleDeleteColumn(colName)}
-                  disabled={localConfig.columns.length === 1}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-red-100 hover:text-red-600 text-[var(--text-muted)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="削除"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
+                  <svg className="w-5 h-5 text-[var(--text-muted)]" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="9" cy="5" r="1.5" />
+                    <circle cx="9" cy="12" r="1.5" />
+                    <circle cx="9" cy="19" r="1.5" />
+                    <circle cx="15" cy="5" r="1.5" />
+                    <circle cx="15" cy="12" r="1.5" />
+                    <circle cx="15" cy="19" r="1.5" />
                   </svg>
-                </button>
-              </div>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    {editingColumn === colName ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onBlur={() => handleRenameColumn(colName, editingTitle)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleRenameColumn(colName, editingTitle);
+                          } else if (e.key === 'Escape') {
+                            setEditingColumn(null);
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 bg-surface-primary border border-[var(--accent-blue-border)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
+                        maxLength={20}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditingColumn(colName);
+                          setEditingTitle(colName);
+                        }}
+                        className="text-left w-full font-medium text-[var(--text-primary)] hover:text-[var(--accent-blue)] transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
+                      >
+                        {localConfig.columnTitles[colName]}
+                      </button>
+                    )}
+                    <p className="text-caption text-[var(--text-muted)]">
+                      {localConfig.columnOrder[colName]?.length || 0} リポジトリ
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleVisibility(colName)}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--accent-blue)] transition-colors"
+                    title={localConfig.columnVisibility[colName] ? '非表示にする' : '表示する'}
+                  >
+                    {localConfig.columnVisibility[colName] ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteColumn(colName)}
+                    disabled={localConfig.columns.length === 1}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--brand-red)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="削除"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] pt-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-[var(--text-primary)] bg-surface-tertiary hover:bg-surface-hover border border-[var(--border-subtle)] transition-colors font-medium"
+            className="px-inset-md py-inset-xs rounded-xl text-[var(--text-primary)] bg-surface-secondary hover:bg-surface-hover border border-[var(--border-subtle)] transition-colors font-medium"
           >
             キャンセル
           </button>
@@ -351,7 +339,11 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
               onSave(localConfig);
               onClose();
             }}
-            className="px-4 py-2 rounded-lg bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] hover:bg-[var(--accent-green-hover)] transition-colors font-medium"
+            className="px-inset-md py-inset-xs rounded-xl text-text-inverse font-semibold shadow-sm transition-all"
+            style={{
+              background: 'var(--brand-gradient)',
+              boxShadow: '0 15px 30px rgba(103,58,183,0.3)',
+            }}
           >
             保存
           </button>

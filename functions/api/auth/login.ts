@@ -38,6 +38,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // リダイレクトURIの決定
     const url = new URL(request.url);
+    const cookieOptions = { secure: url.protocol === 'https:' };
     const redirectUri = env.GITHUB_REDIRECT_URI || `${url.origin}/api/auth/callback`;
 
     // Build GitHub OAuth authorization URL
@@ -53,11 +54,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     // oauth_sessionクッキーを設定
     const headers = new Headers({ 'Location': githubAuthUrl.toString() });
-    setCookies(headers, [{ 
-      name: 'oauth_session', 
-      value: sessionId, 
-      maxAge: 10 * 60 // 10 minutes
-    }]);
+    setCookies(headers, [
+      {
+        name: 'oauth_session',
+        value: sessionId,
+        maxAge: 10 * 60, // 10 minutes
+      },
+    ], cookieOptions);
 
     // Redirect to GitHub OAuth
     return new Response(null, { status: 302, headers });
