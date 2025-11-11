@@ -28,6 +28,11 @@ export const MainColumnSettingsModal: React.FC<MainColumnSettingsModalProps> = (
   const [newColumnName, setNewColumnName] = useState('');
   const [draggedColumn, setDraggedColumn] = useState<ColumnKey | null>(null);
 
+  // Sanitize column name for use in ID attribute
+  const sanitizeId = (name: string): string => {
+    return name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+  };
+
   // Check if column is fixed (cannot be deleted)
   const isFixedColumn = (col: ColumnKey): boolean => {
     return FIXED_COLUMNS.includes(col);
@@ -158,6 +163,8 @@ export const MainColumnSettingsModal: React.FC<MainColumnSettingsModalProps> = (
             </div>
             <div className="flex gap-3 flex-col sm:flex-row">
               <input
+                id="main-new-column-name-input"
+                name="main-new-column-name"
                 type="text"
                 value={newColumnName}
                 onChange={(e) => setNewColumnName(e.target.value)}
@@ -220,6 +227,8 @@ export const MainColumnSettingsModal: React.FC<MainColumnSettingsModalProps> = (
                   <div className="flex-1 min-w-0">
                     {editingColumn === colName ? (
                       <input
+                        id={`main-edit-column-${sanitizeId(colName)}`}
+                        name={`main-edit-column-${sanitizeId(colName)}`}
                         autoFocus
                         type="text"
                         value={editingTitle}

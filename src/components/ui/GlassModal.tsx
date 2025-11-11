@@ -22,7 +22,16 @@ export const GlassModal: React.FC<GlassModalProps> = ({
   tone = 'dark',
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
   const isLightTone = tone === 'light';
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  const handleClose = () => {
+    onCloseRef.current?.();
+  };
 
   useEffect(() => {
     if (!isOpen || typeof document === 'undefined') {
@@ -54,7 +63,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        onCloseRef.current?.();
         return;
       }
 
@@ -90,7 +99,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
@@ -107,7 +116,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
               backgroundColor: isLightTone ? 'rgba(247, 242, 255, 0.75)' : 'rgba(103, 58, 183, 0.25)',
               backdropFilter: isLightTone ? 'blur(8px)' : 'blur(12px)',
             }}
-            onClick={onClose}
+            onClick={handleClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -152,7 +161,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
               )}
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className={`ml-2 inline-flex items-center justify-center rounded-full p-2 transition-colors ${
                   isLightTone
                     ? 'text-[var(--text-secondary)] hover:text-[var(--brand-purple)]'

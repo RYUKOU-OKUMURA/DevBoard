@@ -21,6 +21,11 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
   const [newColumnName, setNewColumnName] = useState('');
   const [draggedColumn, setDraggedColumn] = useState<ManualColumnKey | null>(null);
 
+  // Sanitize column name for use in ID attribute
+  const sanitizeId = (name: string): string => {
+    return name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+  };
+
   // Handle column rename
   const handleRenameColumn = (oldName: ManualColumnKey, newName: string) => {
     const trimmed = newName.trim();
@@ -168,6 +173,8 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
             </div>
             <div className="flex gap-3 flex-col sm:flex-row">
               <input
+                id="manual-new-column-name-input"
+                name="manual-new-column-name"
                 type="text"
                 value={newColumnName}
                 onChange={(e) => setNewColumnName(e.target.value)}
@@ -230,6 +237,8 @@ export const ColumnSettingsModal: React.FC<ColumnSettingsModalProps> = ({
                   <div className="flex-1 min-w-0">
                     {editingColumn === colName ? (
                       <input
+                        id={`manual-edit-column-${sanitizeId(colName)}`}
+                        name={`manual-edit-column-${sanitizeId(colName)}`}
                         autoFocus
                         type="text"
                         value={editingTitle}
