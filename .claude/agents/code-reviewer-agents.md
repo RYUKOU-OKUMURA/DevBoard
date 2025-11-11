@@ -1,5 +1,5 @@
 ---
-name: code-reviewer
+name: code-reviewer-agents
 description: Use this agent when you have just written or modified a logical chunk of code (such as a function, component, module, or feature) and want expert review before proceeding. This agent should be proactively invoked after completing implementation tasks, refactoring sessions, or bug fixes to ensure code quality, adherence to project standards, and identification of potential issues. Examples:\n\n1. After implementing a new feature:\nuser: "I've implemented the repository classification logic"\nassistant: "Let me use the code-reviewer agent to review the implementation."\n<uses Task tool to invoke code-reviewer agent>\n\n2. After writing a utility function:\nuser: "Here's the timeAgo utility function I wrote"\nassistant: "I'll have the code-reviewer agent examine this function for correctness and best practices."\n<uses Task tool to invoke code-reviewer agent>\n\n3. Proactive review after code generation:\nassistant: "I've completed the RepoBoard component implementation. Before we proceed, let me use the code-reviewer agent to ensure it meets the project's quality standards."\n<uses Task tool to invoke code-reviewer agent>
 model: sonnet
 color: cyan
