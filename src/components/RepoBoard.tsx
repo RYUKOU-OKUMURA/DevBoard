@@ -7,6 +7,8 @@ import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
 import { MainColumnSettingsModal } from './MainColumnSettingsModal';
 import { useAuth } from '../contexts/AuthContext';
+import { getStorageItem, setStorageItem } from '../utils/storage';
+import { devWarn } from '../utils/logger';
 
 interface RepoBoardProps {
   repos: Repo[];
@@ -56,21 +58,19 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>(() => {
     try {
-      const raw = localStorage.getItem(COLUMN_TITLES_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, string>>;
+      const parsed = getStorageItem<Partial<Record<ColumnKey, string>>>(COLUMN_TITLES_STORAGE_KEY, {});
+      if (Object.keys(parsed).length > 0) {
         return { ...COLUMN_TITLES, ...parsed };
       }
     } catch (error) {
-      console.warn('Failed to restore column titles', error);
+      devWarn('Failed to restore column titles', error);
     }
     return { ...COLUMN_TITLES };
   });
   const [columnDisplayOrder, setColumnDisplayOrder] = useState<ColumnKey[]>(() => {
     try {
-      const raw = localStorage.getItem(COLUMN_DISPLAY_ORDER_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ColumnKey[];
+      const parsed = getStorageItem<ColumnKey[]>(COLUMN_DISPLAY_ORDER_KEY, []);
+      if (parsed.length > 0) {
         // Validate that all columns are present
         const allColumns = COLUMN_ORDER;
         const validOrder = allColumns.filter(col => parsed.includes(col));
@@ -78,21 +78,18 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         return [...validOrder, ...missingColumns];
       }
     } catch (error) {
-      console.warn('Failed to restore column display order', error);
+      devWarn('Failed to restore column display order', error);
     }
     return [...COLUMN_ORDER];
   });
   const [isColumnSettingsModalOpen, setIsColumnSettingsModalOpen] = useState(false);
   const [columnAssignments, setColumnAssignments] = useState<Record<string, ColumnKey>>(() => {
     try {
-      const raw = localStorage.getItem(COLUMN_ASSIGNMENTS_STORAGE_KEY);
-      if (raw) {
-        return JSON.parse(raw) as Record<string, ColumnKey>;
-      }
+      return getStorageItem<Record<string, ColumnKey>>(COLUMN_ASSIGNMENTS_STORAGE_KEY, {});
     } catch (error) {
-      console.warn('Failed to restore column assignments', error);
+      devWarn('Failed to restore column assignments', error);
+      return {};
     }
-    return {};
   });
   const [orderMap, setOrderMap] = useState<Record<ColumnKey, string[]>>({
     Active: [],
@@ -102,15 +99,12 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   });
   const [hiddenRepoIds, setHiddenRepoIds] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem(HIDDEN_REPOS_STORAGE_KEY);
-      if (raw) {
-        const arr = JSON.parse(raw) as string[];
-        return new Set(arr);
-      }
+      const arr = getStorageItem<string[]>(HIDDEN_REPOS_STORAGE_KEY, []);
+      return new Set(arr);
     } catch (error) {
-      console.warn('Failed to restore hidden repo ids', error);
+      devWarn('Failed to restore hidden repo ids', error);
+      return new Set();
     }
-    return new Set();
   });
 
   // Load presets on mount and when user changes
@@ -118,13 +112,12 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     setPresets(getPresets(user?.userId));
     // Load order map
     try {
-      const raw = localStorage.getItem(ORDER_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Record<ColumnKey, string[]>;
+      const parsed = getStorageItem<Record<ColumnKey, string[]>>(ORDER_STORAGE_KEY, {});
+      if (Object.keys(parsed).length > 0) {
         setOrderMap((prev) => ({ ...prev, ...parsed }));
       }
     } catch (error) {
-      console.warn('Failed to restore column order map', error);
+      devWarn('Failed to restore column order map', error);
     }
   }, [user?.userId]);
 
@@ -190,47 +183,31 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   }, [classifiedRepos, onStatsUpdate, columnTitles, categoryCounts]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_TITLES_STORAGE_KEY, JSON.stringify(columnTitles));
-    } catch (error) {
-      console.warn('Failed to persist column titles', error);
-    }
+    setStorageItem(COLUMN_TITLES_STORAGE_KEY, columnTitles);
   }, [columnTitles]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_DISPLAY_ORDER_KEY, JSON.stringify(columnDisplayOrder));
-      
-      // Ensure all columns in display order have titles
-      setColumnTitles((prev) => {
-        const updated = { ...prev };
-        columnDisplayOrder.forEach((col) => {
-          if (!updated[col]) {
-            updated[col] = col;
-          }
-        });
-        return updated;
+    setStorageItem(COLUMN_DISPLAY_ORDER_KEY, columnDisplayOrder);
+    
+    // Ensure all columns in display order have titles
+    setColumnTitles((prev) => {
+      const updated = { ...prev };
+      columnDisplayOrder.forEach((col) => {
+        if (!updated[col]) {
+          updated[col] = col;
+        }
       });
-    } catch (error) {
-      console.warn('Failed to persist column display order', error);
-    }
+      return updated;
+    });
   }, [columnDisplayOrder]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(columnAssignments));
-    } catch (error) {
-      console.warn('Failed to persist column assignments', error);
-    }
+    setStorageItem(COLUMN_ASSIGNMENTS_STORAGE_KEY, columnAssignments);
   }, [columnAssignments]);
 
   // Persist hidden repos
   useEffect(() => {
-    try {
-      localStorage.setItem(HIDDEN_REPOS_STORAGE_KEY, JSON.stringify(Array.from(hiddenRepoIds)));
-    } catch (error) {
-      console.warn('Failed to persist hidden repos', error);
-    }
+    setStorageItem(HIDDEN_REPOS_STORAGE_KEY, Array.from(hiddenRepoIds));
   }, [hiddenRepoIds]);
 
   // Sync order map with current repos per column
@@ -248,11 +225,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   // Persist order map
   useEffect(() => {
-    try {
-      localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orderMap));
-    } catch (error) {
-      console.warn('Failed to persist column order map', error);
-    }
+    setStorageItem(ORDER_STORAGE_KEY, orderMap);
   }, [orderMap]);
 
   // Calculate total counts

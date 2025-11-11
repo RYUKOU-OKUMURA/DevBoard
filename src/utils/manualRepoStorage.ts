@@ -1,4 +1,6 @@
 import { Repo } from '../types';
+import { getStorageItem, setStorageItem, removeStorageItem } from './storage';
+import { devError, devWarn } from './logger';
 
 const MANUAL_REPOS_STORAGE_KEY = 'github-dashboard-manual-repos';
 
@@ -6,30 +8,14 @@ const MANUAL_REPOS_STORAGE_KEY = 'github-dashboard-manual-repos';
  * 手動追加リポジトリをlocalStorageから取得
  */
 export function getManualRepos(): Repo[] {
-  try {
-    const data = localStorage.getItem(MANUAL_REPOS_STORAGE_KEY);
-    if (!data) {
-      return [];
-    }
-    const repos = JSON.parse(data);
-    return Array.isArray(repos) ? repos : [];
-  } catch (error) {
-    console.error('手動追加リポジトリの取得に失敗しました:', error);
-    return [];
-  }
+  return getStorageItem<Repo[]>(MANUAL_REPOS_STORAGE_KEY, []);
 }
 
 /**
  * 手動追加リポジトリをlocalStorageに保存
  */
 export function saveManualRepos(repos: Repo[]): boolean {
-  try {
-    localStorage.setItem(MANUAL_REPOS_STORAGE_KEY, JSON.stringify(repos));
-    return true;
-  } catch (error) {
-    console.error('手動追加リポジトリの保存に失敗しました:', error);
-    return false;
-  }
+  return setStorageItem(MANUAL_REPOS_STORAGE_KEY, repos);
 }
 
 /**
@@ -41,7 +27,7 @@ export function addManualRepo(repo: Repo): boolean {
     
     // 既に存在するリポジトリかチェック
     if (repos.some((r) => r.id === repo.id)) {
-      console.warn(`リポジトリ ${repo.id} は既に存在します`);
+      devWarn(`リポジトリ ${repo.id} は既に存在します`);
       return false;
     }
 
@@ -57,7 +43,7 @@ export function addManualRepo(repo: Repo): boolean {
     repos.push(newRepo);
     return saveManualRepos(repos);
   } catch (error) {
-    console.error('手動追加リポジトリの追加に失敗しました:', error);
+    devError('手動追加リポジトリの追加に失敗しました:', error);
     return false;
   }
 }
@@ -86,7 +72,7 @@ export function addMultipleManualRepos(newRepos: Repo[]): boolean {
     const updatedRepos = [...repos, ...reposToAdd];
     return saveManualRepos(updatedRepos);
   } catch (error) {
-    console.error('複数のリポジトリ追加に失敗しました:', error);
+    devError('複数のリポジトリ追加に失敗しました:', error);
     return false;
   }
 }
@@ -102,7 +88,7 @@ export function removeManualRepos(ids: string[]): boolean {
 
     return saveManualRepos(filteredRepos);
   } catch (error) {
-    console.error('手動追加リポジトリの削除に失敗しました:', error);
+    devError('手動追加リポジトリの削除に失敗しました:', error);
     return false;
   }
 }
@@ -111,13 +97,7 @@ export function removeManualRepos(ids: string[]): boolean {
  * すべての手動追加リポジトリを削除
  */
 export function clearManualRepos(): boolean {
-  try {
-    localStorage.removeItem(MANUAL_REPOS_STORAGE_KEY);
-    return true;
-  } catch (error) {
-    console.error('手動追加リポジトリのクリアに失敗しました:', error);
-    return false;
-  }
+  return removeStorageItem(MANUAL_REPOS_STORAGE_KEY);
 }
 
 /**

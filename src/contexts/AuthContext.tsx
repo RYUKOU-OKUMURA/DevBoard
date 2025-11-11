@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { devError } from '../utils/logger';
 
 export interface User {
   userId: string;
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccounts([]);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      devError('Auth check failed:', error);
       setUser(null);
       setAccounts([]);
     } finally {
@@ -94,10 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Reload page to fetch new account's repositories
         window.location.reload();
       } else {
-        console.error('Failed to switch account');
+        devError('Failed to switch account');
       }
     } catch (error) {
-      console.error('Switch account failed:', error);
+      devError('Switch account failed:', error);
     }
   };
 
@@ -132,10 +133,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           window.location.href = '/';
         }
       } else {
-        console.error('Failed to remove account');
+        devError('Failed to remove account');
       }
     } catch (error) {
-      console.error('Remove account failed:', error);
+      devError('Remove account failed:', error);
     }
   };
 
@@ -149,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccounts([]);
       window.location.href = '/';
     } catch (error) {
-      console.error('Logout failed:', error);
+      devError('Logout failed:', error);
     }
   };
 

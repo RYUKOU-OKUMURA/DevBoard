@@ -3,6 +3,7 @@ import { Repo } from '../types';
 import { fetchUserRepos, fetchRepositoriesByUrls } from '../api/repos';
 import { getViewerReposTimestamp, getCustomReposTimestamp } from '../utils/repoStorage';
 import { useToast } from './useToast';
+import { devError } from '../utils/logger';
 
 type DataSource = 'viewer' | 'custom';
 
@@ -60,7 +61,7 @@ export function useRepositories(options: UseRepositoriesOptions = {}): UseReposi
 
         return true;
       } catch (err) {
-        console.error('Failed to load repositories:', err);
+        devError('Failed to load repositories:', err);
         const message = err instanceof Error ? err.message : 'Failed to load repositories';
         setError(message);
         if (notify) {
@@ -127,7 +128,7 @@ export function useRepositories(options: UseRepositoriesOptions = {}): UseReposi
 
         return true;
       } catch (err) {
-        console.error('Failed to load custom repositories:', err);
+        devError('Failed to load custom repositories:', err);
         const message = err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました';
         setError(message);
         if (notify) {

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getStorageString, setStorageString } from '../utils/storage';
+import { devError } from '../utils/logger';
 
 type Theme = 'light' | 'dark';
 
@@ -16,17 +18,13 @@ const THEME_STORAGE_KEY = 'devboard-theme';
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     // Load from localStorage or detect system preference
-    try {
-      const saved = localStorage.getItem(THEME_STORAGE_KEY);
-      if (saved === 'light' || saved === 'dark') {
-        return saved;
-      }
-    } catch (error) {
-      console.error('Failed to load theme from localStorage:', error);
+    const saved = getStorageString(THEME_STORAGE_KEY, '');
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
     }
 
     // Detect system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
 
@@ -43,11 +41,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Save to localStorage
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch (error) {
-      console.error('Failed to save theme to localStorage:', error);
-    }
+    setStorageString(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () => {

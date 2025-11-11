@@ -1,4 +1,6 @@
 import type { Repo } from "../types";
+import { getStorageString, removeStorageItem } from './storage';
+import { devError, devWarn } from './logger';
 
 // ストレージキー
 const VIEWER_REPOS_KEY = "devboard_viewer_repos";
@@ -108,38 +110,42 @@ function sanitizeRepos(raw: unknown): Repo[] | null {
 }
 
 function parseStoredRepoData(raw: string): ParsedStoredRepoData | null {
-  const parsed = JSON.parse(raw) as unknown;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
 
-  if (Array.isArray(parsed)) {
-    const repos = sanitizeRepos(parsed);
+    if (Array.isArray(parsed)) {
+      const repos = sanitizeRepos(parsed);
+      if (repos === null) {
+        return null;
+      }
+      return { repos, timestamp: null };
+    }
+
+    if (!isRecord(parsed)) {
+      return null;
+    }
+
+    const repos = sanitizeRepos(parsed.repos);
     if (repos === null) {
       return null;
     }
-    return { repos, timestamp: null };
-  }
 
-  if (!isRecord(parsed)) {
-    return null;
-  }
+    const rawTimestamp = parsed.timestamp;
+    let timestamp: number | null = null;
 
-  const repos = sanitizeRepos(parsed.repos);
-  if (repos === null) {
-    return null;
-  }
-
-  const rawTimestamp = parsed.timestamp;
-  let timestamp: number | null = null;
-
-  if (typeof rawTimestamp === "number" && Number.isFinite(rawTimestamp)) {
-    timestamp = rawTimestamp;
-  } else if (typeof rawTimestamp === "string" && rawTimestamp.trim().length > 0) {
-    const numericTimestamp = Number(rawTimestamp);
-    if (Number.isFinite(numericTimestamp)) {
-      timestamp = numericTimestamp;
+    if (typeof rawTimestamp === "number" && Number.isFinite(rawTimestamp)) {
+      timestamp = rawTimestamp;
+    } else if (typeof rawTimestamp === "string" && rawTimestamp.trim().length > 0) {
+      const numericTimestamp = Number(rawTimestamp);
+      if (Number.isFinite(numericTimestamp)) {
+        timestamp = numericTimestamp;
+      }
     }
-  }
 
-  return { repos, timestamp };
+    return { repos, timestamp };
+  } catch {
+    return null;
+  }
 }
 
 function attachSource(repos: Repo[], type: RepoSourceType): Repo[] {
@@ -174,7 +180,7 @@ function attachSource(repos: Repo[], type: RepoSourceType): Repo[] {
 
 function loadReposFromStorage(key: string, type: RepoSourceType): Repo[] | null {
   try {
-    const stored = localStorage.getItem(key);
+    const stored = getStorageString(key, '');
     if (!stored) {
       return null;
     }
@@ -184,13 +190,13 @@ function loadReposFromStorage(key: string, type: RepoSourceType): Repo[] | null 
     try {
       parsed = parseStoredRepoData(stored);
     } catch (parseError) {
-      console.error(`Failed to parse repo cache for key "${key}":`, parseError);
-      localStorage.removeItem(key);
+      devError(`Failed to parse repo cache for key "${key}":`, parseError);
+      removeStorageItem(key);
       return null;
     }
 
     if (!parsed) {
-      localStorage.removeItem(key);
+      removeStorageItem(key);
       return null;
     }
 
@@ -233,7 +239,7 @@ function loadReposFromStorage(key: string, type: RepoSourceType): Repo[] | null 
       }
 
       // Legacy viewer data without timestamp cannot be trusted, remove it so it can be refreshed.
-      localStorage.removeItem(key);
+      removeStorageItem(key);
       return null;
     }
 
@@ -241,7 +247,7 @@ function loadReposFromStorage(key: string, type: RepoSourceType): Repo[] | null 
       const age = Date.now() - timestamp;
 
       if (!Number.isFinite(age) || age > REPO_CACHE_TTL_MS) {
-        localStorage.removeItem(key);
+        removeStorageItem(key);
         return null;
       }
     }
@@ -253,7 +259,7 @@ function loadReposFromStorage(key: string, type: RepoSourceType): Repo[] | null 
 
     return reposWithSource;
   } catch (error) {
-    console.error("Failed to load repos from localStorage:", error);
+    devError("Failed to load repos from localStorage:", error);
     return null;
   }
 }
@@ -265,15 +271,17 @@ function saveReposToStorage(key: string, repos: Repo[], type: RepoSourceType): v
   };
 
   try {
-    localStorage.setItem(key, JSON.stringify(payload));
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(payload));
+    }
   } catch (error) {
-    console.error(`Failed to save ${type} repos to localStorage:`, error);
+    devError(`Failed to save ${type} repos to localStorage:`, error);
   }
 }
 
 function getRepoTimestamp(key: string): number | null {
   try {
-    const stored = localStorage.getItem(key);
+    const stored = getStorageString(key, '');
     if (!stored) {
       return null;
     }
@@ -285,7 +293,7 @@ function getRepoTimestamp(key: string): number | null {
 
     return parsed.timestamp;
   } catch (error) {
-    console.warn("Failed to read repo timestamp from localStorage:", error);
+    devWarn("Failed to read repo timestamp from localStorage:", error);
     return null;
   }
 }
@@ -338,10 +346,6 @@ export function getCustomReposTimestamp(): number | null {
  * すべてのリポジトリキャッシュをクリア
  */
 export function clearRepoCache(): void {
-  try {
-    localStorage.removeItem(VIEWER_REPOS_KEY);
-    localStorage.removeItem(CUSTOM_REPOS_KEY);
-  } catch (error) {
-    console.error("Failed to clear repo cache:", error);
-  }
+  removeStorageItem(VIEWER_REPOS_KEY);
+  removeStorageItem(CUSTOM_REPOS_KEY);
 }

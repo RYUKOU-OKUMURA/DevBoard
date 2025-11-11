@@ -3,6 +3,9 @@
  * デフォルト列: ["気になる", "学習用", "フォーク済み", "その他"]
  */
 
+import { getStorageItem, setStorageItem, removeStorageItem } from './storage';
+import { devError, devWarn } from './logger';
+
 export type ManualColumnKey = string;
 
 export interface ManualColumnConfig {
@@ -46,43 +49,27 @@ const DEFAULT_COLUMN_CONFIG: ManualColumnConfig = {
  * 手動リポ用のカラム設定を取得
  */
 export function getManualColumnConfig(): ManualColumnConfig {
-  try {
-    const data = localStorage.getItem(MANUAL_COLUMNS_STORAGE_KEY);
-    if (!data) {
-      // デフォルト設定を返す
-      return structuredClone(DEFAULT_COLUMN_CONFIG);
-    }
-    const config = JSON.parse(data);
-    
-    // バージョン互換性をチェック
-    if (!config.columns || !Array.isArray(config.columns)) {
-      return structuredClone(DEFAULT_COLUMN_CONFIG);
-    }
-
-    return config;
-  } catch (error) {
-    console.error('カラム設定の取得に失敗しました:', error);
+  const config = getStorageItem<ManualColumnConfig>(MANUAL_COLUMNS_STORAGE_KEY, DEFAULT_COLUMN_CONFIG);
+  
+  // バージョン互換性をチェック
+  if (!config.columns || !Array.isArray(config.columns)) {
     return structuredClone(DEFAULT_COLUMN_CONFIG);
   }
+
+  return config;
 }
 
 /**
  * 手動リポ用のカラム設定を保存
  */
 export function saveManualColumnConfig(config: ManualColumnConfig): boolean {
-  try {
-    // 設定の妥当性をチェック
-    if (!config.columns || !Array.isArray(config.columns) || config.columns.length === 0) {
-      console.error('無効なカラム設定です');
-      return false;
-    }
-
-    localStorage.setItem(MANUAL_COLUMNS_STORAGE_KEY, JSON.stringify(config));
-    return true;
-  } catch (error) {
-    console.error('カラム設定の保存に失敗しました:', error);
+  // 設定の妥当性をチェック
+  if (!config.columns || !Array.isArray(config.columns) || config.columns.length === 0) {
+    devError('無効なカラム設定です');
     return false;
   }
+
+  return setStorageItem(MANUAL_COLUMNS_STORAGE_KEY, config);
 }
 
 /**
@@ -94,7 +81,7 @@ export function addManualColumn(columnName: ManualColumnKey): boolean {
 
     // 既に存在するかチェック
     if (config.columns.includes(columnName)) {
-      console.warn(`カラム "${columnName}" は既に存在します`);
+      devWarn(`カラム "${columnName}" は既に存在します`);
       return false;
     }
 
@@ -104,7 +91,7 @@ export function addManualColumn(columnName: ManualColumnKey): boolean {
 
     return saveManualColumnConfig(config);
   } catch (error) {
-    console.error('カラムの追加に失敗しました:', error);
+    devError('カラムの追加に失敗しました:', error);
     return false;
   }
 }
@@ -118,13 +105,13 @@ export function removeManualColumn(columnName: ManualColumnKey): boolean {
 
     // 少なくとも1つのカラムは必要
     if (config.columns.length <= 1) {
-      console.error('最後のカラムは削除できません');
+      devError('最後のカラムは削除できません');
       return false;
     }
 
     // カラムが存在するかチェック
     if (!config.columns.includes(columnName)) {
-      console.warn(`カラム "${columnName}" は見つかりません`);
+      devWarn(`カラム "${columnName}" は見つかりません`);
       return false;
     }
 
@@ -141,7 +128,7 @@ export function removeManualColumn(columnName: ManualColumnKey): boolean {
 
     return saveManualColumnConfig(config);
   } catch (error) {
-    console.error('カラムの削除に失敗しました:', error);
+    devError('カラムの削除に失敗しました:', error);
     return false;
   }
 }
@@ -155,13 +142,13 @@ export function renameManualColumn(oldName: ManualColumnKey, newName: ManualColu
 
     // カラムが存在するかチェック
     if (!config.columns.includes(oldName)) {
-      console.warn(`カラム "${oldName}" は見つかりません`);
+      devWarn(`カラム "${oldName}" は見つかりません`);
       return false;
     }
 
     // 新しい名前が既に存在するかチェック
     if (config.columns.includes(newName)) {
-      console.error(`カラム "${newName}" は既に存在します`);
+      devError(`カラム "${newName}" は既に存在します`);
       return false;
     }
 
@@ -186,7 +173,7 @@ export function renameManualColumn(oldName: ManualColumnKey, newName: ManualColu
 
     return saveManualColumnConfig(config);
   } catch (error) {
-    console.error('カラムの名前変更に失敗しました:', error);
+    devError('カラムの名前変更に失敗しました:', error);
     return false;
   }
 }
@@ -195,14 +182,9 @@ export function renameManualColumn(oldName: ManualColumnKey, newName: ManualColu
  * すべての手動カラム設定をリセット
  */
 export function resetManualColumns(): boolean {
-  try {
-    localStorage.removeItem(MANUAL_COLUMNS_STORAGE_KEY);
-    localStorage.removeItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY);
-    return true;
-  } catch (error) {
-    console.error('カラム設定のリセットに失敗しました:', error);
-    return false;
-  }
+  const removed1 = removeStorageItem(MANUAL_COLUMNS_STORAGE_KEY);
+  const removed2 = removeStorageItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY);
+  return removed1 && removed2;
 }
 
 // ===== リポジトリの割り当て管理 =====
@@ -211,30 +193,14 @@ export function resetManualColumns(): boolean {
  * カラムへのリポジトリ割り当てを取得
  */
 export function getManualColumnAssignments(): ManualColumnAssignments {
-  try {
-    const data = localStorage.getItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY);
-    if (!data) {
-      return {};
-    }
-    const assignments = JSON.parse(data);
-    return typeof assignments === 'object' ? assignments : {};
-  } catch (error) {
-    console.error('リポジトリ割り当ての取得に失敗しました:', error);
-    return {};
-  }
+  return getStorageItem<ManualColumnAssignments>(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY, {});
 }
 
 /**
  * カラムへのリポジトリ割り当てを保存
  */
 export function saveManualColumnAssignments(assignments: ManualColumnAssignments): boolean {
-  try {
-    localStorage.setItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(assignments));
-    return true;
-  } catch (error) {
-    console.error('リポジトリ割り当ての保存に失敗しました:', error);
-    return false;
-  }
+  return setStorageItem(MANUAL_COLUMN_ASSIGNMENTS_STORAGE_KEY, assignments);
 }
 
 /**
@@ -246,7 +212,7 @@ export function assignRepoToColumn(repoId: string, columnName: ManualColumnKey):
 
     // カラムが存在するかチェック
     if (!config.columns.includes(columnName)) {
-      console.warn(`カラム "${columnName}" は見つかりません`);
+      devWarn(`カラム "${columnName}" は見つかりません`);
       return false;
     }
 
@@ -272,7 +238,7 @@ export function assignRepoToColumn(repoId: string, columnName: ManualColumnKey):
       saveManualColumnConfig(config) && saveManualColumnAssignments(assignments)
     );
   } catch (error) {
-    console.error('リポジトリの割り当てに失敗しました:', error);
+    devError('リポジトリの割り当てに失敗しました:', error);
     return false;
   }
 }
@@ -302,7 +268,7 @@ export function unassignRepoFromColumn(repoId: string): boolean {
       saveManualColumnConfig(config) && saveManualColumnAssignments(assignments)
     );
   } catch (error) {
-    console.error('リポジトリの割り当て解除に失敗しました:', error);
+    devError('リポジトリの割り当て解除に失敗しました:', error);
     return false;
   }
 }

@@ -1,4 +1,6 @@
 import { ViewPreset, ColumnKey } from '../types';
+import { getStorageItem, setStorageItem, removeStorageItem, getStorageString, setStorageString } from './storage';
+import { devError, devLog } from './logger';
 
 const PRESET_STORAGE_KEY_PREFIX = 'github-dashboard-presets';
 const PRESET_STORAGE_KEY_LEGACY = 'github-dashboard-presets'; // Legacy key without account ID
@@ -23,9 +25,7 @@ function getPresetStorageKey(accountId?: string): string {
 function migrateLegacyPresets(accountId: string): void {
   try {
     // Check if migration has already been done for this account
-    const migrationFlags = JSON.parse(
-      localStorage.getItem(MIGRATION_FLAG_KEY) || '{}'
-    ) as Record<string, boolean>;
+    const migrationFlags = getStorageItem<Record<string, boolean>>(MIGRATION_FLAG_KEY, {});
 
     if (migrationFlags[accountId]) {
       // Already migrated for this account
@@ -35,20 +35,20 @@ function migrateLegacyPresets(accountId: string): void {
     const newStorageKey = getPresetStorageKey(accountId);
 
     // Check if new key already has data
-    const existingNewData = localStorage.getItem(newStorageKey);
+    const existingNewData = getStorageString(newStorageKey, '');
     if (existingNewData) {
       // New storage already has data, mark as migrated and skip
       migrationFlags[accountId] = true;
-      localStorage.setItem(MIGRATION_FLAG_KEY, JSON.stringify(migrationFlags));
+      setStorageItem(MIGRATION_FLAG_KEY, migrationFlags);
       return;
     }
 
     // Try to load legacy presets
-    const legacyData = localStorage.getItem(PRESET_STORAGE_KEY_LEGACY);
+    const legacyData = getStorageString(PRESET_STORAGE_KEY_LEGACY, '');
     if (!legacyData) {
       // No legacy data to migrate
       migrationFlags[accountId] = true;
-      localStorage.setItem(MIGRATION_FLAG_KEY, JSON.stringify(migrationFlags));
+      setStorageItem(MIGRATION_FLAG_KEY, migrationFlags);
       return;
     }
 
@@ -56,7 +56,7 @@ function migrateLegacyPresets(accountId: string): void {
     if (!Array.isArray(legacyPresets) || legacyPresets.length === 0) {
       // No valid legacy data
       migrationFlags[accountId] = true;
-      localStorage.setItem(MIGRATION_FLAG_KEY, JSON.stringify(migrationFlags));
+      setStorageItem(MIGRATION_FLAG_KEY, migrationFlags);
       return;
     }
 
@@ -66,15 +66,15 @@ function migrateLegacyPresets(accountId: string): void {
       accountId: accountId,
     }));
 
-    localStorage.setItem(newStorageKey, JSON.stringify(migratedPresets));
+    setStorageItem(newStorageKey, migratedPresets);
 
     // Mark migration as complete for this account
     migrationFlags[accountId] = true;
-    localStorage.setItem(MIGRATION_FLAG_KEY, JSON.stringify(migrationFlags));
+    setStorageItem(MIGRATION_FLAG_KEY, migrationFlags);
 
-    console.log(`Successfully migrated ${migratedPresets.length} presets for account ${accountId}`);
+    devLog(`Successfully migrated ${migratedPresets.length} presets for account ${accountId}`);
   } catch (error) {
-    console.error('Failed to migrate legacy presets:', error);
+    devError('Failed to migrate legacy presets:', error);
   }
 }
 
@@ -91,14 +91,9 @@ export function getPresets(accountId?: string): ViewPreset[] {
     }
 
     const storageKey = getPresetStorageKey(accountId);
-    const data = localStorage.getItem(storageKey);
-    if (!data) {
-      return [];
-    }
-    const presets = JSON.parse(data);
-    return Array.isArray(presets) ? presets : [];
+    return getStorageItem<ViewPreset[]>(storageKey, []);
   } catch (error) {
-    console.error('Failed to load presets:', error);
+    devError('Failed to load presets:', error);
     return [];
   }
 }
@@ -115,13 +110,13 @@ export function savePreset(preset: Omit<ViewPreset, 'id' | 'createdAt'>, account
 
     // Check for duplicate name
     if (presets.some((p) => p.name === preset.name)) {
-      console.error('A preset with this name already exists');
+      devError('A preset with this name already exists');
       return null;
     }
 
     // Check max presets limit
     if (presets.length >= MAX_PRESETS) {
-      console.error(`Maximum of ${MAX_PRESETS} presets reached`);
+      devError(`Maximum of ${MAX_PRESETS} presets reached`);
       return null;
     }
 
@@ -136,11 +131,13 @@ export function savePreset(preset: Omit<ViewPreset, 'id' | 'createdAt'>, account
     // Save to localStorage
     const storageKey = getPresetStorageKey(accountId);
     const updatedPresets = [...presets, newPreset];
-    localStorage.setItem(storageKey, JSON.stringify(updatedPresets));
+    if (!setStorageItem(storageKey, updatedPresets)) {
+      return null;
+    }
 
     return newPreset;
   } catch (error) {
-    console.error('Failed to save preset:', error);
+    devError('Failed to save preset:', error);
     return null;
   }
 }
@@ -168,15 +165,14 @@ export function deletePreset(id: string, accountId?: string): boolean {
 
     // Check if preset was found
     if (filteredPresets.length === presets.length) {
-      console.error('Preset not found');
+      devError('Preset not found');
       return false;
     }
 
     const storageKey = getPresetStorageKey(accountId);
-    localStorage.setItem(storageKey, JSON.stringify(filteredPresets));
-    return true;
+    return setStorageItem(storageKey, filteredPresets);
   } catch (error) {
-    console.error('Failed to delete preset:', error);
+    devError('Failed to delete preset:', error);
     return false;
   }
 }
@@ -198,13 +194,13 @@ export function updatePreset(
     const presetIndex = presets.findIndex((preset) => preset.id === id);
 
     if (presetIndex === -1) {
-      console.error('Preset not found');
+      devError('Preset not found');
       return null;
     }
 
     // Check for duplicate name if name is being updated
     if (updates.name && presets.some((preset, idx) => preset.name === updates.name && idx !== presetIndex)) {
-      console.error('A preset with this name already exists');
+      devError('A preset with this name already exists');
       return null;
     }
 
@@ -216,11 +212,13 @@ export function updatePreset(
 
     presets[presetIndex] = updatedPreset;
     const storageKey = getPresetStorageKey(accountId);
-    localStorage.setItem(storageKey, JSON.stringify(presets));
+    if (!setStorageItem(storageKey, presets)) {
+      return null;
+    }
 
     return updatedPreset;
   } catch (error) {
-    console.error('Failed to update preset:', error);
+    devError('Failed to update preset:', error);
     return null;
   }
 }
@@ -230,14 +228,8 @@ export function updatePreset(
  * @param accountId - Optional account ID. If provided, clears presets for that account only
  */
 export function clearAllPresets(accountId?: string): boolean {
-  try {
-    const storageKey = getPresetStorageKey(accountId);
-    localStorage.removeItem(storageKey);
-    return true;
-  } catch (error) {
-    console.error('Failed to clear presets:', error);
-    return false;
-  }
+  const storageKey = getPresetStorageKey(accountId);
+  return removeStorageItem(storageKey);
 }
 
 /**

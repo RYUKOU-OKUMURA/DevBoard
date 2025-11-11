@@ -14,6 +14,8 @@ import { fetchRepositoriesByUrls } from './api/repos';
 import type { TabType } from './components/TabNavigation';
 import { getManualRepos, addMultipleManualRepos } from './utils/manualRepoStorage';
 import { getManualColumnConfig } from './utils/manualColumnStorage';
+import { getStorageString, setStorageString } from './utils/storage';
+import { devError } from './utils/logger';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -67,7 +69,7 @@ function AppContent() {
 
   // Tab navigation state
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    const saved = localStorage.getItem('activeTab');
+    const saved = getStorageString('activeTab', 'board');
     return (saved === 'board' || saved === 'updates' || saved === 'manual') ? saved : 'board';
   });
 
@@ -76,7 +78,7 @@ function AppContent() {
 
   // Save active tab to localStorage
   useEffect(() => {
-    localStorage.setItem('activeTab', activeTab);
+    setStorageString('activeTab', activeTab);
   }, [activeTab]);
 
   useEffect(() => {
@@ -187,7 +189,7 @@ function AppContent() {
         setError(`一部のリポジトリを読み込めませんでした: ${failed.join(', ')}`);
       }
     } catch (err) {
-      console.error('Failed to add manual repositories:', err);
+      devError('Failed to add manual repositories:', err);
       const message = err instanceof Error ? err.message : 'リポジトリの追加に失敗しました';
       setError(message);
       showToast({
