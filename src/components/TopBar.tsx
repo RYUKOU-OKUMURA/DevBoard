@@ -321,6 +321,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         onClose={handlePresetDialogClose}
         title="プリセットとして保存"
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        tone="light"
       >
         <div className="space-y-4">
           <p className="text-[var(--text-muted)]">
@@ -349,6 +350,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               }}
               placeholder="例: 開発中プロジェクト"
               className={`w-full px-inset-md py-inset-xs border border-[var(--accent-purple-border)] rounded-xl bg-[var(--accent-purple-muted)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-purple)] focus-visible:ring-opacity-75 focus:border-transparent`}
+              style={{ color: 'var(--text-primary)' }}
               autoFocus
             />
             {presetError && <p className="text-body-sm text-[var(--accent-red-emphasis)]">{presetError}</p>}
