@@ -354,19 +354,23 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       return;
     }
 
-      const preset = getPresetById(presetId, user?.userId);
-      if (preset) {
-        // Load all state from preset
-        setSearchQuery(preset.searchQuery);
-        setSortOrder(preset.sortOrder);
-        setColumnTitles(preset.columnTitles);
-        setOrderMap(preset.columnOrder);
-        setThresholds(preset.thresholds);
-        setColumnAssignments(preset.columnAssignments);
-        setHiddenRepoIds(new Set(preset.hiddenRepoIds));
-        // Note: columnDisplayOrder is not stored in preset, keep current order
-        setCurrentPresetId(presetId);
+    const preset = getPresetById(presetId, user?.userId);
+    if (preset) {
+      // Load all state from preset
+      setSearchQuery(preset.searchQuery);
+      setSortOrder(preset.sortOrder);
+      setColumnTitles(preset.columnTitles);
+      setOrderMap(preset.columnOrder);
+      setThresholds(preset.thresholds);
+      setColumnAssignments(preset.columnAssignments);
+      setHiddenRepoIds(new Set(preset.hiddenRepoIds));
+
+      if (Array.isArray(preset.columnDisplayOrder) && preset.columnDisplayOrder.length > 0) {
+        setColumnDisplayOrder(preset.columnDisplayOrder);
       }
+
+      setCurrentPresetId(presetId);
+    }
   };
 
   const handleSavePreset = (name: string) => {
@@ -376,6 +380,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       sortOrder,
       columnTitles,
       columnOrder: orderMap,
+      columnDisplayOrder,
       thresholds,
       columnAssignments,
       hiddenRepoIds: Array.from(hiddenRepoIds),

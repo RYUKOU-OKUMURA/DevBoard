@@ -1,4 +1,5 @@
 import { ViewPreset, ColumnKey } from '../types';
+import { nanoid } from 'nanoid';
 import { getStorageItem, setStorageItem, removeStorageItem, getStorageString, setStorageString } from './storage';
 import { devError, devLog } from './logger';
 
@@ -6,6 +7,13 @@ const PRESET_STORAGE_KEY_PREFIX = 'github-dashboard-presets';
 const PRESET_STORAGE_KEY_LEGACY = 'github-dashboard-presets'; // Legacy key without account ID
 const MIGRATION_FLAG_KEY = 'github-dashboard-presets-migrated';
 const MAX_PRESETS = 5;
+
+function generatePresetId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return nanoid();
+}
 
 /**
  * Get storage key for presets based on account ID
@@ -123,7 +131,7 @@ export function savePreset(preset: Omit<ViewPreset, 'id' | 'createdAt'>, account
     // Create new preset with accountId
     const newPreset: ViewPreset = {
       ...preset,
-      id: crypto.randomUUID(),
+      id: generatePresetId(),
       accountId: accountId,
       createdAt: new Date().toISOString(),
     };
@@ -241,6 +249,7 @@ export function createPresetSnapshot(params: {
   sortOrder: ViewPreset['sortOrder'];
   columnTitles: Record<ColumnKey, string>;
   columnOrder: Record<ColumnKey, string[]>;
+  columnDisplayOrder: ColumnKey[];
   thresholds: { activeThreshold: number; staleThreshold: number };
   columnAssignments: Record<string, ColumnKey>;
   hiddenRepoIds: string[];
@@ -251,6 +260,7 @@ export function createPresetSnapshot(params: {
     sortOrder: params.sortOrder,
     columnTitles: { ...params.columnTitles },
     columnOrder: { ...params.columnOrder },
+    columnDisplayOrder: [...params.columnDisplayOrder],
     thresholds: { ...params.thresholds },
     columnAssignments: { ...params.columnAssignments },
     hiddenRepoIds: [...params.hiddenRepoIds],
