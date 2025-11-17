@@ -1505,8 +1505,9 @@ const dragVariants = {
 | Phase 5 | フィルター・ソート機能実装 | 2-3h |
 | Phase 6 | 統合・通知機能実装 | 2-3h |
 | Phase 7 | エラーハンドリング・テスト完了 | 2-3h |
+| Phase 8 | GitHub Actions連携機能完了 | 3-4h |
 
-**合計見積もり: 17-24時間**
+**合計見積もり: 20-28時間**
 
 ---
 
@@ -1928,6 +1929,514 @@ ${todo.dueDate ? `<!-- dueDate: ${todo.dueDate} -->` : ''}
   return `${userContent}\n\n---\n\n${metadata}`;
 }
 ```
+
+---
+
+### フェーズ8: GitHub Actions連携 (3-4h)
+
+#### 8.1 概要
+
+**目的**: DevBoard から GitHub Actions 経由で Claude Code/GitHub Copilot を起動し、Issue の実装やレビューを自動化する。
+
+**スコープ**:
+- ✅ ボット実行ボタン（Claude Code/Copilot）
+- ✅ カスタム指示入力ダイアログ
+- ✅ GitHub Issue へのコメント自動投稿
+- ✅ Workflow Run 進捗監視
+- ✅ 実行ステータス表示
+
+**既存設定の活用**:
+- 既に GitHub Actions で Claude Code/Copilot が利用可能な環境を前提
+- サブスクリプション範囲内で動作（追加コストなし）
+
+#### 8.2 データモデル拡張
+
+```typescript
+// src/types/github-actions.ts
+
+/**
+ * GitHub Actions ボット
+ */
+export type GitHubBot = 'claude-code' | 'copilot';
+
+/**
+ * Workflow Run ステータス
+ */
+export type WorkflowStatus = {
+  runId: number;
+  status: 'queued' | 'in_progress' | 'completed';
+  conclusion?: 'success' | 'failure' | 'cancelled' | 'skipped';
+  htmlUrl: string;
+  startedAt?: string;
+  completedAt?: string;
+};
+
+/**
+ * AI 実行履歴
+ */
+export type AIExecutionHistory = {
+  id: string;
+  todoId: string;
+  issueNumber: number;
+  repoId: string;
+  bot: GitHubBot;
+  instruction?: string;
+  triggeredAt: string;
+  workflowStatus?: WorkflowStatus;
+};
+```
+
+#### 8.3 API設計
+
+**Cloudflare Functions エンドポイント**:
+
+```
+/api/github/trigger-bot
+  POST - GitHub Actions ボットをトリガー
+  Body: { repoId, issueNumber, bot: 'claude-code' | 'copilot', instruction? }
+  Response: { success: boolean, commentId: number }
+
+/api/github/workflow-status
+  GET - Workflow Run のステータスを取得
+  Query: { repoId, runId }
+  Response: { status: WorkflowStatus }
+
+/api/github/list-workflow-runs
+  GET - Issue に関連する Workflow Run 一覧を取得
+  Query: { repoId, issueNumber }
+  Response: { runs: WorkflowStatus[] }
+```
+
+**実装例**:
+
+```typescript
+// functions/api/github/trigger-bot.ts
+export async function onRequest(context) {
+  const { request, env } = context;
+  const { repoId, issueNumber, bot, instruction } = await request.json();
+
+  // 1. リポジトリ情報取得
+  const [owner, repo] = parseRepoId(repoId);
+
+  // 2. コメント本文作成
+  const comment = instruction
+    ? `@${bot} ${instruction}`
+    : `@${bot} この Issue を実装してください`;
+
+  // 3. GitHub にコメント投稿（これが GitHub Action をトリガー）
+  const { data } = await octokit.issues.createComment({
+    owner,
+    repo,
+    issue_number: issueNumber,
+    body: comment,
+  });
+
+  return Response.json({
+    success: true,
+    commentId: data.id
+  });
+}
+
+// functions/api/github/workflow-status.ts
+export async function onRequest(context) {
+  const { request, env } = context;
+  const url = new URL(request.url);
+  const repoId = url.searchParams.get('repoId');
+  const runId = url.searchParams.get('runId');
+
+  const [owner, repo] = parseRepoId(repoId);
+
+  // Workflow Run ステータス取得
+  const { data: run } = await octokit.actions.getWorkflowRun({
+    owner,
+    repo,
+    run_id: parseInt(runId),
+  });
+
+  return Response.json({
+    runId: run.id,
+    status: run.status,
+    conclusion: run.conclusion,
+    htmlUrl: run.html_url,
+    startedAt: run.run_started_at,
+    completedAt: run.updated_at,
+  });
+}
+```
+
+#### 8.4 UI コンポーネント
+
+**8.4.1 TodoItem 拡張**
+
+既存の TodoItem に AI 実行ボタンを追加：
+
+```typescript
+// src/components/TodoItem.tsx（拡張）
+
+function TodoItem({ todo, onUpdate, onDelete, onClick }: TodoItemProps) {
+  const [showInstructionDialog, setShowInstructionDialog] = useState<GitHubBot | false>(false);
+  const { triggerBot, workflowStatus, isLoading } = useGitHubActions(todo);
+
+  return (
+    <div className="todo-item">
+      {/* 既存のToDo表示 */}
+      <div className="todo-content">
+        <input
+          type="checkbox"
+          checked={todo.status === 'done'}
+          onChange={(e) => onUpdate({ status: e.target.checked ? 'done' : 'todo' })}
+        />
+        <h3>{todo.title}</h3>
+        <p>{todo.description}</p>
+      </div>
+
+      {/* GitHub Actions ボタン（Issue 紐付け済みの場合のみ） */}
+      {todo.issueNumber && (
+        <div className="ai-actions">
+          <button
+            onClick={() => setShowInstructionDialog('claude-code')}
+            disabled={isLoading}
+          >
+            🤖 Claude で実装
+          </button>
+          <button
+            onClick={() => setShowInstructionDialog('copilot')}
+            disabled={isLoading}
+          >
+            💬 Copilot で相談
+          </button>
+        </div>
+      )}
+
+      {/* Workflow ステータスバッジ */}
+      {workflowStatus && (
+        <AIStatusBadge status={workflowStatus} />
+      )}
+
+      {/* カスタム指示ダイアログ */}
+      {showInstructionDialog && (
+        <AIInstructionDialog
+          bot={showInstructionDialog}
+          onSubmit={(instruction) => {
+            triggerBot(showInstructionDialog, instruction);
+            setShowInstructionDialog(false);
+          }}
+          onCancel={() => setShowInstructionDialog(false)}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+**8.4.2 カスタム指示ダイアログ**
+
+```typescript
+// src/components/AIInstructionDialog.tsx
+
+type AIInstructionDialogProps = {
+  bot: GitHubBot;
+  onSubmit: (instruction: string) => void;
+  onCancel: () => void;
+};
+
+function AIInstructionDialog({ bot, onSubmit, onCancel }: AIInstructionDialogProps) {
+  const [instruction, setInstruction] = useState('');
+
+  const botConfig = {
+    'claude-code': {
+      name: 'Claude Code',
+      placeholder: '例: ユニットテストも追加してください',
+      icon: '🤖',
+      color: 'purple',
+    },
+    'copilot': {
+      name: 'GitHub Copilot',
+      placeholder: '例: TypeScriptで実装してください',
+      icon: '💬',
+      color: 'green',
+    },
+  };
+
+  const config = botConfig[bot];
+
+  return (
+    <Modal open onClose={onCancel}>
+      <div className="ai-instruction-dialog">
+        <h2>
+          <span className={`icon ${config.color}`}>{config.icon}</span>
+          {config.name} への指示
+        </h2>
+
+        <textarea
+          placeholder={config.placeholder}
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          rows={4}
+          className="instruction-input"
+        />
+
+        <p className="hint">
+          空の場合は「この Issue を実装してください」が送信されます
+        </p>
+
+        <div className="actions">
+          <button onClick={onCancel} className="btn-secondary">
+            キャンセル
+          </button>
+          <button
+            onClick={() => onSubmit(instruction)}
+            className={`btn-primary ${config.color}`}
+          >
+            実行
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+```
+
+**8.4.3 ステータスバッジ**
+
+```typescript
+// src/components/AIStatusBadge.tsx
+
+type AIStatusBadgeProps = {
+  status: WorkflowStatus;
+};
+
+function AIStatusBadge({ status }: AIStatusBadgeProps) {
+  const statusConfig = {
+    queued: {
+      icon: '⏳',
+      label: '待機中',
+      color: 'gray',
+    },
+    in_progress: {
+      icon: '⚙️',
+      label: '実行中',
+      color: 'blue',
+      animated: true,
+    },
+    success: {
+      icon: '✅',
+      label: '完了',
+      color: 'green',
+    },
+    failure: {
+      icon: '❌',
+      label: '失敗',
+      color: 'red',
+    },
+    cancelled: {
+      icon: '🚫',
+      label: 'キャンセル',
+      color: 'gray',
+    },
+  };
+
+  const config = status.conclusion
+    ? statusConfig[status.conclusion]
+    : statusConfig[status.status];
+
+  return (
+    <div className={`status-badge ${config.color} ${config.animated ? 'pulse' : ''}`}>
+      <span className="icon">{config.icon}</span>
+      <span className="label">{config.label}</span>
+      {status.startedAt && (
+        <span className="time">
+          {formatRelativeTime(status.startedAt)}
+        </span>
+      )}
+      <a
+        href={status.htmlUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link"
+      >
+        詳細 →
+      </a>
+    </div>
+  );
+}
+```
+
+#### 8.5 カスタムフック
+
+```typescript
+// src/hooks/useGitHubActions.ts
+
+export function useGitHubActions(todo: Todo) {
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  // ボット実行
+  const triggerBot = async (
+    bot: GitHubBot,
+    instruction?: string
+  ) => {
+    if (!todo.issueNumber) {
+      throw new Error('Issue が紐付けられていません');
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // GitHub にコメント投稿（Workflow トリガー）
+      const response = await fetch('/api/github/trigger-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repoId: todo.repoId,
+          issueNumber: todo.issueNumber,
+          bot,
+          instruction,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to trigger bot');
+      }
+
+      // 進捗監視開始
+      startStatusPolling(todo.repoId, todo.issueNumber);
+
+      showToast({
+        type: 'success',
+        title: `${bot} を起動しました`,
+        message: 'GitHub Actions が実行中です',
+      });
+    } catch (err) {
+      setError(err as Error);
+      showToast({
+        type: 'error',
+        title: 'エラー',
+        message: err.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ステータスポーリング
+  const startStatusPolling = (repoId: string, issueNumber: number) => {
+    let pollCount = 0;
+    const maxPolls = 60; // 5分間（5秒ごと × 60回）
+
+    const interval = setInterval(async () => {
+      try {
+        // 最新の Workflow Run を取得
+        const response = await fetch(
+          `/api/github/list-workflow-runs?repoId=${repoId}&issueNumber=${issueNumber}`
+        );
+        const { runs } = await response.json();
+
+        if (runs && runs.length > 0) {
+          const latestRun = runs[0];
+          setWorkflowStatus(latestRun);
+
+          // 完了したらポーリング停止
+          if (latestRun.status === 'completed') {
+            clearInterval(interval);
+
+            // 成功/失敗の通知
+            showToast({
+              type: latestRun.conclusion === 'success' ? 'success' : 'error',
+              title: latestRun.conclusion === 'success' ? '実行完了' : '実行失敗',
+              message: `Workflow が${latestRun.conclusion === 'success' ? '正常に完了' : '失敗'}しました`,
+            });
+          }
+        }
+
+        pollCount++;
+        if (pollCount >= maxPolls) {
+          clearInterval(interval);
+        }
+      } catch (err) {
+        console.error('Failed to fetch workflow status:', err);
+      }
+    }, 5000); // 5秒ごと
+
+    // クリーンアップ
+    return () => clearInterval(interval);
+  };
+
+  // 初回ロード時にステータス取得
+  useEffect(() => {
+    if (todo.issueNumber) {
+      fetch(`/api/github/list-workflow-runs?repoId=${todo.repoId}&issueNumber=${todo.issueNumber}`)
+        .then(res => res.json())
+        .then(({ runs }) => {
+          if (runs && runs.length > 0) {
+            setWorkflowStatus(runs[0]);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [todo.repoId, todo.issueNumber]);
+
+  return {
+    triggerBot,
+    workflowStatus,
+    isLoading,
+    error,
+  };
+}
+```
+
+#### 8.6 GitHub Actions ワークフロー例
+
+既存の Workflow が以下のような構成であることを前提：
+
+```yaml
+# .github/workflows/claude-code.yml
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude:
+    if: contains(github.event.comment.body, '@claude-code')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run Claude Code
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Claude Code の実行ロジック
+          echo "Executing Claude Code..."
+```
+
+DevBoard からのコメント投稿により、この Workflow が自動的にトリガーされます。
+
+#### 8.7 タスク一覧
+
+| タスク | 内容 | 見積もり |
+|--------|------|----------|
+| **API実装** | trigger-bot, workflow-status, list-workflow-runs | 1-1.5h |
+| **型定義** | GitHubBot, WorkflowStatus, AIExecutionHistory | 0.5h |
+| **UI実装** | TodoItem拡張, AIInstructionDialog, AIStatusBadge | 1-1.5h |
+| **カスタムフック** | useGitHubActions（ポーリング含む） | 0.5-1h |
+| **テスト** | 動作確認、エラーハンドリング | 0.5h |
+
+#### 成果物
+- `src/types/github-actions.ts`
+- `functions/api/github/trigger-bot.ts`
+- `functions/api/github/workflow-status.ts`
+- `functions/api/github/list-workflow-runs.ts`
+- `src/components/AIInstructionDialog.tsx`
+- `src/components/AIStatusBadge.tsx`
+- `src/hooks/useGitHubActions.ts`
+- 修正: `src/components/TodoItem.tsx`
 
 ---
 
