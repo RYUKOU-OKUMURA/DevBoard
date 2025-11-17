@@ -134,14 +134,83 @@ export type TokenUsage = {
 
 ### 2.2 ストレージ設計
 
-**ストレージキー:**
+#### 2.2.1 ストレージオプション比較
+
+| 項目 | localStorage | Cloudflare KV | Cloudflare D1 | Durable Objects |
+|------|-------------|---------------|---------------|-----------------|
+| **容量制限** | ~5MB | 実質無制限 | 実質無制限 | 実質無制限 |
+| **同期** | なし（端末固有） | グローバル | グローバル | グローバル |
+| **一貫性** | 即座 | 結果整合性 | 強整合性 | 強整合性 |
+| **コスト** | 無料 | 読み$0.50/1M、書き$5/1M | Alpha（無料） | $0.15/1M req |
+| **複雑度** | 低 | 低 | 中 | 高 |
+| **オフライン** | ○ | × | × | × |
+| **適用** | MVP、設定 | セッション履歴 | 将来（複雑クエリ） | 将来（トランザクション） |
+
+#### 2.2.2 MVP ストレージ戦略
+
+**Phase 1 (MVP):**
+- **AI設定**: `localStorage`（暗号化）
+  - キー: `github-dashboard-ai-config:{accountId}`
+  - 値: `Record<AIProvider, AIConfig>`
+  - 理由: 小容量、高速アクセス、オフライン対応
+
+- **チャットセッション**: `localStorage` + 将来的に KV 移行
+  - キー: `github-dashboard-ai-sessions:{accountId}`
+  - 値: `AIChatSession[]`（最新50セッションのみ）
+  - アーカイブ戦略: 30日以上古いセッションは自動削除
+
+- **トークン使用量**: `localStorage`
+  - キー: `github-dashboard-ai-token-usage:{accountId}`
+  - 値: `TokenUsage[]`（直近90日分）
+
+**Phase 2 (Post-MVP):**
+- **チャットセッション**: Cloudflare KV に移行
+  - 複数端末での同期
+  - セッション数の上限撤廃
+  - バックアップと復元機能
+
+**容量見積もり:**
+```typescript
+// AI設定: ~500B × 2プロバイダー = ~1KB
+// セッション1件: ~2KB（メッセージ10件想定）
+// セッション50件: ~100KB
+// トークン使用量90日: ~10KB
+// 合計: ~111KB（5MB制限に対して十分余裕あり）
+```
+
+#### 2.2.3 ストレージキー設計
+
+**キー:**
 - `github-dashboard-ai-config:{accountId}` → `Record<AIProvider, AIConfig>`
 - `github-dashboard-ai-sessions:{accountId}` → `AIChatSession[]`
 - `github-dashboard-ai-token-usage:{accountId}` → `TokenUsage[]`
 
 **セキュリティ考慮:**
-- APIキーは暗号化してlocalStorageに保存
-- または、Cloudflare KVに保存（より安全）
+- APIキーは AES-256-GCM で暗号化して localStorage に保存
+- 暗号化鍵は accountId + ブラウザ固有値から導出（PBKDF2）
+- または、Cloudflare Workers Secrets に保存（サブスクリプション連携時）
+
+#### 2.2.4 移行インターフェース設計
+
+将来的な KV/D1 移行に備え、ストレージアクセスを抽象化：
+
+```typescript
+// src/utils/aiStorage.ts
+interface AIStorageAdapter {
+  getConfig(accountId: string, provider: AIProvider): Promise<AIConfig | null>;
+  saveConfig(accountId: string, provider: AIProvider, config: AIConfig): Promise<void>;
+  getSessions(accountId: string, limit?: number): Promise<AIChatSession[]>;
+  saveSession(accountId: string, session: AIChatSession): Promise<void>;
+  getTokenUsage(accountId: string, startDate: string, endDate: string): Promise<TokenUsage[]>;
+  recordTokenUsage(accountId: string, usage: TokenUsage): Promise<void>;
+}
+
+// MVP実装: LocalStorage adapter
+class LocalStorageAdapter implements AIStorageAdapter { ... }
+
+// 将来: KV adapter
+class CloudflareKVAdapter implements AIStorageAdapter { ... }
+```
 
 ### 2.3 API設計
 
@@ -237,6 +306,210 @@ App
     ├── AIReviewButton              // レビュー依頼ボタン
     └── AIReviewPanel               // レビュー結果表示
 ```
+
+### 2.5 コンテキスト制御設計
+
+#### 2.5.1 トークン管理戦略
+
+**トークン制限:**
+```typescript
+const TOKEN_LIMITS = {
+  claude: {
+    'claude-3-5-sonnet-20241022': { input: 200_000, output: 4_096 },
+    'claude-3-opus-20240229': { input: 200_000, output: 4_096 },
+    'claude-3-haiku-20240307': { input: 200_000, output: 4_096 },
+  },
+  copilot: {
+    default: { input: 8_000, output: 2_048 }, // GPT-4ベース想定
+  },
+} as const;
+```
+
+**トークン推定:**
+```typescript
+// src/utils/tokenEstimator.ts
+function estimateTokens(text: string): number {
+  // 簡易推定: 1トークン ≒ 4文字（英語）、1トークン ≒ 2文字（日本語）
+  const japaneseChars = (text.match(/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/g) || []).length;
+  const otherChars = text.length - japaneseChars;
+  return Math.ceil(japaneseChars / 2 + otherChars / 4);
+}
+
+function canFitInContext(
+  systemPrompt: string,
+  userInput: string,
+  context: string,
+  provider: AIProvider,
+  model: string
+): boolean {
+  const total = estimateTokens(systemPrompt) + estimateTokens(userInput) + estimateTokens(context);
+  const limit = TOKEN_LIMITS[provider][model]?.input || 8000;
+  return total < limit * 0.9; // 安全マージン10%
+}
+```
+
+#### 2.5.2 動的コンテキストウィンドウ
+
+Issue/PR の内容が長い場合、優先順位に基づいて動的に削減：
+
+**優先順位:**
+1. **必須**: ユーザーの直接入力、Issue/PRタイトル
+2. **高**: Issue/PR本文（最初の500文字）、コードの差分（変更行のみ）
+3. **中**: リポジトリ説明、Issue/PRラベル
+4. **低**: コメント、レビュー履歴
+
+**実装:**
+```typescript
+function buildOptimalContext(
+  repo: Repo,
+  issue?: Issue,
+  pr?: PullRequest,
+  maxTokens: number = 50_000
+): string {
+  const parts: Array<{ priority: number; content: string; tokens: number }> = [
+    { priority: 1, content: `リポジトリ: ${repo.nameWithOwner}`, tokens: estimateTokens(repo.nameWithOwner) },
+    { priority: 3, content: `説明: ${repo.description}`, tokens: estimateTokens(repo.description || '') },
+    // ... 他のパーツ
+  ];
+
+  // トークン制限内に収まるまで低優先度から削除
+  parts.sort((a, b) => b.priority - a.priority);
+  let total = 0;
+  const selected: string[] = [];
+
+  for (const part of parts) {
+    if (total + part.tokens <= maxTokens) {
+      selected.push(part.content);
+      total += part.tokens;
+    }
+  }
+
+  return selected.join('\n\n');
+}
+```
+
+#### 2.5.3 コスト見積もりと警告
+
+**実装:**
+```typescript
+// src/utils/costEstimator.ts
+const PRICING = {
+  'claude-3-5-sonnet-20241022': { input: 3 / 1_000_000, output: 15 / 1_000_000 },
+  'claude-3-opus-20240229': { input: 15 / 1_000_000, output: 75 / 1_000_000 },
+  'claude-3-haiku-20240307': { input: 0.25 / 1_000_000, output: 1.25 / 1_000_000 },
+} as const;
+
+function estimateCost(model: string, inputTokens: number, outputTokens: number = 1000): number {
+  const pricing = PRICING[model];
+  if (!pricing) return 0;
+  return inputTokens * pricing.input + outputTokens * pricing.output;
+}
+
+// UIで表示
+function showCostWarning(estimatedCost: number) {
+  if (estimatedCost > 0.1) {
+    return `⚠️ この操作は約 $${estimatedCost.toFixed(3)} のコストが発生します。続行しますか？`;
+  }
+  return null;
+}
+```
+
+#### 2.5.4 ストリーミング対応
+
+Claude/OpenAI API はストリーミングをサポートしているため、長い応答を逐次表示：
+
+**実装:**
+```typescript
+// functions/api/ai/chat-stream.ts
+export async function onRequest(context) {
+  const { request, env } = context;
+  const { provider, message, sessionId } = await request.json();
+
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+
+  // SSE形式でストリーミング
+  anthropic.messages.stream({
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: message }],
+  }).on('text', (text) => {
+    writer.write(new TextEncoder().encode(`data: ${JSON.stringify({ text })}\n\n`));
+  }).on('end', () => {
+    writer.close();
+  });
+
+  return new Response(stream.readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+}
+```
+
+### 2.6 プロバイダー管理戦略
+
+#### 2.6.1 フォールバック設計
+
+GitHub Copilot API が未提供または利用不可の場合の対応：
+
+**Phase 1 (MVP):**
+- **Claude のみ実装**: Copilot は UI に表示するが「準備中」ステータス
+- **エラーメッセージ**:
+  ```
+  GitHub Copilot API は現在ベータ版です。
+  正式リリースまで Claude をご利用ください。
+  ```
+
+**Phase 2 (Copilot 利用可能後):**
+- Copilot API 統合
+- プロバイダー切り替え機能
+
+**フォールバックロジック:**
+```typescript
+async function sendAIMessage(
+  provider: AIProvider,
+  message: string,
+  fallbackProvider?: AIProvider
+): Promise<string> {
+  try {
+    if (provider === 'copilot' && !isCopilotAvailable()) {
+      throw new Error('Copilot API not available');
+    }
+    return await callAI(provider, message);
+  } catch (error) {
+    if (fallbackProvider && error.message.includes('not available')) {
+      console.warn(`Falling back to ${fallbackProvider}`);
+      return await callAI(fallbackProvider, message);
+    }
+    throw error;
+  }
+}
+```
+
+#### 2.6.2 プロバイダー切り替えUI
+
+**自動切り替え:**
+- Copilot 選択時に利用不可な場合、自動で Claude に切り替え
+- ユーザーに通知トースト表示
+
+**手動切り替え:**
+- 設定画面で「優先プロバイダー」を選択
+- チャットパネルでタブ切り替え可能
+
+#### 2.6.3 プロバイダー別機能制限
+
+| 機能 | Claude | Copilot (将来) |
+|------|--------|----------------|
+| チャット | ✅ | ✅ |
+| Issue実装提案 | ✅ | ✅ |
+| PRレビュー | ✅ | ✅ |
+| コード生成 | ✅ | ✅（推奨） |
+| 長文コンテキスト | ✅（200K） | ⚠️（8K想定） |
+| ストリーミング | ✅ | ✅ |
+| 日本語対応 | ✅ | ✅ |
 
 ---
 
@@ -1011,22 +1284,136 @@ const reviewVariants = {
 
 ### 8.1 APIキー保護
 
-**保存方式:**
-```typescript
-// 暗号化してlocalStorageに保存
-const encrypted = await encryptAPIKey(apiKey, userSecret);
-localStorage.setItem(`ai-key:${provider}`, encrypted);
+#### 8.1.1 暗号化仕様
 
-// または、Cloudflare KVに保存（より安全）
-await env.KV.put(`ai-key:${accountId}:${provider}`, apiKey, {
-  expirationTtl: 86400 * 30, // 30日
-});
+**使用アルゴリズム:**
+- **暗号化**: AES-256-GCM（Web Crypto API）
+- **鍵導出**: PBKDF2（100,000 iterations）
+- **ソルト**: accountId + ブラウザ固有値（crypto.randomUUID）
+
+**実装:**
+```typescript
+// src/utils/encryption.ts
+import { webcrypto } from 'crypto';
+
+const ALGORITHM = 'AES-GCM';
+const KEY_LENGTH = 256;
+const IV_LENGTH = 12;
+const SALT_LENGTH = 16;
+const ITERATIONS = 100_000;
+
+async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyMaterial = await webcrypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+
+  return await webcrypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: ITERATIONS,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    { name: ALGORITHM, length: KEY_LENGTH },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+export async function encryptAPIKey(apiKey: string, accountId: string): Promise<string> {
+  const encoder = new TextEncoder();
+
+  // ソルトとIVを生成
+  const salt = webcrypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+  const iv = webcrypto.getRandomValues(new Uint8Array(IV_LENGTH));
+
+  // 鍵を導出
+  const key = await deriveKey(accountId, salt);
+
+  // 暗号化
+  const encrypted = await webcrypto.subtle.encrypt(
+    { name: ALGORITHM, iv },
+    key,
+    encoder.encode(apiKey)
+  );
+
+  // salt + iv + encrypted を Base64 エンコード
+  const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
+  combined.set(salt, 0);
+  combined.set(iv, salt.length);
+  combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+
+  return btoa(String.fromCharCode(...combined));
+}
+
+export async function decryptAPIKey(encrypted: string, accountId: string): Promise<string> {
+  const decoder = new TextDecoder();
+
+  // Base64 デコード
+  const combined = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
+
+  // salt, iv, encrypted を分離
+  const salt = combined.slice(0, SALT_LENGTH);
+  const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+  const ciphertext = combined.slice(SALT_LENGTH + IV_LENGTH);
+
+  // 鍵を導出
+  const key = await deriveKey(accountId, salt);
+
+  // 復号化
+  const decrypted = await webcrypto.subtle.decrypt(
+    { name: ALGORITHM, iv },
+    key,
+    ciphertext
+  );
+
+  return decoder.decode(decrypted);
+}
 ```
 
+#### 8.1.2 保存方式の比較
+
+| 方式 | セキュリティ | 利便性 | 多端末対応 | 推奨用途 |
+|------|------------|--------|-----------|---------|
+| **暗号化localStorage** | ⚠️ 中 | ✅ 高 | ❌ なし | MVP、開発用 |
+| **Cloudflare Workers Secrets** | ✅ 高 | ⚠️ 中 | ✅ あり | サブスク連携時 |
+| **プロキシAPI（キー非保存）** | ✅ 最高 | ✅ 高 | ✅ あり | 本番推奨 |
+
+**MVP 実装方針:**
+- **個人APIキー**: 暗号化して localStorage に保存
+- **サブスクリプション**: Workers Secrets でサーバー側管理
+
+**本番推奨アーキテクチャ（Phase 2）:**
+```
+ユーザー → Cloudflare Workers → Claude/Copilot API
+             ↑ Secrets にキー保存
+             ↑ accountId で使用量管理
+```
+ユーザーは API キーを直接持たず、Workers がプロキシとして動作。
+
+#### 8.1.3 APIキー管理ベストプラクティス
+
+**実装必須:**
+- [ ] APIキーの表示は `*****` でマスク
+- [ ] 「テスト接続」機能で有効性を検証
+- [ ] 無効なキーの場合、即座にエラー表示
+- [ ] 定期ローテーション推奨の通知（90日ごと）
+
+**OAuth スコープ（サブスクリプション連携時）:**
+- Anthropic: `api` スコープのみ（最小権限）
+- GitHub（Copilot用）: `copilot` スコープのみ
+
 **推奨事項:**
-- APIキーの定期ローテーション
+- APIキーの定期ローテーション（90日）
 - 最小権限の原則（必要なスコープのみ）
 - 使用しないプロバイダーのキーは削除
+- 開発環境と本番環境で異なるキーを使用
 
 ### 8.2 プロンプトインジェクション対策
 
@@ -1052,6 +1439,224 @@ const rateLimiter = new RateLimiter({
 });
 
 await rateLimiter.checkLimit(`user:${accountId}`);
+```
+
+### 8.4 外部API依存管理
+
+#### 8.4.1 レート制限管理
+
+**Claude API 制限:**
+- **Tier 1（新規）**: 50 RPM, 40,000 TPM, 200,000 TPD
+- **Tier 2**: 1,000 RPM, 80,000 TPM, 1,000,000 TPD
+- **Tier 3**: 2,000 RPM, 160,000 TPM, 2,000,000 TPD
+
+**実装:**
+```typescript
+// src/utils/rateLimiter.ts
+class APIRateLimiter {
+  private requests: Map<string, number[]> = new Map();
+
+  async checkLimit(accountId: string, provider: AIProvider): Promise<boolean> {
+    const key = `${accountId}:${provider}`;
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1分
+
+    // 古いリクエストを削除
+    const recent = (this.requests.get(key) || []).filter(t => now - t < windowMs);
+
+    // 制限チェック
+    const limits = {
+      claude: 50, // Tier 1
+      copilot: 60, // 仮定
+    };
+
+    if (recent.length >= limits[provider]) {
+      const oldestRequest = recent[0];
+      const waitMs = windowMs - (now - oldestRequest);
+      throw new RateLimitError(`Rate limit exceeded. Retry after ${Math.ceil(waitMs / 1000)}s`);
+    }
+
+    // リクエスト記録
+    recent.push(now);
+    this.requests.set(key, recent);
+    return true;
+  }
+}
+```
+
+**UIフィードバック:**
+```typescript
+// レート制限エラー時の表示
+if (error instanceof RateLimitError) {
+  showToast({
+    type: 'warning',
+    title: 'レート制限',
+    message: `APIリクエスト制限に達しました。${error.retryAfter}秒後に再試行してください。`,
+  });
+}
+```
+
+#### 8.4.2 エラーハンドリングとリトライ戦略
+
+**エラー分類:**
+```typescript
+type APIError =
+  | { code: 400; type: 'invalid_request'; message: string }
+  | { code: 401; type: 'authentication_error'; message: string }
+  | { code: 429; type: 'rate_limit_error'; retryAfter: number }
+  | { code: 500; type: 'api_error'; message: string }
+  | { code: 503; type: 'service_unavailable'; retryAfter?: number }
+  | { code: 'NETWORK_ERROR'; type: 'network_error'; message: string };
+```
+
+**リトライロジック:**
+```typescript
+async function callAIWithRetry(
+  provider: AIProvider,
+  message: string,
+  maxRetries: number = 3
+): Promise<string> {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await callAI(provider, message);
+    } catch (error) {
+      lastError = error;
+
+      // リトライしないエラー
+      if (error.code === 400 || error.code === 401) {
+        throw error;
+      }
+
+      // レート制限
+      if (error.code === 429) {
+        const delay = error.retryAfter * 1000 || (attempt + 1) * 2000;
+        await sleep(delay);
+        continue;
+      }
+
+      // サーバーエラー（指数バックオフ）
+      if (error.code === 500 || error.code === 503) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+        await sleep(delay);
+        continue;
+      }
+
+      // ネットワークエラー
+      if (error.code === 'NETWORK_ERROR') {
+        const delay = (attempt + 1) * 1000;
+        await sleep(delay);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(`Failed after ${maxRetries} retries: ${lastError.message}`);
+}
+```
+
+#### 8.4.3 タイムアウト管理
+
+**実装:**
+```typescript
+async function callAIWithTimeout(
+  provider: AIProvider,
+  message: string,
+  timeoutMs: number = 30_000
+): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ provider, message }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.');
+    }
+    throw error;
+  }
+}
+```
+
+#### 8.4.4 API可用性監視
+
+**ヘルスチェック:**
+```typescript
+// functions/api/ai/health.ts
+export async function onRequest(context) {
+  const { env } = context;
+
+  const health = {
+    claude: await checkClaudeHealth(env.ANTHROPIC_API_KEY),
+    copilot: await checkCopilotHealth(), // 将来
+    timestamp: new Date().toISOString(),
+  };
+
+  return Response.json(health);
+}
+
+async function checkClaudeHealth(apiKey: string): Promise<{ status: string; latency: number }> {
+  const start = Date.now();
+  try {
+    await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307', // 最小モデル
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'test' }],
+    });
+    return { status: 'ok', latency: Date.now() - start };
+  } catch (error) {
+    return { status: 'error', latency: -1 };
+  }
+}
+```
+
+**UIステータス表示:**
+```typescript
+// 設定画面にステータス表示
+<div className="api-status">
+  <StatusBadge status={claudeHealth.status} label="Claude API" />
+  <StatusBadge status={copilotHealth.status} label="Copilot API" />
+</div>
+```
+
+#### 8.4.5 フォールバック実装詳細
+
+**優先順位付きフォールバック:**
+```typescript
+const AI_PROVIDERS_PRIORITY: AIProvider[] = ['claude', 'copilot']; // 優先順
+
+async function sendMessageWithFallback(message: string): Promise<string> {
+  const errors: Array<{ provider: AIProvider; error: Error }> = [];
+
+  for (const provider of AI_PROVIDERS_PRIORITY) {
+    try {
+      const config = await getAIConfig(currentAccount.id, provider);
+      if (!config?.enabled) continue;
+
+      return await callAI(provider, message);
+    } catch (error) {
+      errors.push({ provider, error });
+      console.warn(`${provider} failed, trying next provider...`, error);
+    }
+  }
+
+  // すべて失敗
+  throw new Error(
+    `All AI providers failed:\n${errors.map(e => `- ${e.provider}: ${e.error.message}`).join('\n')}`
+  );
+}
 ```
 
 ---
@@ -1189,13 +1794,147 @@ ENCRYPTION_KEY=...
 
 ---
 
-## 12. 参考資料
+## 12. MVPスコープ定義
+
+### 12.1 3層スコープ分離
+
+#### 🎯 MVP (Phase 1) - 8-10時間
+
+**目標**: Claude統合の基本機能を最速でリリース
+
+**含まれる機能:**
+- ✅ Claude API 統合（Claudeのみ、Copilotは除外）
+- ✅ 基本チャット機能（シンプルなUI）
+- ✅ AI設定画面（APIキー入力、モデル選択）
+- ✅ 暗号化された localStorage ストレージ
+- ✅ トークン使用量の基本表示
+
+**実装フェーズ:**
+- フェーズ1: 基盤構築（簡略版）- 2-3h
+  - 型定義、ストレージ（localStorage のみ）、暗号化
+  - `/api/ai/chat` エンドポイント（Claude のみ）
+- フェーズ2: AI設定UI（簡略版）- 1.5-2h
+  - APIキー入力フォーム
+  - モデル選択（Claude 3モデルのみ）
+  - テスト接続機能
+- フェーズ3: 基本チャットパネル - 3-4h
+  - チャット入力・表示
+  - マークダウン対応
+  - セッション保存（最新10件のみ）
+- フェーズ7（部分）: 基本テスト - 1.5-2h
+  - エラーハンドリング
+  - 基本的な動作確認
+
+**除外する機能（V1.1以降）:**
+- ❌ GitHub Copilot 統合
+- ❌ Issue/PR統合
+- ❌ コンテキスト自動注入
+- ❌ サブスクリプション連携
+- ❌ ストリーミング応答
+- ❌ RepoCard アクション
+- ❌ 高度なプロンプト最適化
+
+**成功基準:**
+- [ ] Claudeとチャットできる
+- [ ] APIキーを安全に保存できる
+- [ ] チャット履歴が保存される
+- [ ] トークン使用量が表示される
+
+#### 🚀 V1.1 (Phase 2) - 6-8時間
+
+**目標**: Issue/PR統合とコンテキスト機能の追加
+
+**追加機能:**
+- ✅ Issue実装提案機能
+- ✅ PRレビュー機能
+- ✅ コンテキスト自動注入
+- ✅ RepoCard アクションメニュー
+- ✅ ストリーミング応答対応
+- ✅ トークン最適化
+
+**実装フェーズ:**
+- フェーズ4: Issue/PR統合 - 3-4h
+- フェーズ5: プロンプト最適化 - 2-3h
+- 追加: ストリーミング対応 - 1h
+
+**成功基準:**
+- [ ] Issueから実装提案を取得できる
+- [ ] PRのコードレビューができる
+- [ ] リポジトリコンテキストが自動注入される
+
+#### 🌟 V2.0 (Phase 3) - 7-10時間
+
+**目標**: Copilot統合とエンタープライズ機能
+
+**追加機能:**
+- ✅ GitHub Copilot API 統合
+- ✅ サブスクリプション連携（Claude + Copilot）
+- ✅ Cloudflare KV によるセッション同期
+- ✅ 高度なコスト管理
+- ✅ 組織アカウント対応（将来）
+
+**実装フェーズ:**
+- フェーズ6: サブスクリプション連携 - 3-4h
+- 追加: Copilot API 統合 - 2-3h
+- 追加: KV ストレージ移行 - 2-3h
+
+**成功基準:**
+- [ ] Copilot が利用可能
+- [ ] サブスクアカウントで認証できる
+- [ ] 複数端末でセッションが同期される
+
+### 12.2 MVP時間見積もり調整
+
+**元の見積もり**: 19-26時間（全7フェーズ）
+
+**MVP見積もり**: 8-10時間（3フェーズ + 部分的Phase 7）
+
+**削減内容:**
+- Copilot統合: -2h
+- Issue/PR統合: -3~4h → V1.1へ
+- プロンプト最適化: -2~3h → V1.1へ
+- サブスク連携: -3~4h → V2.0へ
+- 高度なテスト: -1h → V1.1/V2.0へ
+
+### 12.3 段階的リリース計画
+
+**Week 1-2: MVP開発**
+- Claude統合のみで基本機能を実装
+- 内部テスト・フィードバック収集
+
+**Week 3-4: V1.1開発**
+- Issue/PR統合追加
+- 実際の開発ワークフローで利用開始
+
+**Week 5+: V2.0開発**
+- Copilot API がリリースされたタイミングで統合
+- サブスクリプション機能の追加
+
+### 12.4 優先順位付けマトリクス
+
+| 機能 | 価値 | 複雑度 | 依存性 | 優先度 |
+|------|-----|-------|--------|--------|
+| Claude チャット | 高 | 低 | なし | **MVP** |
+| API設定UI | 高 | 低 | なし | **MVP** |
+| セッション保存 | 中 | 低 | なし | **MVP** |
+| Issue実装提案 | 高 | 中 | MVP | **V1.1** |
+| PRレビュー | 高 | 中 | MVP | **V1.1** |
+| コンテキスト注入 | 中 | 中 | MVP | **V1.1** |
+| Copilot統合 | 中 | 高 | API未公開 | **V2.0** |
+| サブスク連携 | 低 | 高 | OAuth | **V2.0** |
+| KV同期 | 低 | 中 | V1.1 | **V2.0** |
+
+---
+
+## 13. 参考資料
 
 - [Anthropic Claude API Docs](https://docs.anthropic.com/)
 - [GitHub Copilot Documentation](https://docs.github.com/en/copilot)
 - [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/)
 - [Prompt Engineering Guide](https://www.promptingguide.ai/)
 - [OpenAI Best Practices](https://platform.openai.com/docs/guides/prompt-engineering)
+- [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
+- [PBKDF2 Key Derivation](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey)
 
 ---
 

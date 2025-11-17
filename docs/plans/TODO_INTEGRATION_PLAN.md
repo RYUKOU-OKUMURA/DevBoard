@@ -131,15 +131,105 @@ export type TodoSort =
 
 ### 2.2 ストレージ設計
 
-**ストレージキー:**
+#### 2.2.1 ストレージオプション比較
+
+| 項目 | localStorage | Cloudflare KV | Cloudflare D1 | Durable Objects |
+|------|-------------|---------------|---------------|-----------------|
+| **容量制限** | ~5MB | 実質無制限 | 実質無制限 | 実質無制限 |
+| **同期** | なし（端末固有） | グローバル | グローバル | グローバル |
+| **一貫性** | 即座 | 結果整合性 | 強整合性 | 強整合性 |
+| **トランザクション** | ❌ | ❌ | ✅ | ✅ |
+| **複雑クエリ** | ❌ | ❌ | ✅（SQL） | ⚠️ |
+| **コスト** | 無料 | 読み$0.50/1M、書き$5/1M | Alpha（無料） | $0.15/1M req |
+| **適用** | MVP | Post-MVP（同期） | 将来（高度なクエリ） | 将来（リアルタイム） |
+
+#### 2.2.2 MVP ストレージ戦略
+
+**Phase 1 (MVP):**
+- **ToDo データ**: `localStorage`
+  - キー: `github-dashboard-todos:{accountId}`
+  - 値: `Todo[]`（最大500件）
+  - アーカイブ: 完了後30日経過したToDoは自動削除
+
+- **同期設定**: `localStorage`
+  - キー: `github-dashboard-issue-sync-config:{accountId}`
+  - 値: `IssueSyncConfig`
+
+- **フィルター状態**: `localStorage`
+  - キー: `github-dashboard-todo-filter:{accountId}`
+  - 値: `TodoFilter`
+
+**Phase 2 (Post-MVP):**
+- **ToDo データ**: Cloudflare KV または D1 に移行
+  - 複数端末での同期
+  - 無制限のToDo保存
+  - リアルタイム同期（Durable Objects使用時）
+
+**容量見積もり:**
+```typescript
+// ToDo 1件: ~800B（説明200文字想定）
+// 500件: ~400KB
+// 同期設定: ~200B
+// フィルター状態: ~500B
+// 合計: ~400KB（5MB制限に対して十分余裕あり）
+```
+
+#### 2.2.3 ストレージキー設計
+
+**キー:**
 - `github-dashboard-todos:{accountId}` → `Todo[]`
 - `github-dashboard-issue-sync-config:{accountId}` → `IssueSyncConfig`
-- `github-dashboard-todo-filter:{accountId}` → `TodoFilter`（前回のフィルター状態）
+- `github-dashboard-todo-filter:{accountId}` → `TodoFilter`
+- `github-dashboard-todo-sync-state:{accountId}` → `{ lastSyncAt: string; syncInProgress: boolean }`
 
-**同期戦略:**
-- ローカルストレージ（localStorage）に保存
-- バックグラウンドで定期的にGitHub Issuesと同期
-- 競合発生時はGitHub Issuesを優先（サーバー側が真実の源）
+#### 2.2.4 同期戦略
+
+**基本方針:**
+- **ソース・オブ・トゥルース**: GitHub Issues（サーバー側）
+- **ローカル編集**: localStorage で即座に反映
+- **バックグラウンド同期**: 定期的に GitHub Issues と双方向同期
+- **競合解決**: デフォルトで GitHub Issues 優先、ユーザー選択も可能
+
+**同期フロー:**
+```typescript
+// 1. ローカル変更をキューに追加
+const syncQueue: Array<{ action: 'create' | 'update' | 'delete'; todo: Todo }> = [];
+
+// 2. バックグラウンド同期実行
+async function syncTodos() {
+  // 2.1 GitHub Issuesを取得
+  const issues = await fetchIssues();
+
+  // 2.2 ローカルToDoと比較
+  const { toCreate, toUpdate, conflicts } = compareTodos(localTodos, issues);
+
+  // 2.3 競合解決
+  for (const conflict of conflicts) {
+    const resolution = await resolveConflict(conflict);
+    if (resolution === 'server') {
+      updateLocalTodo(conflict.issue);
+    } else {
+      await updateGitHubIssue(conflict.todo);
+    }
+  }
+
+  // 2.4 変更を適用
+  await createIssues(toCreate);
+  await updateIssues(toUpdate);
+}
+```
+
+#### 2.2.5 データ保持ポリシー
+
+**自動削除ルール:**
+- 完了後30日経過したToDo → アーカイブまたは削除
+- 未連携の削除済みToDo → 即座に削除
+- Issue連携済みの削除済みToDo → 30日後に削除（復元可能期間）
+
+**容量制限対策:**
+- ToDoが500件を超えたら警告表示
+- 古い完了ToDoを自動アーカイブ
+- ユーザーに手動アーカイブを促す
 
 ### 2.3 GitHub API統合
 
@@ -1077,6 +1167,267 @@ function extractPriority(labels: string[]): TodoPriority {
 └─────────────────────────────────────────┘
 ```
 
+### 4.4 同期状態管理
+
+#### 4.4.1 ソース・オブ・トゥルースの明確化
+
+**基本原則:**
+- **GitHub Issues**: サーバー側の真実の源（Source of Truth）
+- **ローカルToDo**: クライアント側のキャッシュ + 一時編集
+- **競合時**: GitHub Issues を優先（設定で変更可能）
+
+**データフローと状態:**
+```typescript
+type SyncState =
+  | { status: 'idle' }
+  | { status: 'syncing'; progress: number }
+  | { status: 'conflict'; conflicts: ConflictItem[] }
+  | { status: 'error'; error: Error };
+
+type ConflictItem = {
+  todoId: string;
+  localVersion: Todo;
+  remoteVersion: Issue;
+  updatedAtDiff: number; // 秒単位の差分
+  conflictFields: Array<'title' | 'description' | 'status' | 'priority' | 'dueDate'>;
+};
+```
+
+#### 4.4.2 3-Way マージアルゴリズム
+
+**実装:**
+```typescript
+function threeWayMerge(base: Todo, local: Todo, remote: Issue): Todo | 'conflict' {
+  const merged: Partial<Todo> = {};
+
+  for (const field of ['title', 'description', 'status', 'priority', 'dueDate'] as const) {
+    const baseValue = base[field];
+    const localValue = local[field];
+    const remoteValue = mapIssueField(remote, field);
+
+    // 両方とも変更なし
+    if (localValue === baseValue && remoteValue === baseValue) {
+      merged[field] = baseValue;
+    }
+    // ローカルのみ変更
+    else if (localValue !== baseValue && remoteValue === baseValue) {
+      merged[field] = localValue;
+    }
+    // リモートのみ変更
+    else if (localValue === baseValue && remoteValue !== baseValue) {
+      merged[field] = remoteValue;
+    }
+    // 両方変更（競合）
+    else if (localValue !== remoteValue) {
+      return 'conflict';
+    }
+    // 両方同じ値に変更（自動マージ可能）
+    else {
+      merged[field] = localValue;
+    }
+  }
+
+  return { ...base, ...merged };
+}
+```
+
+#### 4.4.3 削除・孤立データの処理
+
+**削除シナリオ:**
+
+| ローカルToDo | GitHub Issue | 処理 |
+|-------------|-------------|------|
+| 存在 | 削除済み | ToDoを「削除済み」マーク、30日後に完全削除 |
+| 削除済み | 存在 | Issue を基に ToDo を復元（ユーザーに確認） |
+| 削除済み | 削除済み | 完全削除 |
+| 存在（未連携） | - | ローカルのみ保持 |
+| - | 新規作成 | 自動インポート（設定による） |
+
+**孤立データクリーンアップ:**
+```typescript
+// 30日以上前の削除済みToDoを削除
+function cleanupOrphanedTodos(todos: Todo[]): Todo[] {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  return todos.filter(todo => {
+    if (!todo.deletedAt) return true;
+    return new Date(todo.deletedAt) > thirtyDaysAgo;
+  });
+}
+
+// Issue連携が切れたToDoを検出
+async function detectOrphanedTodos(todos: Todo[]): Promise<Todo[]> {
+  const synced = todos.filter(t => t.issueNumber);
+  const orphaned: Todo[] = [];
+
+  for (const todo of synced) {
+    try {
+      await fetchIssue(todo.repoId, todo.issueNumber!);
+    } catch (error) {
+      if (error.status === 404) {
+        orphaned.push(todo);
+      }
+    }
+  }
+
+  return orphaned;
+}
+```
+
+#### 4.4.4 同期履歴の記録
+
+**同期ログ:**
+```typescript
+type SyncLog = {
+  id: string;
+  timestamp: string;
+  action: 'import' | 'export' | 'bidirectional';
+  repoId?: string;
+  itemsProcessed: number;
+  conflicts: number;
+  errors: Array<{ todoId: string; error: string }>;
+  duration: number; // ミリ秒
+};
+
+// ストレージ
+const SYNC_LOG_KEY = 'github-dashboard-sync-logs:{accountId}';
+const MAX_LOGS = 50; // 最新50件のみ保持
+```
+
+### 4.5 マルチデバイス対応
+
+#### 4.5.1 端末間同期の設計
+
+**Phase 1 (MVP):**
+- **同期なし**: 各端末で独立した localStorage
+- **エクスポート/インポート機能**: JSON形式でToDoをエクスポート・インポート
+  ```typescript
+  function exportTodos(): string {
+    const todos = getTodos(accountId);
+    return JSON.stringify({ version: '1.0', todos, exportedAt: new Date().toISOString() });
+  }
+
+  function importTodos(json: string): { imported: number; skipped: number } {
+    const { version, todos } = JSON.parse(json);
+    // バージョンチェックとインポート処理
+  }
+  ```
+
+**Phase 2 (Post-MVP):**
+- **Cloudflare KV 同期**: サーバー側でToDoを管理
+  ```typescript
+  // 端末A で ToDo 編集 → KV に保存
+  await env.KV.put(`todos:${accountId}`, JSON.stringify(todos));
+
+  // 端末B で同期 → KV から取得
+  const remoteTodos = await env.KV.get(`todos:${accountId}`, 'json');
+  ```
+
+- **最終更新タイムスタンプ比較**:
+  ```typescript
+  const local = getLocalTodos();
+  const remote = await getRemoteTodos();
+
+  if (remote.updatedAt > local.updatedAt) {
+    // リモートが新しい → ローカルを更新
+    setLocalTodos(remote.todos);
+  } else if (local.updatedAt > remote.updatedAt) {
+    // ローカルが新しい → リモートを更新
+    await saveRemoteTodos(local.todos);
+  }
+  ```
+
+#### 4.5.2 オフライン編集キュー
+
+**実装:**
+```typescript
+type OfflineAction = {
+  id: string;
+  action: 'create' | 'update' | 'delete';
+  todo: Todo;
+  timestamp: string;
+  retryCount: number;
+};
+
+const offlineQueue: OfflineAction[] = [];
+
+// オフライン時の編集をキューに追加
+function queueOfflineEdit(action: 'create' | 'update' | 'delete', todo: Todo) {
+  offlineQueue.push({
+    id: crypto.randomUUID(),
+    action,
+    todo,
+    timestamp: new Date().toISOString(),
+    retryCount: 0,
+  });
+  saveOfflineQueue();
+}
+
+// オンライン復帰時にキューを処理
+async function processOfflineQueue() {
+  for (const item of offlineQueue) {
+    try {
+      switch (item.action) {
+        case 'create':
+          await createIssue(item.todo);
+          break;
+        case 'update':
+          await updateIssue(item.todo);
+          break;
+        case 'delete':
+          await deleteIssue(item.todo);
+          break;
+      }
+      // 成功したらキューから削除
+      removeFromQueue(item.id);
+    } catch (error) {
+      item.retryCount++;
+      if (item.retryCount > 3) {
+        // 3回失敗したらユーザーに通知
+        notifyUser(`${item.todo.title} の同期に失敗しました`);
+      }
+    }
+  }
+}
+
+// オンライン/オフライン検出
+window.addEventListener('online', () => {
+  processOfflineQueue();
+});
+```
+
+#### 4.5.3 競合検出と解決UI（マルチデバイス）
+
+**競合シナリオ:**
+- 端末Aで ToDo を「進行中」に更新
+- 端末Bで 同じ ToDo を「完了」に更新
+- 端末Aが同期を実行 → 競合検出
+
+**解決UI:**
+```
+┌─────────────────────────────────────────┐
+│ 端末間の同期競合                        │
+├─────────────────────────────────────────┤
+│ 「認証機能の実装」が複数端末で編集され  │
+│ ています。どちらの変更を採用しますか？  │
+│                                         │
+│ ○ この端末の変更（最新）                │
+│   ステータス: 完了                      │
+│   更新: 2分前（この端末）               │
+│                                         │
+│ ○ 他の端末の変更                        │
+│   ステータス: 進行中                    │
+│   更新: 5分前（MacBook Pro）            │
+│                                         │
+│ ○ 両方の変更をマージ                    │
+│   ステータス: 完了（この端末を優先）    │
+│   説明: 両端末の変更を統合              │
+│                                         │
+│           [この端末] [他の端末] [マージ]│
+└─────────────────────────────────────────┘
+```
+
 ---
 
 ## 5. UI/UXデザインガイドライン
@@ -1312,6 +1663,272 @@ async function batchSyncTodos(todos: Todo[]): Promise<SyncResult[]> {
 - 完了から30日経過したToDoを自動アーカイブ
 - アーカイブから90日経過したToDoを削除（確認付き）
 
+### 9.3 GitHub API 管理
+
+#### 9.3.1 レート制限の追跡と予測
+
+**GitHub GraphQL API 制限:**
+- **制限**: 5,000ポイント / 時間
+- **ポイント計算**: クエリの複雑さに応じて変動（10〜100ポイント/リクエスト）
+- **リセット**: 毎時0分
+
+**実装:**
+```typescript
+type RateLimitStatus = {
+  limit: number;
+  remaining: number;
+  resetAt: string; // ISO 8601
+  cost: number; // 最後のクエリのコスト
+};
+
+async function checkRateLimit(): Promise<RateLimitStatus> {
+  const query = `
+    query {
+      rateLimit {
+        limit
+        remaining
+        resetAt
+        cost
+      }
+    }
+  `;
+
+  const { data } = await graphqlRequest(query);
+  return data.rateLimit;
+}
+
+// レート制限を監視
+class RateLimitMonitor {
+  private status: RateLimitStatus | null = null;
+
+  async canMakeRequest(estimatedCost: number = 10): Promise<boolean> {
+    if (!this.status) {
+      this.status = await checkRateLimit();
+    }
+
+    return this.status.remaining >= estimatedCost;
+  }
+
+  async waitIfNeeded(estimatedCost: number = 10): Promise<void> {
+    if (await this.canMakeRequest(estimatedCost)) {
+      return;
+    }
+
+    const now = Date.now();
+    const resetAt = new Date(this.status!.resetAt).getTime();
+    const waitMs = resetAt - now + 1000; // 1秒のバッファ
+
+    console.warn(`Rate limit exceeded. Waiting ${waitMs}ms until reset.`);
+    await sleep(waitMs);
+
+    // ステータスを再取得
+    this.status = await checkRateLimit();
+  }
+}
+```
+
+**UIフィードバック:**
+```typescript
+// レート制限警告の表示
+if (rateLimit.remaining < 100) {
+  showToast({
+    type: 'warning',
+    title: 'API制限警告',
+    message: `GitHub APIの残り回数が少なくなっています（残り${rateLimit.remaining}回）。${new Date(rateLimit.resetAt).toLocaleTimeString()}にリセットされます。`,
+  });
+}
+```
+
+#### 9.3.2 同期失敗時のリトライロジック
+
+**実装:**
+```typescript
+async function syncWithRetry(
+  fn: () => Promise<void>,
+  maxRetries: number = 3
+): Promise<void> {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      await fn();
+      return;
+    } catch (error) {
+      lastError = error;
+
+      // リトライしないエラー
+      if (error.status === 404 || error.status === 403) {
+        throw error;
+      }
+
+      // レート制限
+      if (error.status === 429 || error.message.includes('rate limit')) {
+        const rateLimitMonitor = new RateLimitMonitor();
+        await rateLimitMonitor.waitIfNeeded();
+        continue;
+      }
+
+      // サーバーエラー（指数バックオフ）
+      if (error.status >= 500) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+        await sleep(delay);
+        continue;
+      }
+
+      // ネットワークエラー
+      if (error.code === 'NETWORK_ERROR') {
+        const delay = (attempt + 1) * 2000;
+        await sleep(delay);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error(`Failed after ${maxRetries} retries: ${lastError.message}`);
+}
+```
+
+#### 9.3.3 手動同期オプション
+
+**UI:**
+```
+┌─────────────────────────────────────────┐
+│ Issue同期設定                           │
+├─────────────────────────────────────────┤
+│ 自動同期: ⚪ ON  ○ OFF                  │
+│ 同期間隔: [15分 ▼]                     │
+│                                         │
+│ 最終同期: 2分前                         │
+│ 次回同期: 13分後                        │
+│                                         │
+│ [今すぐ同期]                           │
+│                                         │
+│ 同期履歴:                               │
+│ • 2分前 - 5件同期完了                   │
+│ • 17分前 - 3件同期完了                  │
+│ • 32分前 - 同期失敗（レート制限）       │
+│   [再試行]                              │
+└─────────────────────────────────────────┘
+```
+
+**実装:**
+```typescript
+async function manualSync() {
+  try {
+    setSyncState({ status: 'syncing', progress: 0 });
+
+    const todos = getTodos();
+    const syncable = todos.filter(t => t.syncEnabled && t.issueNumber);
+
+    for (let i = 0; i < syncable.length; i++) {
+      await syncTodoWithIssue(syncable[i]);
+      setSyncState({ status: 'syncing', progress: (i + 1) / syncable.length });
+    }
+
+    setSyncState({ status: 'idle' });
+    showToast({ type: 'success', message: `${syncable.length}件のToDoを同期しました` });
+  } catch (error) {
+    setSyncState({ status: 'error', error });
+    showToast({ type: 'error', message: `同期に失敗しました: ${error.message}` });
+  }
+}
+```
+
+### 9.4 Issue ⇔ ToDo マッピング表
+
+#### 9.4.1 フィールド対応表
+
+| ToDoフィールド | Issueフィールド | 変換方向 | 備考 |
+|---------------|----------------|---------|------|
+| **title** | title | ⇄ | 双方向同期 |
+| **description** | body | ⇄ | Markdown形式、双方向同期 |
+| **status** | state | ⇄ | `todo`/`in_progress` → `OPEN`, `done` → `CLOSED` |
+| **priority** | labels | ⇄ | `priority:high` などのラベルで表現 |
+| **dueDate** | milestone.dueOn | → | Milestoneが存在する場合のみ。Issue→ToDoは未対応 |
+| **assignee** | assignees[0].login | ⇄ | 複数担当者の場合、最初の1人のみ |
+| **labels** | labels | ⇄ | priority:*ラベル以外 |
+| **issueNumber** | number | ← | Issue→ToDoのみ（読み取り専用） |
+| **issueUrl** | url | ← | Issue→ToDoのみ（読み取り専用） |
+| **createdAt** | createdAt | ← | Issue→ToDoのみ |
+| **updatedAt** | updatedAt | ⇄ | 競合検出に使用 |
+| **completedAt** | closedAt | ← | Issue→ToDoのみ |
+
+**凡例:**
+- ⇄: 双方向同期
+- →: ToDo→Issueのみ
+- ←: Issue→ToDoのみ
+
+#### 9.4.2 一方向のみフィールドの扱い
+
+**ToDo専用フィールド（Issueに保存されない）:**
+- `repoId`: ローカルでのリポジトリ識別のみ
+- `syncEnabled`: 同期設定（ローカル設定）
+
+**Issue専用情報（ToDoに反映されない）:**
+- コメント数、リアクション
+- プロジェクトボード情報
+- リンクされたPull Request
+
+**今後の拡張でマッピング候補:**
+- コメント → ToDoのメモフィールド（将来追加）
+- Milestone → 期日の自動設定
+
+#### 9.4.3 カスタムメタデータ戦略
+
+DevBoard専用の情報をIssue本文に埋め込む方法：
+
+**Issue本文フォーマット:**
+```markdown
+{user description}
+
+---
+
+<!-- DevBoard Metadata -->
+<!-- priority: high -->
+<!-- dueDate: 2025-01-15T00:00:00Z -->
+<!-- syncEnabled: true -->
+<!-- End DevBoard Metadata -->
+```
+
+**パース実装:**
+```typescript
+function parseDevBoardMetadata(body: string): Partial<Todo> {
+  const metadataRegex = /<!-- DevBoard Metadata -->([\s\S]*?)<!-- End DevBoard Metadata -->/;
+  const match = body.match(metadataRegex);
+
+  if (!match) return {};
+
+  const metadata: Partial<Todo> = {};
+  const lines = match[1].trim().split('\n');
+
+  for (const line of lines) {
+    const fieldMatch = line.match(/<!-- (\w+): (.+) -->/);
+    if (fieldMatch) {
+      const [, key, value] = fieldMatch;
+      metadata[key] = parseValue(key, value);
+    }
+  }
+
+  return metadata;
+}
+
+function injectDevBoardMetadata(body: string, todo: Todo): string {
+  const userContent = body.replace(/<!-- DevBoard Metadata -->[\s\S]*?<!-- End DevBoard Metadata -->/, '').trim();
+
+  const metadata = `
+<!-- DevBoard Metadata -->
+<!-- priority: ${todo.priority} -->
+${todo.dueDate ? `<!-- dueDate: ${todo.dueDate} -->` : ''}
+<!-- syncEnabled: ${todo.syncEnabled} -->
+<!-- End DevBoard Metadata -->
+  `.trim();
+
+  return `${userContent}\n\n---\n\n${metadata}`;
+}
+```
+
 ---
 
 ## 10. 将来の拡張計画
@@ -1403,13 +2020,171 @@ ISSUE_AUTO_CLOSE_ENABLED=false
 
 ---
 
-## 12. 参考資料
+## 12. MVPスコープ定義
+
+### 12.1 3層スコープ分離
+
+#### 🎯 MVP (Phase 1) - 6-8時間
+
+**目標**: ローカルToDo管理と基本的なIssueインポート機能
+
+**含まれる機能:**
+- ✅ ローカルToDo管理（作成・編集・削除）
+- ✅ シンプルなリスト表示UI
+- ✅ ステータス管理（未着手/進行中/完了）
+- ✅ 優先度設定（High/Medium/Low）
+- ✅ GitHub Issue インポート（片方向: Issue → ToDo）
+- ✅ localStorage ストレージ
+
+**実装フェーズ:**
+- フェーズ1: データ層・ストレージ - 2-3h
+  - 型定義、ストレージ（localStorage のみ）
+  - Issue インポート API（片方向のみ）
+- フェーズ2: 基本UI - 2-3h
+  - シンプルなリスト表示
+  - ToDo作成・編集モーダル
+  - ステータス・優先度選択
+- フェーズ7（部分）: 基本テスト - 1.5-2h
+  - エラーハンドリング
+  - 基本的な動作確認
+
+**除外する機能（V1.1以降）:**
+- ❌ ToDo → Issue 作成（エクスポート）
+- ❌ 双方向同期
+- ❌ Kanban ボード表示
+- ❌ ドラッグ＆ドロップ
+- ❌ 期限管理とリマインダー
+- ❌ バックグラウンド自動同期
+- ❌ 競合解決UI
+- ❌ リアルタイム通知
+
+**成功基準:**
+- [ ] ToDoを作成・編集・削除できる
+- [ ] GitHub IssueをToDoとしてインポートできる
+- [ ] ステータスと優先度で管理できる
+- [ ] リポジトリ別にToDoを表示できる
+
+#### 🚀 V1.1 (Phase 2) - 6-8時間
+
+**目標**: 双方向同期と競合解決
+
+**追加機能:**
+- ✅ ToDo → Issue 作成（エクスポート）
+- ✅ 双方向同期（バックグラウンド）
+- ✅ 競合検出と解決UI
+- ✅ 期限管理とリマインダー
+- ✅ フィルター・ソート機能
+- ✅ ToDoステータス表示
+
+**実装フェーズ:**
+- フェーズ3: Kanban ボード - 3-4h（スキップ or 簡易版）
+- フェーズ4: Issue同期（双方向） - 3-4h
+- フェーズ5: フィルター・ソート - 2-3h
+- フェーズ6: 統合・通知 - 2-3h
+
+**成功基準:**
+- [ ] ToDoからIssueを作成できる
+- [ ] Issue更新時にToDoが自動同期される
+- [ ] 競合が発生した時に適切に解決できる
+- [ ] 期限切れタスクの通知が表示される
+
+#### 🌟 V2.0 (Phase 3) - 5-7時間
+
+**目標**: 高度なUI とマルチデバイス対応
+
+**追加機能:**
+- ✅ Kanban ボード表示（ドラッグ＆ドロップ）
+- ✅ Cloudflare KV によるマルチデバイス同期
+- ✅ オフライン編集キュー
+- ✅ 高度なフィルター（複数条件、保存済みフィルター）
+- ✅ 統計ダッシュボード
+- ✅ エクスポート/インポート機能
+
+**実装フェーズ:**
+- フェーズ3（完全版）: Kanban ボード - 3-4h
+- 追加: KV ストレージ移行 - 2-3h
+- 追加: オフライン対応 - 2h
+
+**成功基準:**
+- [ ] Kanban ボードでドラッグ＆ドロップできる
+- [ ] 複数端末でToDoが同期される
+- [ ] オフライン時でも編集・同期できる
+
+### 12.2 MVP時間見積もり調整
+
+**元の見積もり**: 17-24時間（全7フェーズ）
+
+**MVP見積もり**: 6-8時間（2フェーズ + 部分的Phase 7）
+
+**削減内容:**
+- Kanban ボード: -3~4h → V2.0へ
+- Issue同期（エクスポート）: -2h → V1.1へ
+- 双方向同期: -2h → V1.1へ
+- フィルター・ソート: -2~3h → V1.1へ
+- 通知: -2~3h → V1.1へ
+- 高度なテスト: -1h → V1.1/V2.0へ
+
+### 12.3 段階的リリース計画
+
+**Week 1-2: MVP開発**
+- ローカルToDo管理 + Issue インポートのみ
+- シンプルなリスト表示
+- 内部テスト・フィードバック収集
+
+**Week 3-4: V1.1開発**
+- 双方向同期追加
+- 競合解決UI
+- 実際の開発ワークフローで利用開始
+
+**Week 5+: V2.0開発**
+- Kanban UI 追加
+- マルチデバイス同期
+- オフライン対応
+
+### 12.4 優先順位付けマトリクス
+
+| 機能 | 価値 | 複雑度 | 依存性 | 優先度 |
+|------|-----|-------|--------|--------|
+| ローカルToDo管理 | 高 | 低 | なし | **MVP** |
+| リスト表示UI | 高 | 低 | なし | **MVP** |
+| Issue インポート | 高 | 中 | MVP | **MVP** |
+| Issue エクスポート | 高 | 中 | MVP | **V1.1** |
+| 双方向同期 | 中 | 高 | V1.1 | **V1.1** |
+| 競合解決UI | 中 | 中 | V1.1 | **V1.1** |
+| 期限管理 | 中 | 低 | MVP | **V1.1** |
+| Kanban ボード | 中 | 高 | MVP | **V2.0** |
+| マルチデバイス同期 | 低 | 高 | V1.1 | **V2.0** |
+| オフライン編集 | 低 | 中 | V2.0 | **V2.0** |
+
+### 12.5 リスク軽減策
+
+**MVP で特に注意すべき点:**
+1. **Issue インポートの信頼性**
+   - レート制限の適切な管理
+   - エラーハンドリングの徹底
+   - ユーザーへの明確なフィードバック
+
+2. **データ消失の防止**
+   - localStorage のバックアップ機能
+   - エクスポート機能をMVPに含める検討
+   - 定期的な自動保存
+
+3. **UI の直感性**
+   - シンプルで分かりやすいUI
+   - アクセシビリティの確保
+   - レスポンシブデザイン
+
+---
+
+## 13. 参考資料
 
 - [GitHub Issues API](https://docs.github.com/en/rest/issues)
 - [GitHub GraphQL API](https://docs.github.com/en/graphql)
 - [@dnd-kit Documentation](https://docs.dndkit.com/)
 - [React Window](https://react-window.vercel.app/)
 - [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API)
+- [Three-Way Merge Algorithm](https://en.wikipedia.org/wiki/Merge_(version_control)#Three-way_merge)
+- [Offline-First Design Patterns](https://offlinefirst.org/)
 
 ---
 
