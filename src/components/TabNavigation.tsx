@@ -2,13 +2,14 @@ import { motion } from 'framer-motion';
 import React from 'react';
 import { focusRing } from '../lib/focusRing';
 
-export type TabType = 'board' | 'updates' | 'manual';
+export type TabType = 'board' | 'updates' | 'manual' | 'todos';
 
 interface TabNavigationProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   updateCount?: number;
   manualRepoCount?: number;
+  todoCount?: number;
 }
 
 const ICONS: Record<TabType, JSX.Element> = {
@@ -31,6 +32,12 @@ const ICONS: Record<TabType, JSX.Element> = {
       <path d="M12 5v14M5 12h14" />
     </svg>
   ),
+  todos: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+    </svg>
+  ),
 };
 
 const BADGE_STYLE = {
@@ -42,6 +49,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   onTabChange,
   updateCount = 0,
   manualRepoCount = 0,
+  todoCount = 0,
 }) => {
   const handleTabChange = (tab: TabType) => {
     if (tab !== activeTab) {
@@ -53,6 +61,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     { id: 'board', label: 'カンバン' },
     { id: 'updates', label: '最近の更新', badge: updateCount },
     { id: 'manual', label: '追加したリポジトリ', badge: manualRepoCount },
+    { id: 'todos', label: 'TODO', badge: todoCount },
   ];
 
   return (

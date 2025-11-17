@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard } from './components';
+import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard, TodosTab } from './components';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import AccountSwitcher from './components/AccountSwitcher';
@@ -9,6 +9,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { useToast } from './hooks/useToast';
 import { useRepositories } from './hooks/useRepositories';
 import { useRecentActivities } from './hooks/useRecentActivities';
+import { useTodos } from './hooks/useTodos';
 import { Repo, ColumnKey } from './types';
 import { fetchRepositoriesByUrls } from './api/repos';
 import type { TabType } from './components/TabNavigation';
@@ -70,8 +71,11 @@ function AppContent() {
   // Tab navigation state
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const saved = getStorageString('activeTab', 'board');
-    return (saved === 'board' || saved === 'updates' || saved === 'manual') ? saved : 'board';
+    return (saved === 'board' || saved === 'updates' || saved === 'manual' || saved === 'todos') ? saved : 'board';
   });
+
+  // TODO hook
+  const { stats: todoStats } = useTodos({ autoLoad: true });
 
   // Modal state
   const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
@@ -430,6 +434,7 @@ function AppContent() {
         onTabChange={setActiveTab}
         updateCount={recentItems.length}
         manualRepoCount={manualRepoCount}
+        todoCount={todoStats?.total || 0}
       />
 
       {/* Board Tab Content */}
@@ -471,6 +476,13 @@ function AppContent() {
             onSelectedReposChange={setSelectedRepoIds}
             onColumnsChange={setManualColumns}
           />
+        )}
+      </div>
+
+      {/* TODOs Tab Content */}
+      <div className={activeTab === 'todos' ? 'animate-slide-fade-in' : 'hidden'}>
+        {activeTab === 'todos' && (
+          <TodosTab repos={repos} />
         )}
       </div>
 

@@ -10,3 +10,7 @@ export { AddRepoModal } from './AddRepoModal';
 export { UpdatesTab } from './UpdatesTab';
 export { ManualRepoBoard } from './ManualRepoBoard';
 export { ColumnSettingsModal } from './ColumnSettingsModal';
+export { TodosTab } from './TodosTab';
+export { TodoFilters } from './TodoFilters';
+export { TodoBoard } from './TodoBoard';
+export { TodoStats } from './TodoStats';
