@@ -17,13 +17,13 @@
 - ルート: `vite.config.ts`, `tailwind.config.js`, `postcss.config.js`, `wrangler.toml`
 - アプリ: `src/main.tsx`, `src/App.tsx`, `src/index.css`, `src/components/*`, `src/types/*`
 - ユーティリティ: `src/utils/*`, `src/lib/*`
-- ドキュメント: `docs/development.md`, `docs/detailed-results.md` など
+- ドキュメント: `docs/guides/development.md`, `docs/guides/detailed-results.md` など
 
 ## 良い点
 - 型の整備が比較的行き届いており、`src/types` に共通型が集約されています。
 - UI コンポーネントは Tailwind ベースで一貫性があり、アクセシビリティ属性（role, aria-*）も配慮されています（例: `RepoCard`）。
 - 日付差分などの基盤ユーティリティが `src/utils/date.ts` に切り出され、再利用性が高いです。
-- Cloudflare Pages/Functions の運用ログや診断手順が `docs/detailed-results.md` にまとまっており、運用の見通しが良いです。
+- Cloudflare Pages/Functions の運用ログや診断手順が `docs/guides/detailed-results.md` にまとまっており、運用の見通しが良いです。
 
 ## 課題（要改善点）
 1. ユーティリティの重複・二重抽象の兆候

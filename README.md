@@ -55,7 +55,7 @@
 
 ## 開発環境のセットアップ
 
-詳細な手順は [docs/development.md](docs/development.md) を参照してください。
+詳細な手順は [docs/guides/development.md](docs/guides/development.md) を参照してください。
 
 ### クイックスタート
 
@@ -138,7 +138,7 @@ npm run lint:fix
 
 ## デプロイ
 
-Cloudflare Pages へのデプロイ手順は [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) を参照してください。
+Cloudflare Pages へのデプロイ手順は [docs/guides/DEPLOYMENT.md](docs/guides/DEPLOYMENT.md) を参照してください。
 
 ### デプロイ概要
 
@@ -164,9 +164,16 @@ GitHub_Dashboard/
 ├── CLAUDE.md                  # Claude Code ガイダンス
 ├── requirements.md            # MVP 要件定義
 ├── docs/
-│   ├── development.md         # ローカル開発環境セットアップ
-│   ├── DEPLOYMENT.md          # デプロイ手順書
-│   └── PRIVACY.md             # プライバシーポリシー
+│   ├── README.md              # ドキュメントインデックス
+│   ├── guides/                # 開発・デプロイガイド
+│   │   ├── development.md     # ローカル開発環境セットアップ
+│   │   ├── DEPLOYMENT.md      # デプロイ手順書
+│   │   └── ...
+│   ├── plans/                 # 実装計画書
+│   ├── security/              # セキュリティ関連
+│   ├── design/                # デザインシステム
+│   └── misc/                  # その他
+│       └── PRIVACY.md         # プライバシーポリシー
 ├── functions/                 # Cloudflare Workers Functions
 │   ├── _middleware.ts         # CORS、セキュリティヘッダー
 │   ├── api/
@@ -273,15 +280,15 @@ npm test -- src/lib/__tests__/classifyRepo.test.ts
 - このアプリケーションは、GitHub OAuth を通じて取得したアクセストークンを暗号化して Cloudflare KV に保存します
 - セッションは30日間有効です
 - 収集した情報は第三者に共有されません
-- 詳細は [docs/PRIVACY.md](docs/PRIVACY.md) を参照してください
+- 詳細は [docs/misc/PRIVACY.md](docs/misc/PRIVACY.md) を参照してください
 
 ## トラブルシューティング
 
-詳細なトラブルシューティングガイドは [docs/development.md](docs/development.md) を参照してください。
+詳細なトラブルシューティングガイドは [docs/guides/development.md](docs/guides/development.md) を参照してください。
 
-詳しい結果（ログと診断）の見方は [docs/detailed-results.md](docs/detailed-results.md) を参照してください。実行環境の準備状況は /api/auth/status で確認できます。
+詳しい結果（ログと診断）の見方は [docs/guides/detailed-results.md](docs/guides/detailed-results.md) を参照してください。実行環境の準備状況は /api/auth/status で確認できます。
 
-Cloudflare Pages の設定画面がロックされて編集できない場合（「このプロジェクトのバインディングは wrangler.toml を通じて管理されています」と表示される）は、[docs/pages-config-modes.md](docs/pages-config-modes.md) を参照して、ダッシュボード管理モードへの切り替え手順（推奨）または Wrangler 管理モードでの設定方法を確認してください。
+Cloudflare Pages の設定画面がロックされて編集できない場合（「このプロジェクトのバインディングは wrangler.toml を通じて管理されています」と表示される）は、[docs/guides/pages-config-modes.md](docs/guides/pages-config-modes.md) を参照して、ダッシュボード管理モードへの切り替え手順（推奨）または Wrangler 管理モードでの設定方法を確認してください。
 
 ### よくある問題
 

@@ -272,7 +272,7 @@
   - [x] `build.terserOptions` 設定（console.log削除）
 
 **5.2 ローカル開発環境のセットアップ手順作成**
-- [x] `docs/development.md` 作成
+- [x] `docs/guides/development.md` 作成
   - [x] Wrangler CLIインストール手順
   - [x] `.dev.vars` 設定手順
   - [x] KV Namespace作成手順（ローカル用）
@@ -310,7 +310,7 @@
 - [x] 環境変数の説明を更新
 
 **6.2 プライバシーポリシー作成**
-- [x] `docs/PRIVACY.md` 作成
+- [x] `docs/misc/PRIVACY.md` 作成
   - [x] 収集する情報の明記
   - [x] 情報の利用目的
   - [x] 保存期間（30日間）
@@ -319,7 +319,7 @@
   - [x] お問い合わせ先
 
 **6.3 デプロイ手順書作成**
-- [x] `docs/DEPLOYMENT.md` 作成
+- [x] `docs/guides/DEPLOYMENT.md` 作成
   - [x] Cloudflare Pages プロジェクト作成手順
   - [x] GitHub連携設定
   - [x] ビルド設定（コマンド、出力ディレクトリ）
@@ -641,9 +641,9 @@ kv_namespaces = [
 
 5. **ドキュメント**
    - README.md（完全刷新）
-   - docs/development.md（ローカル開発環境セットアップ）
-   - docs/DEPLOYMENT.md（Cloudflare Pagesデプロイ手順）
-   - docs/PRIVACY.md（プライバシーポリシー）
+   - docs/guides/development.md（ローカル開発環境セットアップ）
+   - docs/guides/DEPLOYMENT.md（Cloudflare Pagesデプロイ手順）
+   - docs/misc/PRIVACY.md（プライバシーポリシー）
 
 ### 技術的ハイライト
 
@@ -654,7 +654,7 @@ kv_namespaces = [
 
 ### 次のステップ（デプロイ）
 
-本番環境へのデプロイは、[docs/DEPLOYMENT.md](DEPLOYMENT.md) の手順に従って実行してください。
+本番環境へのデプロイは、[docs/guides/DEPLOYMENT.md](../guides/DEPLOYMENT.md) の手順に従って実行してください。
 
 主なステップ：
 1. 本番用GitHub OAuth App作成

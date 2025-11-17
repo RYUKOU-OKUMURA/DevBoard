@@ -945,7 +945,7 @@ export const Toast = ({ message, type }) => (
 - その他（フォーカスリング、motion-reduce追加）
 
 ### 新規ドキュメント（1ファイル）
-- `docs/design-system-guidelines.md` - タイポグラフィ、スペーシング、モーションガイドライン
+- `docs/design/design-system-guidelines.md` - タイポグラフィ、スペーシング、モーションガイドライン
 
 ---
 

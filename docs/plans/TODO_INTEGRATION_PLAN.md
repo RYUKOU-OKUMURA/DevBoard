@@ -1,0 +1,1416 @@
+# DevBoard ToDo-Issue連携機能実装計画書
+
+**作成日**: 2025-11-17
+**バージョン**: 1.0
+**ステータス**: 計画中
+**優先度**: 3（タグ機能、AI統合の次）
+
+## 1. 概要
+
+### 1.1 目的
+リポジトリに紐付いたToDoタスクを管理し、GitHub Issuesと双方向同期することで、DevBoard上での開発タスク管理を実現する。
+
+### 1.2 スコープ
+- **ToDo管理**: リポジトリ別のタスク作成・編集・削除
+- **Issue連携**: GitHub Issuesとの双方向同期
+- **進捗管理**: ステータス管理（未着手/進行中/完了）
+- **優先度管理**: High/Medium/Low
+- **期限管理**: 期日設定とリマインダー
+- **統合ビュー**: 全リポジトリ横断のToDoリスト
+
+### 1.3 成功基準
+- ✅ リポジトリ別にToDoを作成・管理できる
+- ✅ ToDoからGitHub Issueを作成できる
+- ✅ GitHub IssueをToDoとしてインポートできる
+- ✅ ToDo完了時にIssueをクローズできる（オプション）
+- ✅ Issue更新時にToDoを自動同期できる
+- ✅ 期限切れタスクの通知
+- ✅ 優先度・期限でのソート・フィルタリング
+
+---
+
+## 2. アーキテクチャ設計
+
+### 2.1 データモデル
+
+```typescript
+// src/types/todo.ts
+
+/**
+ * ToDo ステータス
+ */
+export type TodoStatus = 'todo' | 'in_progress' | 'done';
+
+/**
+ * ToDo 優先度
+ */
+export type TodoPriority = 'high' | 'medium' | 'low';
+
+/**
+ * ToDo アイテム
+ */
+export type Todo = {
+  id: string;                    // UUID
+  title: string;                 // タイトル
+  description?: string;          // 説明（Markdown対応）
+  repoId: string;                // 関連リポジトリID
+  status: TodoStatus;            // ステータス
+  priority: TodoPriority;        // 優先度
+  dueDate?: string;              // 期日（ISO 8601）
+  assignee?: string;             // 担当者（GitHubユーザー名）
+  labels: string[];              // ラベル
+  issueNumber?: number;          // 連携しているIssue番号
+  issueUrl?: string;             // Issue URL
+  syncEnabled: boolean;          // Issue同期有効/無効
+  createdAt: string;             // 作成日時
+  updatedAt: string;             // 更新日時
+  completedAt?: string;          // 完了日時
+};
+
+/**
+ * ToDo グループ（リポジトリ別）
+ */
+export type TodoGroup = {
+  repoId: string;
+  repoName: string;
+  todos: Todo[];
+  totalCount: number;
+  doneCount: number;
+};
+
+/**
+ * ToDo 統計情報
+ */
+export type TodoStats = {
+  total: number;
+  todo: number;
+  inProgress: number;
+  done: number;
+  overdue: number;              // 期限切れ
+  dueToday: number;             // 今日期限
+  dueThisWeek: number;          // 今週期限
+};
+
+/**
+ * Issue 同期設定
+ */
+export type IssueSyncConfig = {
+  enabled: boolean;              // 同期有効/無効
+  autoImport: boolean;           // 新規Issue自動インポート
+  autoClose: boolean;            // ToDo完了時にIssue自動クローズ
+  syncInterval: number;          // 同期間隔（分）
+  lastSyncAt?: string;           // 最終同期日時
+};
+
+/**
+ * ToDo フィルター
+ */
+export type TodoFilter = {
+  status?: TodoStatus[];         // ステータスフィルター
+  priority?: TodoPriority[];     // 優先度フィルター
+  repoIds?: string[];            // リポジトリフィルター
+  assignee?: string;             // 担当者フィルター
+  labels?: string[];             // ラベルフィルター
+  dueDateRange?: {               // 期日範囲
+    start?: string;
+    end?: string;
+  };
+  searchQuery?: string;          // 検索クエリ
+};
+
+/**
+ * ToDo ソート
+ */
+export type TodoSort =
+  | 'priority'                   // 優先度順
+  | 'dueDate'                    // 期日順
+  | 'createdAt'                  // 作成日順
+  | 'updatedAt'                  // 更新日順
+  | 'title';                     // タイトル順
+```
+
+### 2.2 ストレージ設計
+
+**ストレージキー:**
+- `github-dashboard-todos:{accountId}` → `Todo[]`
+- `github-dashboard-issue-sync-config:{accountId}` → `IssueSyncConfig`
+- `github-dashboard-todo-filter:{accountId}` → `TodoFilter`（前回のフィルター状態）
+
+**同期戦略:**
+- ローカルストレージ（localStorage）に保存
+- バックグラウンドで定期的にGitHub Issuesと同期
+- 競合発生時はGitHub Issuesを優先（サーバー側が真実の源）
+
+### 2.3 GitHub API統合
+
+#### GraphQL クエリ
+
+**Issue一覧取得:**
+```graphql
+query GetRepositoryIssues($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    issues(first: 100, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
+      nodes {
+        id
+        number
+        title
+        body
+        state
+        createdAt
+        updatedAt
+        closedAt
+        url
+        labels(first: 10) {
+          nodes {
+            name
+          }
+        }
+        assignees(first: 5) {
+          nodes {
+            login
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}
+```
+
+**Issue作成:**
+```graphql
+mutation CreateIssue($repositoryId: ID!, $title: String!, $body: String, $assigneeIds: [ID!], $labelIds: [ID!]) {
+  createIssue(input: {
+    repositoryId: $repositoryId
+    title: $title
+    body: $body
+    assigneeIds: $assigneeIds
+    labelIds: $labelIds
+  }) {
+    issue {
+      id
+      number
+      url
+    }
+  }
+}
+```
+
+**Issue更新:**
+```graphql
+mutation UpdateIssue($issueId: ID!, $title: String, $body: String, $state: IssueState) {
+  updateIssue(input: {
+    id: $issueId
+    title: $title
+    body: $body
+    state: $state
+  }) {
+    issue {
+      id
+      number
+      state
+      updatedAt
+    }
+  }
+}
+```
+
+**Issueクローズ:**
+```graphql
+mutation CloseIssue($issueId: ID!) {
+  closeIssue(input: { issueId: $issueId }) {
+    issue {
+      id
+      state
+      closedAt
+    }
+  }
+}
+```
+
+### 2.4 API設計
+
+#### Cloudflare Functions エンドポイント
+
+```
+/api/todos/sync
+  POST - ToDo と GitHub Issues を同期
+  Body: { repoId, direction: 'import' | 'export' | 'bidirectional' }
+  Response: { syncedCount, conflicts }
+
+/api/todos/create-issue
+  POST - ToDo から GitHub Issue を作成
+  Body: { todoId }
+  Response: { issueNumber, issueUrl }
+
+/api/todos/import-issues
+  POST - GitHub Issues を ToDo としてインポート
+  Body: { repoId, issueNumbers?: number[] }
+  Response: { importedCount, todos }
+
+/api/todos/close-issue
+  POST - ToDo 完了時に Issue をクローズ
+  Body: { todoId, issueId }
+  Response: { success }
+```
+
+### 2.5 コンポーネント構成
+
+```
+App
+├── TodoPanel (NEW)                    // ToDoパネル（サイドバー or タブ）
+│   ├── TodoStats                      // 統計表示
+│   ├── TodoFilters                    // フィルター
+│   ├── TodoList                       // ToDo一覧
+│   │   └── TodoItem                   // ToDoアイテム
+│   └── TodoGroupView                  // リポジトリ別グループ表示
+├── TodoBoard (NEW)                    // ToDoボード（カンバン形式）
+│   ├── TodoColumn                     // ステータス別カラム
+│   │   └── TodoCard                   // ToDoカード
+│   └── TodoDragDrop                   // ドラッグ＆ドロップ
+├── TodoDetail (NEW)                   // ToDo詳細モーダル
+│   ├── TodoEditor                     // 編集フォーム
+│   ├── IssueSyncStatus                // Issue同期状態
+│   └── TodoHistory                    // 変更履歴
+├── TodoCreate (NEW)                   // ToDo作成モーダル
+│   ├── RepoSelector                   // リポジトリ選択
+│   ├── PrioritySelector               // 優先度選択
+│   └── DueDatePicker                  // 期日選択
+├── IssueSyncSettings (NEW)            // Issue同期設定
+│   ├── SyncToggle                     // 同期ON/OFF
+│   ├── AutoImportToggle               // 自動インポート
+│   └── SyncIntervalSelector           // 同期間隔
+└── RepoCard
+    └── TodoBadge (NEW)                // リポジトリ別ToDo件数バッジ
+```
+
+---
+
+## 3. 実装フェーズ
+
+### フェーズ1: データ層・ストレージ (2-3h)
+
+#### タスク
+
+1. **型定義作成** (`src/types/todo.ts`)
+   - Todo, TodoGroup, TodoStats, IssueSyncConfig等の型定義
+
+2. **ToDoストレージ** (`src/utils/todoStorage.ts`)
+   ```typescript
+   // 主要な関数
+   - getTodos(accountId: string): Todo[]
+   - saveTodos(accountId: string, todos: Todo[]): void
+   - createTodo(accountId: string, todo: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>): Todo
+   - updateTodo(accountId: string, todoId: string, updates: Partial<Todo>): void
+   - deleteTodo(accountId: string, todoId: string): void
+   - getTodosByRepo(accountId: string, repoId: string): Todo[]
+   - getTodoStats(accountId: string): TodoStats
+
+   - getIssueSyncConfig(accountId: string): IssueSyncConfig
+   - saveIssueSyncConfig(accountId: string, config: IssueSyncConfig): void
+   ```
+
+3. **Issue同期ロジック** (`src/utils/issueSync.ts`)
+   ```typescript
+   /**
+    * GitHub Issues をインポート
+    */
+   async function importIssuesFromGitHub(
+     repoId: string,
+     issueNumbers?: number[]
+   ): Promise<Todo[]>
+
+   /**
+    * ToDo から Issue を作成
+    */
+   async function createIssueFromTodo(todo: Todo): Promise<{ number: number; url: string }>
+
+   /**
+    * ToDo と Issue を同期
+    */
+   async function syncTodoWithIssue(todo: Todo): Promise<Todo>
+
+   /**
+    * Issue を Todoにマッピング
+    */
+   function mapIssueToTodo(issue: GitHubIssue, repoId: string): Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>
+
+   /**
+    * Issue ステータスと ToDo ステータスを変換
+    */
+   function issueStateToTodoStatus(state: 'OPEN' | 'CLOSED'): TodoStatus
+   function todoStatusToIssueState(status: TodoStatus): 'OPEN' | 'CLOSED'
+   ```
+
+4. **Cloudflare Functions実装**
+   - `/api/todos/sync` エンドポイント
+   - `/api/todos/create-issue` エンドポイント
+   - `/api/todos/import-issues` エンドポイント
+   - `/api/todos/close-issue` エンドポイント
+   - GitHub GraphQL統合
+
+5. **カスタムフック** (`src/hooks/useTodos.ts`)
+   ```typescript
+   export function useTodos(repoId?: string) {
+     const { currentAccount } = useAuth();
+     const [todos, setTodos] = useState<Todo[]>([]);
+     const [stats, setStats] = useState<TodoStats | null>(null);
+     const [isLoading, setIsLoading] = useState(false);
+     const [syncConfig, setSyncConfig] = useState<IssueSyncConfig | null>(null);
+
+     // CRUD操作
+     const createTodo = async (data: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>) => { ... };
+     const updateTodo = async (todoId: string, updates: Partial<Todo>) => { ... };
+     const deleteTodo = async (todoId: string) => { ... };
+
+     // Issue連携
+     const createIssueFromTodo = async (todoId: string) => { ... };
+     const importIssues = async (issueNumbers?: number[]) => { ... };
+     const syncWithGitHub = async () => { ... };
+
+     return {
+       todos,
+       stats,
+       syncConfig,
+       createTodo,
+       updateTodo,
+       deleteTodo,
+       createIssueFromTodo,
+       importIssues,
+       syncWithGitHub,
+       isLoading,
+     };
+   }
+   ```
+
+#### 成果物
+- `src/types/todo.ts`
+- `src/utils/todoStorage.ts`
+- `src/utils/issueSync.ts`
+- `functions/api/todos/sync.ts`
+- `functions/api/todos/create-issue.ts`
+- `functions/api/todos/import-issues.ts`
+- `functions/api/todos/close-issue.ts`
+- `src/hooks/useTodos.ts`
+
+---
+
+### フェーズ2: 基本UIコンポーネント (3-4h)
+
+#### 2.1 TodoItem コンポーネント
+
+**ファイル**: `src/components/TodoItem.tsx`
+
+**Props:**
+```typescript
+type TodoItemProps = {
+  todo: Todo;
+  onUpdate: (updates: Partial<Todo>) => void;
+  onDelete: () => void;
+  onClick: () => void;
+  showRepo?: boolean;            // リポジトリ名表示
+};
+```
+
+**機能:**
+- チェックボックス（ステータス切り替え）
+- タイトル・説明の表示
+- 優先度インジケーター（色分け）
+- 期日表示（期限切れは赤色）
+- Issueバッジ（連携中の場合）
+- リポジトリ名（グローバルビューの場合）
+- コンテキストメニュー（編集・削除・Issue作成）
+
+**UI構成:**
+```
+┌─────────────────────────────────────────┐
+│ ☐ [H] 認証機能の実装          📅 12/25  │
+│     owner/repo-name            🔗 #123  │
+│     OAuth 2.0を使用した認証を実装する   │
+│                         [編集] [削除]   │
+└─────────────────────────────────────────┘
+
+凡例:
+- ☐/☑: チェックボックス
+- [H]/[M]/[L]: 優先度（High/Medium/Low）
+- 📅: 期日
+- 🔗: Issue連携
+```
+
+#### 2.2 TodoList コンポーネント
+
+**ファイル**: `src/components/TodoList.tsx`
+
+**機能:**
+- ToDo一覧表示
+- 仮想スクロール（大量データ対応）
+- グループ化（リポジトリ別、ステータス別、優先度別）
+- ソート（優先度、期日、作成日、更新日）
+- フィルタリング
+- ドラッグ＆ドロップ（並び替え）
+
+**UI構成:**
+```
+┌─────────────────────────────────────────┐
+│ ToDo (15)               [+新規作成]     │
+├─────────────────────────────────────────┤
+│ [フィルター] [ソート] [グループ]       │
+│                                         │
+│ ▼ owner/repo-1 (5)                     │
+│   ☐ [H] タスク1                📅期限  │
+│   ☑ [M] タスク2                        │
+│   ☐ [L] タスク3                🔗 #10  │
+│                                         │
+│ ▼ owner/repo-2 (3)                     │
+│   ☐ [H] タスク4                📅今日  │
+│   ☐ [M] タスク5                        │
+│                                         │
+│ [さらに読み込む]                       │
+└─────────────────────────────────────────┘
+```
+
+#### 2.3 TodoDetail モーダル
+
+**ファイル**: `src/components/TodoDetail.tsx`
+
+**機能:**
+- ToDo詳細表示・編集
+- Markdown対応の説明エディター
+- リポジトリ選択
+- ステータス変更
+- 優先度変更
+- 期日設定
+- ラベル管理
+- Issue連携状態表示
+- Issue作成/リンク/同期ボタン
+
+**UI構成:**
+```
+┌─────────────────────────────────────────┐
+│ ToDo詳細                       [×]      │
+├─────────────────────────────────────────┤
+│ タイトル:                               │
+│ [認証機能の実装___________________]     │
+│                                         │
+│ リポジトリ: [owner/repo ▼]             │
+│                                         │
+│ ステータス: ● 未着手 ○ 進行中 ○ 完了  │
+│                                         │
+│ 優先度: ● High  ○ Medium  ○ Low        │
+│                                         │
+│ 期日: [2025-12-25 ▼]                   │
+│                                         │
+│ 説明:                                   │
+│ ┌─────────────────────────────────────┐ │
+│ │ OAuth 2.0を使用した認証を実装する   │ │
+│ │ - GitHub認証                        │ │
+│ │ - トークン管理                      │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ Issue連携:                              │
+│ ┌─────────────────────────────────────┐ │
+│ │ 🔗 Issue #123                       │ │
+│ │ [同期] [Issueを開く] [連携解除]    │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│ または: [新しいIssueを作成]            │
+│                                         │
+│                    [キャンセル] [保存]  │
+└─────────────────────────────────────────┘
+```
+
+#### 成果物
+- `src/components/TodoItem.tsx`
+- `src/components/TodoList.tsx`
+- `src/components/TodoDetail.tsx`
+- `src/components/TodoStats.tsx`
+
+---
+
+### フェーズ3: ToDoボード（カンバン形式） (3-4h)
+
+#### 3.1 TodoBoard コンポーネント
+
+**ファイル**: `src/components/TodoBoard.tsx`
+
+**機能:**
+- カンバンスタイルのボード表示
+- 3カラム: 未着手 / 進行中 / 完了
+- ドラッグ＆ドロップでステータス変更
+- カラムごとの件数表示
+- カードのコンパクト表示
+
+**UI構成:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ToDoボード                              [リスト表示に切替]  │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
+│ │ 未着手 (8)  │ │ 進行中 (3)  │ │ 完了 (12)   │           │
+│ ├─────────────┤ ├─────────────┤ ├─────────────┤           │
+│ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │           │
+│ │ │[H] タスク1│ │ │[M] タスク4│ │ │[L] タスク7│ │           │
+│ │ │repo-1    │ │ │repo-2    │ │ │repo-1    │ │           │
+│ │ │📅 12/25  │ │ │🔗 #15    │ │ │✓ 完了    │ │           │
+│ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │           │
+│ │             │ │             │ │             │           │
+│ │ ┌─────────┐ │ │ ┌─────────┐ │ │ ┌─────────┐ │           │
+│ │ │[M] タスク2│ │ │[H] タスク5│ │ │[M] タスク8│ │           │
+│ │ │repo-1    │ │ │repo-3    │ │ │repo-2    │ │           │
+│ │ │📅 今日   │ │ │           │ │ │✓ 完了    │ │           │
+│ │ └─────────┘ │ │ └─────────┘ │ │ └─────────┘ │           │
+│ │             │ │             │ │             │           │
+│ │ [+ 追加]    │ │             │ │             │           │
+│ └─────────────┘ └─────────────┘ └─────────────┘           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2 TodoCard コンポーネント
+
+**ファイル**: `src/components/TodoCard.tsx`
+
+**機能:**
+- コンパクトなカード表示
+- ドラッグハンドル
+- 優先度・期日・Issue連携のインジケーター
+- ホバーでアクションボタン表示
+
+#### 3.3 ドラッグ＆ドロップ実装
+
+**ライブラリ**: `@dnd-kit/core` (既存のFramer Motionと統合可能)
+
+```typescript
+import { DndContext, DragEndEvent } from '@dnd-kit/core';
+
+function TodoBoard() {
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const todoId = active.id as string;
+    const newStatus = over.id as TodoStatus;
+
+    updateTodo(todoId, { status: newStatus });
+  };
+
+  return (
+    <DndContext onDragEnd={handleDragEnd}>
+      <TodoColumn status="todo" />
+      <TodoColumn status="in_progress" />
+      <TodoColumn status="done" />
+    </DndContext>
+  );
+}
+```
+
+#### 成果物
+- `src/components/TodoBoard.tsx`
+- `src/components/TodoColumn.tsx`
+- `src/components/TodoCard.tsx`
+
+---
+
+### フェーズ4: Issue同期機能 (3-4h)
+
+#### 4.1 Issue同期設定UI
+
+**ファイル**: `src/components/IssueSyncSettings.tsx`
+
+**機能:**
+- 同期ON/OFF切り替え
+- 自動インポート設定
+- 自動クローズ設定
+- 同期間隔設定（5分/15分/30分/1時間）
+- 手動同期ボタン
+- 最終同期日時表示
+- 同期履歴表示
+
+**UI構成:**
+```
+┌─────────────────────────────────────────┐
+│ Issue同期設定                  [×]      │
+├─────────────────────────────────────────┤
+│ Issue同期を有効化                       │
+│ [ON ●───○ OFF]                         │
+│                                         │
+│ 自動インポート                          │
+│ 新しいIssueを自動的にToDoとして追加     │
+│ [ON ●───○ OFF]                         │
+│                                         │
+│ 自動クローズ                            │
+│ ToDo完了時にIssueを自動的にクローズ     │
+│ [ON ○───● OFF]                         │
+│                                         │
+│ 同期間隔: [15分 ▼]                     │
+│                                         │
+│ 最終同期: 2分前                         │
+│ [今すぐ同期]                           │
+│                                         │
+│ 同期履歴:                               │
+│ ┌─────────────────────────────────────┐ │
+│ │ 2025-11-17 14:32 - 5件インポート    │ │
+│ │ 2025-11-17 14:17 - 変更なし         │ │
+│ │ 2025-11-17 14:02 - 2件更新          │ │
+│ └─────────────────────────────────────┘ │
+│                                         │
+│                          [閉じる]       │
+└─────────────────────────────────────────┘
+```
+
+#### 4.2 Issueインポートフロー
+
+**手動インポート:**
+1. リポジトリ選択
+2. Issueリスト表示（未インポートのみ）
+3. インポートするIssueを選択（チェックボックス）
+4. [インポート]ボタンクリック
+5. ToDoとして追加
+
+**自動インポート:**
+- 設定した間隔で自動実行
+- 新規作成されたIssueを検出
+- バックグラウンドでToDoに追加
+- 通知表示（Toast）
+
+#### 4.3 Issue作成フロー
+
+**フロー:**
+1. ToDoからIssue作成ボタンクリック
+2. 確認ダイアログ表示
+   - Issue情報のプレビュー
+   - タイトル・本文の最終確認
+3. GitHub APIでIssue作成
+4. 作成されたIssue番号・URLをToDoに保存
+5. `syncEnabled: true` に設定
+6. 成功通知（Toast + Issue URLリンク）
+
+#### 4.4 同期ロジック
+
+**双方向同期:**
+```typescript
+async function syncTodoWithIssue(todo: Todo): Promise<Todo> {
+  if (!todo.issueNumber || !todo.syncEnabled) return todo;
+
+  // GitHub Issueを取得
+  const issue = await fetchIssue(todo.repoId, todo.issueNumber);
+
+  // 競合検出: どちらが新しいか
+  const todoUpdatedAt = new Date(todo.updatedAt);
+  const issueUpdatedAt = new Date(issue.updatedAt);
+
+  if (issueUpdatedAt > todoUpdatedAt) {
+    // Issueが新しい → ToDoを更新
+    return {
+      ...todo,
+      title: issue.title,
+      description: issue.body,
+      status: issueStateToTodoStatus(issue.state),
+      labels: issue.labels.map(l => l.name),
+      assignee: issue.assignees[0]?.login,
+      updatedAt: issue.updatedAt,
+    };
+  } else if (todoUpdatedAt > issueUpdatedAt) {
+    // ToDoが新しい → Issueを更新
+    await updateIssue(issue.id, {
+      title: todo.title,
+      body: todo.description,
+      state: todoStatusToIssueState(todo.status),
+    });
+    return todo;
+  }
+
+  // 同じタイムスタンプ → 同期不要
+  return todo;
+}
+```
+
+#### 成果物
+- `src/components/IssueSyncSettings.tsx`
+- `src/components/IssueImportDialog.tsx`
+- `src/utils/issueSyncWorker.ts` (バックグラウンド同期)
+
+---
+
+### フェーズ5: フィルター・ソート機能 (2-3h)
+
+#### 5.1 TodoFilters コンポーネント
+
+**ファイル**: `src/components/TodoFilters.tsx`
+
+**機能:**
+- ステータスフィルター（複数選択）
+- 優先度フィルター（複数選択）
+- リポジトリフィルター（複数選択）
+- ラベルフィルター
+- 期日フィルター（期限切れ/今日/今週/今月/カスタム範囲）
+- テキスト検索
+- フィルタークリア
+- フィルター保存（次回起動時に復元）
+
+**UI構成:**
+```
+┌─────────────────────────────────────────┐
+│ フィルター                              │
+├─────────────────────────────────────────┤
+│ ステータス:                             │
+│ ☑ 未着手  ☑ 進行中  ☐ 完了             │
+│                                         │
+│ 優先度:                                 │
+│ ☑ High  ☑ Medium  ☑ Low                │
+│                                         │
+│ リポジトリ: [すべて ▼]                 │
+│                                         │
+│ 期日:                                   │
+│ ○ すべて                                │
+│ ○ 期限切れ                              │
+│ ○ 今日                                  │
+│ ○ 今週                                  │
+│ ● カスタム [2025-11-17] 〜 [12-31]    │
+│                                         │
+│ [クリア] [適用]                        │
+└─────────────────────────────────────────┘
+```
+
+#### 5.2 ソート機能
+
+**実装:**
+```typescript
+function sortTodos(todos: Todo[], sortBy: TodoSort): Todo[] {
+  switch (sortBy) {
+    case 'priority':
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      return [...todos].sort((a, b) =>
+        priorityOrder[a.priority] - priorityOrder[b.priority]
+      );
+
+    case 'dueDate':
+      return [...todos].sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
+
+    case 'createdAt':
+      return [...todos].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+    case 'updatedAt':
+      return [...todos].sort((a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
+    case 'title':
+      return [...todos].sort((a, b) =>
+        a.title.localeCompare(b.title)
+      );
+  }
+}
+```
+
+#### 成果物
+- `src/components/TodoFilters.tsx`
+- `src/utils/todoFilters.ts`
+- `src/utils/todoSort.ts`
+
+---
+
+### フェーズ6: 統合・通知機能 (2-3h)
+
+#### 6.1 RepoCard統合
+
+**修正ファイル**: `src/components/RepoCard.tsx`
+
+**追加機能:**
+- ToDoバッジ表示（未完了件数）
+- クリックでそのリポジトリのToDoフィルタービューを開く
+- コンテキストメニューに「ToDoを追加」
+
+**UI:**
+```
+┌─────────────────────────────┐
+│ owner/repo-name    [🏷️] [3]│  ← 3: 未完了ToDo件数
+│ 説明文...                    │
+│ TypeScript  ⭐123           │
+└─────────────────────────────┘
+```
+
+#### 6.2 期限通知機能
+
+**実装:**
+- ブラウザ通知API使用
+- 通知タイミング:
+  - 期限当日の朝9時
+  - 期限1時間前
+  - 期限切れ直後
+- 通知設定（ON/OFF、タイミングカスタマイズ）
+
+**通知内容:**
+```
+📅 期限のお知らせ
+
+「認証機能の実装」の期限が今日です
+owner/repo-name
+
+[詳細を見る] [完了にする]
+```
+
+#### 6.3 統計ダッシュボード
+
+**ファイル**: `src/components/TodoDashboard.tsx`
+
+**機能:**
+- 全体統計表示
+  - 総タスク数
+  - ステータス別内訳（円グラフ）
+  - 優先度別内訳（棒グラフ）
+  - 期限別内訳（期限切れ/今日/今週/今月）
+- リポジトリ別統計
+  - リポジトリごとのタスク数
+  - 完了率
+- 進捗トレンド
+  - 週別完了タスク数（折れ線グラフ）
+  - 月別完了率
+
+**UI構成:**
+```
+┌─────────────────────────────────────────┐
+│ ToDo統計                                │
+├─────────────────────────────────────────┤
+│ 全体サマリー                            │
+│ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐       │
+│ │ 45  │ │ 12  │ │  8  │ │ 25  │       │
+│ │総数 │ │未着手│ │進行中│ │完了 │       │
+│ └─────┘ └─────┘ └─────┘ └─────┘       │
+│                                         │
+│ ステータス別      優先度別               │
+│ ┌─────────┐     ┌─────────┐           │
+│ │ ●未着手 │     │████ H   │           │
+│ │ ●進行中 │     │███ M    │           │
+│ │ ●完了   │     │█ L      │           │
+│ └─────────┘     └─────────┘           │
+│                                         │
+│ 期限別                                  │
+│ 期限切れ: 3件 🔴                        │
+│ 今日: 2件 🟡                            │
+│ 今週: 5件 🟢                            │
+│                                         │
+│ リポジトリ別タスク数                    │
+│ owner/repo-1: 15件 (完了率: 60%)       │
+│ owner/repo-2: 8件 (完了率: 75%)        │
+│ owner/repo-3: 12件 (完了率: 50%)       │
+└─────────────────────────────────────────┘
+```
+
+#### 成果物
+- 修正: `src/components/RepoCard.tsx`
+- `src/components/TodoNotification.tsx`
+- `src/components/TodoDashboard.tsx`
+- `src/utils/todoNotifications.ts`
+
+---
+
+### フェーズ7: 仕上げ・テスト (2-3h)
+
+#### 7.1 エラーハンドリング
+
+1. **Issue作成/更新エラー**
+   - 権限不足 → 権限確認案内
+   - ネットワークエラー → リトライ
+   - Issue重複 → 既存Issue選択
+
+2. **同期競合**
+   - GitHub優先（サーバー側が真実）
+   - 競合通知とマニュアル解決UI
+
+3. **データ不整合**
+   - Issueが削除された場合 → ToDo側の連携解除
+   - リポジトリが削除された場合 → ToDoも削除（確認付き）
+
+#### 7.2 パフォーマンス最適化
+
+1. **仮想スクロール**
+   - `react-window` 使用
+   - 大量ToDo（100+）でも滑らか
+
+2. **バックグラウンド同期**
+   - Web Worker使用
+   - UI操作をブロックしない
+
+3. **キャッシュ戦略**
+   - Issue情報のキャッシュ（5分）
+   - 同期結果のキャッシュ
+
+#### 7.3 アクセシビリティ
+
+1. **キーボード操作**
+   - `n`: 新規ToDo作成
+   - `f`: フィルター開く
+   - `/`: 検索フォーカス
+   - `Space`: チェックボックストグル
+   - `Enter`: ToDo詳細開く
+
+2. **ARIA属性**
+   - `role="list"` for TodoList
+   - `role="listitem"` for TodoItem
+   - `aria-label` for すべてのボタン
+   - `aria-live="polite"` for 通知
+
+3. **スクリーンリーダー**
+   - 適切なラベル
+   - 状態変更の音声フィードバック
+
+#### 7.4 テスト
+
+1. **ユニットテスト**
+   - todoStorage.ts
+   - issueSync.ts
+   - フィルター・ソートロジック
+
+2. **統合テスト**
+   - Issue作成フロー
+   - Issue同期フロー
+   - CRUD操作
+
+3. **E2Eテスト**
+   - ToDo作成 → Issue作成 → 同期
+   - Issue更新 → ToDo同期
+   - ToDo完了 → Issue自動クローズ
+
+#### 成果物
+- エラーハンドリング実装
+- パフォーマンス最適化
+- アクセシビリティ改善
+- テストコード
+
+---
+
+## 4. Issue連携の詳細仕様
+
+### 4.1 ToDoからIssue作成
+
+**マッピング:**
+```typescript
+Todo → GitHub Issue:
+- title → title
+- description → body
+- priority → label (priority:high, priority:medium, priority:low)
+- dueDate → milestone（該当する場合）
+- labels → labels
+```
+
+**Issue本文フォーマット:**
+```markdown
+<!-- DevBoard ToDo -->
+
+{todo.description}
+
+---
+
+**優先度**: {priority}
+**期日**: {dueDate}
+
+_この Issue は DevBoard から作成されました_
+```
+
+### 4.2 IssueからToDo作成
+
+**マッピング:**
+```typescript
+GitHub Issue → Todo:
+- title → title
+- body → description
+- state (OPEN/CLOSED) → status (todo/done)
+- labels → priority（priority:*ラベルから）+ labels
+- assignees[0] → assignee
+- createdAt → createdAt
+- updatedAt → updatedAt
+```
+
+**優先度判定:**
+```typescript
+function extractPriority(labels: string[]): TodoPriority {
+  if (labels.includes('priority:high')) return 'high';
+  if (labels.includes('priority:medium')) return 'medium';
+  if (labels.includes('priority:low')) return 'low';
+
+  // デフォルト: ラベルから推測
+  if (labels.some(l => /urgent|critical|blocker/i.test(l))) return 'high';
+  if (labels.some(l => /bug|enhancement/i.test(l))) return 'medium';
+  return 'low';
+}
+```
+
+### 4.3 同期競合の解決
+
+**競合検出:**
+- ToDoとIssueの両方が更新されている
+- `updatedAt` タイムスタンプで判定
+
+**解決戦略:**
+1. **サーバー優先（デフォルト）**: Issueの内容を採用
+2. **クライアント優先**: ToDoの内容を採用（設定で選択可能）
+3. **マニュアル解決**: ユーザーに選択させる
+
+**競合UI:**
+```
+┌─────────────────────────────────────────┐
+│ 同期競合の解決                          │
+├─────────────────────────────────────────┤
+│ ToDoとIssueの両方が更新されています。   │
+│ どちらの内容を採用しますか？            │
+│                                         │
+│ ○ Issue の内容を採用（推奨）            │
+│   タイトル: "認証機能の実装 v2"         │
+│   ステータス: Open                      │
+│   更新日時: 5分前                       │
+│                                         │
+│ ○ ToDo の内容を採用                     │
+│   タイトル: "認証機能の実装"            │
+│   ステータス: 進行中                    │
+│   更新日時: 10分前                      │
+│                                         │
+│            [Issue採用] [ToDo採用]       │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 5. UI/UXデザインガイドライン
+
+### 5.1 デザインシステム準拠
+
+**適用ルール:**
+- Typography: `text-body` (タイトル), `text-body-sm` (説明), `text-caption` (メタ情報)
+- Spacing: `gap-inline-md`, `p-inset-lg`
+- Focus: `focusRing` preset適用
+- Motion: Framer Motion使用、`motion-reduce:animate-none`
+- Metallic: ToDoパネルヘッダー、完了カードに使用
+
+### 5.2 カラースキーム
+
+**優先度カラー:**
+- High: `#EF4444` (red-500)
+- Medium: `#F97316` (orange-500)
+- Low: `#6B7280` (gray-500)
+
+**ステータスカラー:**
+- 未着手: `#6B7280` (gray-500)
+- 進行中: `#3B82F6` (blue-500)
+- 完了: `#22C55E` (green-500)
+
+**期日カラー:**
+- 期限切れ: `#EF4444` (red-500)
+- 今日: `#F59E0B` (amber-500)
+- 今週: `#3B82F6` (blue-500)
+- それ以降: `#6B7280` (gray-500)
+
+### 5.3 アニメーション
+
+**ToDoアイテム:**
+```typescript
+const todoVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 20 },
+};
+```
+
+**完了時のアニメーション:**
+```typescript
+const completionVariants = {
+  initial: { scale: 1 },
+  complete: {
+    scale: [1, 1.1, 1],
+    transition: { duration: 0.3 },
+  },
+};
+```
+
+**ドラッグ＆ドロップ:**
+```typescript
+const dragVariants = {
+  dragging: {
+    scale: 1.05,
+    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+    rotate: 2,
+  },
+};
+```
+
+---
+
+## 6. マイルストーン
+
+| フェーズ | 完了条件 | 見積もり |
+|---------|---------|---------|
+| Phase 1 | データ層・Issue同期API実装完了 | 2-3h |
+| Phase 2 | 基本UIコンポーネント動作 | 3-4h |
+| Phase 3 | ToDoボード（カンバン）実装完了 | 3-4h |
+| Phase 4 | Issue同期機能（双方向）動作 | 3-4h |
+| Phase 5 | フィルター・ソート機能実装 | 2-3h |
+| Phase 6 | 統合・通知機能実装 | 2-3h |
+| Phase 7 | エラーハンドリング・テスト完了 | 2-3h |
+
+**合計見積もり: 17-24時間**
+
+---
+
+## 7. テストシナリオ
+
+### 7.1 機能テスト
+
+1. **ToDo CRUD**
+   - [ ] ToDo作成
+   - [ ] ToDo編集
+   - [ ] ToDo削除
+   - [ ] ステータス変更
+   - [ ] 優先度変更
+   - [ ] 期日設定
+
+2. **Issue連携**
+   - [ ] ToDoからIssue作成
+   - [ ] IssueをToDoにインポート
+   - [ ] Issue更新時にToDo同期
+   - [ ] ToDo更新時にIssue同期
+   - [ ] ToDo完了時にIssue自動クローズ
+   - [ ] 同期競合の解決
+
+3. **フィルター・ソート**
+   - [ ] ステータスフィルター
+   - [ ] 優先度フィルター
+   - [ ] リポジトリフィルター
+   - [ ] 期日フィルター
+   - [ ] テキスト検索
+   - [ ] 優先度順ソート
+   - [ ] 期日順ソート
+
+4. **カンバンボード**
+   - [ ] ドラッグ＆ドロップでステータス変更
+   - [ ] カラムごとの件数表示
+   - [ ] カード追加
+
+5. **通知**
+   - [ ] 期限当日の通知
+   - [ ] 期限1時間前の通知
+   - [ ] 期限切れ通知
+
+### 7.2 統合テスト
+
+1. **エンドツーエンド**
+   - [ ] ToDo作成 → Issue作成 → 同期確認
+   - [ ] Issue作成 → 自動インポート → ToDo表示
+   - [ ] ToDo完了 → Issue自動クローズ → 同期確認
+
+2. **エラーケース**
+   - [ ] Issue作成失敗時の処理
+   - [ ] 同期失敗時のリトライ
+   - [ ] 権限不足の処理
+   - [ ] ネットワークエラーの処理
+
+---
+
+## 8. セキュリティ考慮事項
+
+### 8.1 GitHub権限
+
+**必要なスコープ:**
+- `repo`: プライベートリポジトリのIssue操作
+- `public_repo`: パブリックリポジトリのIssue操作
+
+**権限チェック:**
+```typescript
+async function checkIssuePermissions(repoId: string): Promise<boolean> {
+  try {
+    // テスト用にIssueラベル取得を試行
+    await fetchIssueLabels(repoId);
+    return true;
+  } catch (error) {
+    if (error.status === 403) return false;
+    throw error;
+  }
+}
+```
+
+### 8.2 データ検証
+
+**入力検証:**
+```typescript
+function validateTodo(todo: Partial<Todo>): string[] {
+  const errors: string[] = [];
+
+  if (!todo.title || todo.title.trim().length === 0) {
+    errors.push('タイトルは必須です');
+  }
+
+  if (todo.title && todo.title.length > 200) {
+    errors.push('タイトルは200文字以内にしてください');
+  }
+
+  if (todo.description && todo.description.length > 10000) {
+    errors.push('説明は10000文字以内にしてください');
+  }
+
+  if (todo.dueDate) {
+    const dueDate = new Date(todo.dueDate);
+    if (isNaN(dueDate.getTime())) {
+      errors.push('期日の形式が正しくありません');
+    }
+  }
+
+  return errors;
+}
+```
+
+---
+
+## 9. コスト・パフォーマンス管理
+
+### 9.1 API使用量の最適化
+
+**戦略:**
+1. **バッチ処理**: 複数ToDoの同期を一度のAPI呼び出しにまとめる
+2. **キャッシュ**: Issue情報を5分間キャッシュ
+3. **差分同期**: 変更されたToDoのみ同期
+4. **レート制限遵守**: GitHub API制限（5000 req/hour）内で運用
+
+**実装:**
+```typescript
+// バッチ同期
+async function batchSyncTodos(todos: Todo[]): Promise<SyncResult[]> {
+  const changedTodos = todos.filter(needsSync);
+
+  // 10件ずつバッチ処理
+  const batches = chunk(changedTodos, 10);
+  const results: SyncResult[] = [];
+
+  for (const batch of batches) {
+    const batchResults = await Promise.all(
+      batch.map(todo => syncTodoWithIssue(todo))
+    );
+    results.push(...batchResults);
+
+    // レート制限対策: 100ms待機
+    await sleep(100);
+  }
+
+  return results;
+}
+```
+
+### 9.2 ストレージ最適化
+
+**容量見積もり:**
+- 1ToDo: ~500 bytes
+- 100ToDo: ~50KB
+- 1000ToDo: ~500KB
+
+**クリーンアップ戦略:**
+- 完了から30日経過したToDoを自動アーカイブ
+- アーカイブから90日経過したToDoを削除（確認付き）
+
+---
+
+## 10. 将来の拡張計画
+
+### 10.1 追加機能
+
+1. **サブタスク**
+   - ToDoを階層化
+   - 親タスクの進捗を子タスクから自動計算
+
+2. **リカーリングタスク**
+   - 定期的に発生するタスク（毎週、毎月等）
+   - 自動生成
+
+3. **テンプレート**
+   - よく使うタスクをテンプレート化
+   - 「新機能実装」「バグ修正」等のテンプレート
+
+4. **時間トラッキング**
+   - 作業時間の記録
+   - タスクごとの実績時間
+
+5. **コメント機能**
+   - ToDo内でのディスカッション
+   - Issueコメントとの同期
+
+### 10.2 チーム機能
+
+1. **担当者管理**
+   - チームメンバーへのタスク割り当て
+   - 担当者別ビュー
+
+2. **共有ToDo**
+   - チーム全体で見えるToDoボード
+   - リアルタイム同期
+
+3. **進捗レポート**
+   - チーム全体の進捗レポート
+   - 個人別のパフォーマンス分析
+
+### 10.3 他サービス連携
+
+1. **Slack連携**
+   - ToDo作成/完了通知
+   - Slackから直接ToDo操作
+
+2. **カレンダー連携**
+   - Google Calendar等と同期
+   - 期日をカレンダーに表示
+
+3. **Jira連携**
+   - Jiraチケットとの同期
+   - 双方向連携
+
+---
+
+## 11. 実装時の注意事項
+
+### 11.1 必須確認事項
+
+- [ ] GitHub OAuth scopeに `repo` が含まれているか確認
+- [ ] Issue操作の権限確認
+- [ ] 既存のRepoCard、RepoBoard実装の確認
+- [ ] Web Worker対応ブラウザの確認
+
+### 11.2 依存関係
+
+**新規追加パッケージ:**
+```json
+{
+  "@dnd-kit/core": "^6.0.0",           // ドラッグ＆ドロップ
+  "@dnd-kit/sortable": "^7.0.0",       // ソート可能リスト
+  "react-window": "^1.8.0",            // 仮想スクロール
+  "date-fns": "^2.30.0",               // 日付処理
+  "uuid": "^9.0.0",                    // UUID生成
+  "marked": "^11.0.0"                  // Markdown表示（AI統合と共通）
+}
+```
+
+### 11.3 環境変数
+
+```bash
+# .env.local
+# Issue同期設定
+ISSUE_SYNC_ENABLED=true
+ISSUE_SYNC_INTERVAL_MINUTES=15
+ISSUE_AUTO_CLOSE_ENABLED=false
+```
+
+---
+
+## 12. 参考資料
+
+- [GitHub Issues API](https://docs.github.com/en/rest/issues)
+- [GitHub GraphQL API](https://docs.github.com/en/graphql)
+- [@dnd-kit Documentation](https://docs.dndkit.com/)
+- [React Window](https://react-window.vercel.app/)
+- [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API)
+
+---
+
+**ドキュメント終了**

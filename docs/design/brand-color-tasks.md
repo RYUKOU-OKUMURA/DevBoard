@@ -110,7 +110,7 @@
 - [x] ブラウザ設定で `prefers-reduced-motion` をテスト
 
 #### タスク 0.3.4: 標準トランジションパターンをドキュメント化（10分）
-- [x] `docs/design-system-guidelines.md` 作成
+- [x] `docs/design/design-system-guidelines.md` 作成
 - [x] ホバー、アクティブ、フォーカス状態の標準パターンを記述
 - [x] コード例を追加
 
