@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Repo } from '../types';
-import {
-  getManualRepos,
-  saveManualRepos,
-  removeManualRepos,
-  clearManualRepos,
-} from '../utils/manualRepoStorage';
+import { getManualRepos, saveManualRepos, removeManualRepos, clearManualRepos } from '../utils/manualRepoStorage';
 import {
   getManualColumnConfig,
   saveManualColumnConfig,
@@ -17,55 +12,29 @@ import {
 import { RepoColumn } from './RepoColumn';
 import { ColumnSettingsModal } from './ColumnSettingsModal';
 import { RepoCard } from './RepoCard';
+import { confirmDestructiveAction } from '../utils/confirmDialog';
 
 interface ManualRepoBoardProps {
   onStatsUpdate?: (manualRepoCount: number) => void;
-  // Props from App.tsx (optional - for controlled mode)
   manualRepos?: Repo[];
-  selectedRepoIds?: Set<string>;
-  manualColumns?: string[];
   onReposChange?: (repos: Repo[]) => void;
-  onSelectedReposChange?: (ids: Set<string>) => void;
-  onColumnsChange?: (columns: string[]) => void;
 }
 
 export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   onStatsUpdate,
   manualRepos: externalManualRepos,
-  selectedRepoIds: externalSelectedRepoIds,
-  manualColumns: externalManualColumns,
   onReposChange,
-  onSelectedReposChange,
-  onColumnsChange,
 }) => {
   // Use external props if provided, otherwise use internal state
   const [internalManualRepos, setInternalManualRepos] = useState<Repo[]>([]);
-  const [internalSelectedRepos, setInternalSelectedRepos] = useState<Set<string>>(new Set());
-  
+
   const manualRepos = externalManualRepos ?? internalManualRepos;
-  const selectedRepos = externalSelectedRepoIds ?? internalSelectedRepos;
-  
+
   const setManualRepos = (repos: Repo[]) => {
     if (onReposChange) {
       onReposChange(repos);
     } else {
       setInternalManualRepos(repos);
-    }
-  };
-  
-  const setSelectedRepos = (ids: Set<string> | ((prev: Set<string>) => Set<string>)) => {
-    if (onSelectedReposChange) {
-      if (typeof ids === 'function') {
-        onSelectedReposChange(ids(selectedRepos));
-      } else {
-        onSelectedReposChange(ids);
-      }
-    } else {
-      if (typeof ids === 'function') {
-        setInternalSelectedRepos(ids);
-      } else {
-        setInternalSelectedRepos(ids);
-      }
     }
   };
 
@@ -78,6 +47,19 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [orderMap, setOrderMap] = useState<Record<ManualColumnKey, string[]>>({});
+  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
+
+  const persistRemoval = (ids: string[]) => {
+    if (!externalManualRepos && ids.length > 0) {
+      removeManualRepos(ids);
+    }
+  };
+
+  const persistClear = () => {
+    if (!externalManualRepos) {
+      clearManualRepos();
+    }
+  };
 
   // Initialize orderMap from columnConfig
   useEffect(() => {
@@ -97,39 +79,13 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     if (!externalManualRepos) {
       const repos = getManualRepos();
       setInternalManualRepos(repos);
-      if (onStatsUpdate) {
-        onStatsUpdate(repos.length);
-      }
-    } else {
-      // If external repos are provided, just notify parent of count
-      if (onStatsUpdate) {
-        onStatsUpdate(externalManualRepos.length);
-      }
+      onStatsUpdate?.(repos.length);
     }
   }, [externalManualRepos, onStatsUpdate]);
 
-  // Sync external columns to columnConfig when changed externally
   useEffect(() => {
-    if (externalManualColumns && externalManualColumns.length > 0) {
-      const currentConfig = getManualColumnConfig();
-      const newColumns = externalManualColumns.filter(col => !currentConfig.columns.includes(col));
-      if (newColumns.length > 0 || externalManualColumns.length !== currentConfig.columns.length) {
-        const updatedConfig = {
-          ...currentConfig,
-          columns: externalManualColumns,
-        };
-        // Add new columns to config if needed
-        newColumns.forEach(col => {
-          updatedConfig.columnTitles[col] = col;
-          updatedConfig.columnOrder[col] = [];
-        });
-        setColumnConfig(updatedConfig);
-        if (onColumnsChange) {
-          onColumnsChange(externalManualColumns);
-        }
-      }
-    }
-  }, [externalManualColumns, onColumnsChange]);
+    onStatsUpdate?.(manualRepos.length);
+  }, [manualRepos.length, onStatsUpdate]);
 
   // Persist changes (only if not controlled by props)
   useEffect(() => {
@@ -140,15 +96,24 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
 
   useEffect(() => {
     saveManualColumnConfig(columnConfig);
-    // Notify parent of column changes
-    if (onColumnsChange) {
-      onColumnsChange(columnConfig.columns);
-    }
-  }, [columnConfig, onColumnsChange]);
+  }, [columnConfig]);
 
   useEffect(() => {
     saveManualColumnAssignments(columnAssignments);
   }, [columnAssignments]);
+
+  useEffect(() => {
+    setSelectedRepos((prev) => {
+      const validIds = new Set(manualRepos.map((repo) => repo.id));
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (validIds.has(id)) {
+          next.add(id);
+        }
+      });
+      return next;
+    });
+  }, [manualRepos]);
 
   useEffect(() => {
     if (Object.keys(orderMap).length > 0) {
@@ -226,57 +191,38 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
       return;
     }
 
-    // 二重確認
-    const firstConfirm = window.confirm(
-      `選択した ${selectedRepos.size} 件のリポジトリを削除しますか？`
-    );
-    if (!firstConfirm) {
+    const confirmed = confirmDestructiveAction({
+      title: `選択した ${selectedRepos.size} 件のリポジトリを削除しますか？`,
+      confirmWarning: 'この操作は取り消せません。本当に削除しますか？',
+    });
+    if (!confirmed) {
       return;
     }
 
-    const secondConfirm = window.confirm(
-      'この操作は取り消せません。本当に削除しますか？'
-    );
-    if (!secondConfirm) {
-      return;
-    }
-
-    removeManualRepos(Array.from(selectedRepos));
-    const updatedRepos = getManualRepos();
+    const ids = Array.from(selectedRepos);
+    persistRemoval(ids);
+    const updatedRepos = manualRepos.filter((repo) => !selectedRepos.has(repo.id));
     setManualRepos(updatedRepos);
     setSelectedRepos(new Set());
-    
-    // Notify parent
-    if (onStatsUpdate) {
-      onStatsUpdate(updatedRepos.length);
-    }
   };
 
   const handleDeleteRepo = (repoId: string) => {
-    // 二重確認
-    const firstConfirm = window.confirm('このリポジトリを削除しますか？');
-    if (!firstConfirm) {
+    const confirmed = confirmDestructiveAction({
+      title: 'このリポジトリを削除しますか？',
+      confirmWarning: 'この操作は取り消せません。本当に削除しますか？',
+    });
+    if (!confirmed) {
       return;
     }
 
-    const secondConfirm = window.confirm('この操作は取り消せません。本当に削除しますか？');
-    if (!secondConfirm) {
-      return;
-    }
-
-    removeManualRepos([repoId]);
-    const updatedRepos = getManualRepos();
+    persistRemoval([repoId]);
+    const updatedRepos = manualRepos.filter((repo) => repo.id !== repoId);
     setManualRepos(updatedRepos);
     setSelectedRepos((prev: Set<string>) => {
       const next = new Set(prev);
       next.delete(repoId);
       return next;
     });
-    
-    // Notify parent
-    if (onStatsUpdate) {
-      onStatsUpdate(updatedRepos.length);
-    }
   };
 
   const handleToggleDeleteMode = () => {
@@ -288,31 +234,19 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   };
 
   const handleClearAll = () => {
-    // 二重確認
-    const firstConfirm = window.confirm(
-      `すべてのリポジトリ（${manualRepos.length} 件）を削除しますか？`
-    );
-    if (!firstConfirm) {
+    const confirmed = confirmDestructiveAction({
+      title: `すべてのリポジトリ（${manualRepos.length} 件）を削除しますか？`,
+      confirmWarning: 'この操作は取り消せません。本当にすべてのリポジトリを削除しますか？',
+    });
+    if (!confirmed) {
       return;
     }
 
-    const secondConfirm = window.confirm(
-      'この操作は取り消せません。本当にすべてのリポジトリを削除しますか？'
-    );
-    if (!secondConfirm) {
-      return;
-    }
-
-    clearManualRepos();
+    persistClear();
     const updatedRepos: Repo[] = [];
     setManualRepos(updatedRepos);
     setSelectedRepos(new Set());
     setIsDeleteMode(false);
-    
-    // Notify parent
-    if (onStatsUpdate) {
-      onStatsUpdate(0);
-    }
   };
 
   const handleReorderWithinColumn = (col: ManualColumnKey, fromId: string, toId?: string) => {
