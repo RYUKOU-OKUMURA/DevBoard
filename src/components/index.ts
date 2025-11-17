@@ -10,3 +10,5 @@ export { AddRepoModal } from './AddRepoModal';
 export { UpdatesTab } from './UpdatesTab';
 export { ManualRepoBoard } from './ManualRepoBoard';
 export { ColumnSettingsModal } from './ColumnSettingsModal';
+export { AISettings } from './AISettings';
+export { AIPanel } from './AIPanel';

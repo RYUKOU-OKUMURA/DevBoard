@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard } from './components';
+import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard, AIPanel, AISettings } from './components';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import AccountSwitcher from './components/AccountSwitcher';
@@ -16,6 +16,7 @@ import { getManualRepos, addMultipleManualRepos } from './utils/manualRepoStorag
 import { getManualColumnConfig } from './utils/manualColumnStorage';
 import { getStorageString, setStorageString } from './utils/storage';
 import { devError } from './utils/logger';
+import { focusRing } from './lib/focusRing';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -75,6 +76,8 @@ function AppContent() {
 
   // Modal state
   const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
+  const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
 
   // Save active tab to localStorage
   useEffect(() => {
@@ -483,6 +486,36 @@ function AppContent() {
         onSubmit={handleManualRepoSubmit}
         isLoading={isSavingManualRepos}
       />
+
+      {/* AI Chat Panel */}
+      <AIPanel
+        isOpen={isAIPanelOpen}
+        onClose={() => setIsAIPanelOpen(false)}
+        onOpenSettings={() => {
+          setIsAIPanelOpen(false);
+          setIsAISettingsOpen(true);
+        }}
+      />
+
+      {/* AI Settings Modal */}
+      <AISettings
+        isOpen={isAISettingsOpen}
+        onClose={() => setIsAISettingsOpen(false)}
+      />
+
+      {/* Floating AI Button */}
+      <button
+        onClick={() => setIsAIPanelOpen(true)}
+        className={`fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-br from-brand-purple to-brand-red
+          shadow-2xl hover:scale-110 transition-transform duration-200 flex items-center justify-center
+          ${focusRing.default} ${focusRing.brand} z-40`}
+        aria-label="AIアシスタントを開く"
+        title="AIアシスタント"
+      >
+        <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      </button>
     </div>
   );
 }

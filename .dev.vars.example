@@ -9,3 +9,8 @@ GITHUB_CLIENT_SECRET=your_dev_client_secret_here
 # Generate with: openssl rand -hex 32
 SESSION_SECRET=your_random_32_character_session_secret_here
 ENCRYPTION_KEY=your_random_32_character_encryption_key_here
+
+# AI Integration (Optional - for server-side API key)
+# Get from: https://console.anthropic.com/
+# Note: Users can also provide their own API key in the UI settings
+ANTHROPIC_API_KEY=sk-ant-your_api_key_here
