@@ -6,6 +6,10 @@ import { motion } from 'framer-motion';
 import React, { useState } from 'react';
 import type { Todo } from '../types';
 import { focusRing } from '../lib/focusRing';
+import { AIInstructionDialog } from './AIInstructionDialog';
+import { AIStatusBadge } from './AIStatusBadge';
+import { useGitHubActions } from '../hooks/useGitHubActions';
+import type { GitHubBot } from '../types/githubActions';
 
 interface TodoItemProps {
   todo: Todo;
@@ -25,6 +29,21 @@ export const TodoItem: React.FC<TodoItemProps> = ({
   repoName,
 }) => {
   const [showActions, setShowActions] = useState(false);
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
+
+  // GitHub Actions AI integration (only if issue is linked)
+  const {
+    workflowStatus,
+    isLoading: isAILoading,
+    error: aiError,
+    triggerBot,
+    clearError,
+  } = useGitHubActions({
+    todoId: todo.id,
+    repoId: todo.repoId,
+    issueNumber: todo.issueNumber,
+    autoLoadHistory: true,
+  });
 
   // Priority colors
   const priorityColors = {
@@ -71,6 +90,16 @@ export const TodoItem: React.FC<TodoItemProps> = ({
     if (window.confirm('このToDoを削除しますか？')) {
       onDelete();
     }
+  };
+
+  const handleAIClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsAIDialogOpen(true);
+  };
+
+  const handleAISubmit = async (bot: GitHubBot, instruction?: string) => {
+    await triggerBot(bot, instruction);
+    setIsAIDialogOpen(false);
   };
 
   // Format due date
@@ -231,6 +260,35 @@ export const TodoItem: React.FC<TodoItemProps> = ({
               </span>
             )}
           </div>
+
+          {/* AI Integration (only if issue is linked) */}
+          {todo.issueNumber && (
+            <div className="flex items-center gap-inline-sm mt-stack-sm pt-stack-sm border-t border-[var(--border-subtle)]">
+              <button
+                onClick={handleAIClick}
+                disabled={isAILoading}
+                className={`
+                  px-inset-sm py-inset-xs rounded-md text-caption
+                  bg-brand-purple/10 text-brand-purple
+                  hover:bg-brand-purple/20 transition
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+                  focus-visible:ring-brand-purple focus-visible:ring-offset-[var(--bg-secondary)]
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                `}
+                aria-label="AIで実装"
+              >
+                🤖 AIで実装
+              </button>
+
+              <AIStatusBadge status={workflowStatus || undefined} isLoading={isAILoading} />
+
+              {aiError && (
+                <span className="text-caption text-[#EF4444]" role="alert">
+                  {aiError}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions (shown on hover) */}
@@ -271,6 +329,19 @@ export const TodoItem: React.FC<TodoItemProps> = ({
           </motion.div>
         )}
       </div>
+
+      {/* AI Instruction Dialog */}
+      {todo.issueNumber && (
+        <AIInstructionDialog
+          isOpen={isAIDialogOpen}
+          onClose={() => {
+            setIsAIDialogOpen(false);
+            clearError();
+          }}
+          onSubmit={handleAISubmit}
+          isLoading={isAILoading}
+        />
+      )}
     </motion.div>
   );
 };
