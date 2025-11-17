@@ -16,6 +16,8 @@ interface RepoCardProps {
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
   columnKey?: ColumnKey | string;
+  todoCount?: number;
+  onTodoClick?: (repoId: string) => void;
 }
 
 export const RepoCard: React.FC<RepoCardProps> = ({
@@ -27,6 +29,8 @@ export const RepoCard: React.FC<RepoCardProps> = ({
   onSelect,
   onDelete,
   columnKey,
+  todoCount = 0,
+  onTodoClick,
 }) => {
   const { getTagObjectsForRepo } = useTags();
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
@@ -77,6 +81,13 @@ export const RepoCard: React.FC<RepoCardProps> = ({
   const handleTagEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsTagSelectorOpen(true);
+  };
+
+  const handleTodoBadgeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onTodoClick) {
+      onTodoClick(repo.id);
+    }
   };
 
   // Extract owner and repo name
@@ -191,6 +202,21 @@ export const RepoCard: React.FC<RepoCardProps> = ({
             <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-caption font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm transition-colors">
               Public
             </span>
+          )}
+
+          {/* TODO Badge */}
+          {todoCount > 0 && (
+            <button
+              onClick={handleTodoBadgeClick}
+              className={`inline-flex items-center gap-inline-xs px-inset-sm py-inline-xs rounded-lg text-caption font-medium bg-[var(--brand-purple-soft)] text-[var(--brand-purple-emphasis)] border border-[var(--brand-purple)] shadow-sm transition-all hover:bg-[var(--brand-purple)] hover:text-white ${focusRing.default} ${focusRing.brand}`}
+              title="View TODOs for this repository"
+              aria-label={`${todoCount} TODOs for ${repo.nameWithOwner}`}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+              </svg>
+              <span>{todoCount}</span>
+            </button>
           )}
 
           {/* Tag Edit Button */}
