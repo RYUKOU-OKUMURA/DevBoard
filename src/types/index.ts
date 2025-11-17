@@ -80,3 +80,6 @@ export interface ToastMessage {
 
 // Export ToDo types
 export * from './todo';
+
+// Export GitHub Actions AI integration types
+export * from './githubActions';
