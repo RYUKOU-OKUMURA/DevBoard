@@ -1,8 +1,11 @@
 import { motion } from 'framer-motion';
-import React from 'react';
+import React, { useState } from 'react';
 import { ColumnKey, Repo } from '../types';
 import { timeAgo } from '../lib/timeAgo';
 import { focusRing } from '../lib/focusRing';
+import { useTags } from '../hooks/useTags';
+import { TagBadgeList } from './TagBadge';
+import { TagSelector } from './TagSelector';
 
 interface RepoCardProps {
   repo: Repo;
@@ -25,6 +28,12 @@ export const RepoCard: React.FC<RepoCardProps> = ({
   onDelete,
   columnKey,
 }) => {
+  const { getTagObjectsForRepo } = useTags();
+  const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
+
+  // Get tags for this repository
+  const repoTags = getTagObjectsForRepo(repo.id);
+
   const handleClick = () => {
     window.open(repo.htmlUrl, '_blank', 'noopener,noreferrer');
   };
@@ -63,6 +72,11 @@ export const RepoCard: React.FC<RepoCardProps> = ({
     if (onDelete) {
       onDelete(repo.id);
     }
+  };
+
+  const handleTagEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsTagSelectorOpen(true);
   };
 
   // Extract owner and repo name
@@ -179,6 +193,18 @@ export const RepoCard: React.FC<RepoCardProps> = ({
             </span>
           )}
 
+          {/* Tag Edit Button */}
+          <button
+            onClick={handleTagEditClick}
+            className={`inline-flex items-center justify-center w-5 h-5 rounded-lg hover:bg-surface-hover text-[var(--text-muted)] hover:text-brand-purple transition-colors opacity-0 group-hover:opacity-100 ${focusRing.default} ${focusRing.brand}`}
+            title="Edit tags"
+            aria-label="Edit repository tags"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+          </button>
+
           {/* Delete Button */}
           {showDeleteButton && onDelete && (
             <button
@@ -250,7 +276,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
 
       {/* Topics */}
       {displayTopics.length > 0 && (
-        <div className="flex flex-wrap gap-inline-sm">
+        <div className="flex flex-wrap gap-inline-sm mb-stack-sm">
           {displayTopics.map((topic) => (
             <span
               key={topic}
@@ -266,6 +292,25 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           )}
         </div>
       )}
+
+      {/* Tags */}
+      {repoTags.length > 0 && (
+        <div className="pt-stack-xs border-t border-[var(--border-subtle)]">
+          <TagBadgeList
+            tags={repoTags}
+            maxVisible={3}
+            size="sm"
+          />
+        </div>
+      )}
+
+      {/* Tag Selector Modal */}
+      <TagSelector
+        isOpen={isTagSelectorOpen}
+        onClose={() => setIsTagSelectorOpen(false)}
+        repoId={repo.id}
+        repoName={repo.nameWithOwner}
+      />
     </motion.div>
   );
 };
