@@ -32,7 +32,7 @@ import {
   syncTodosWithIssues,
   exportTodoAsIssue,
 } from '../utils/issueSync';
-import { useAuth } from './useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Hook options
@@ -509,7 +509,3 @@ function applySortOrder(todos: Todo[], sort: TodoSort): Todo[] {
 /**
  * Hook to use auth context
  */
-function useAuth() {
-  const context = require('../contexts/AuthContext').useAuth();
-  return context;
-}
