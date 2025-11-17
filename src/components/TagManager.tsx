@@ -117,6 +117,7 @@ export function TagManager({ isOpen, onClose }: TagManagerProps) {
       onClose={onClose}
       title="Tag Management"
       className="max-w-2xl"
+      tone="light"
     >
       <div className="space-y-stack-lg">
         {/* Create New Tag Form */}

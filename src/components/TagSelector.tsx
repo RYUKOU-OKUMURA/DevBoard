@@ -99,6 +99,7 @@ export function TagSelector({
       onClose={onClose}
       title={`Select Tags - ${repoName}`}
       className="max-w-lg"
+      tone="light"
     >
       <div className="space-y-stack-lg">
         {/* Available Tags */}
