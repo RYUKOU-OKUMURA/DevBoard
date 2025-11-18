@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Repo } from '../types';
+import { Repo, SortOrder } from '../types';
 import { getManualRepos, saveManualRepos, removeManualRepos, clearManualRepos } from '../utils/manualRepoStorage';
 import {
   getManualColumnConfig,
@@ -13,6 +13,9 @@ import { RepoColumn } from './RepoColumn';
 import { ColumnSettingsModal } from './ColumnSettingsModal';
 import { RepoCard } from './RepoCard';
 import { confirmDestructiveAction } from '../utils/confirmDialog';
+import { useTagsContext } from '../contexts/TagsContext';
+import { searchAndSortRepos } from '../utils/search';
+import { TopBar } from './TopBar';
 
 interface ManualRepoBoardProps {
   onStatsUpdate?: (manualRepoCount: number) => void;
@@ -25,6 +28,8 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   manualRepos: externalManualRepos,
   onReposChange,
 }) => {
+  const { getTagObjectsForRepo } = useTagsContext();
+  
   // Use external props if provided, otherwise use internal state
   const [internalManualRepos, setInternalManualRepos] = useState<Repo[]>([]);
 
@@ -48,6 +53,8 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [orderMap, setOrderMap] = useState<Record<ManualColumnKey, string[]>>({});
   const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
 
   const persistRemoval = (ids: string[]) => {
     if (!externalManualRepos && ids.length > 0) {
@@ -125,6 +132,11 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     }
   }, [orderMap]);
 
+  // Filter and sort repos based on search query and sort order
+  const filteredRepos = useMemo(() => {
+    return searchAndSortRepos(manualRepos, searchQuery, sortOrder, getTagObjectsForRepo);
+  }, [manualRepos, searchQuery, sortOrder, getTagObjectsForRepo]);
+
   // Classify repos by column
   const classifiedRepos = useMemo(() => {
     const result: Record<ManualColumnKey, Repo[]> = {};
@@ -133,7 +145,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
       result[col] = [];
     });
 
-    manualRepos.forEach((repo) => {
+    filteredRepos.forEach((repo) => {
       const assignedCol = columnAssignments[repo.id];
       const column = assignedCol || columnConfig.columns[0];
 
@@ -144,7 +156,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     });
 
     return result;
-  }, [manualRepos, columnAssignments, columnConfig]);
+  }, [filteredRepos, columnAssignments, columnConfig]);
 
   // Get ordered repos for a column
   const getOrderedRepos = (col: ManualColumnKey): Repo[] => {
@@ -370,47 +382,54 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
     );
   }
 
+  // Calculate filtered count for display
+  const filteredCount = Object.values(classifiedRepos).reduce(
+    (sum, columnRepos) => sum + columnRepos.length,
+    0
+  );
+
   return (
     <div className="h-screen flex flex-col bg-surface-app transition-colors">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-8 py-4 bg-surface-primary border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-4">
-          <h2 className="text-title-3 font-semibold text-[var(--text-primary)]">
-            追加したリポジトリ ({manualRepos.length})
-          </h2>
-        </div>
+      {/* TopBar with Search and Sort */}
+      <TopBar
+        title={`追加したリポジトリ (${manualRepos.length})`}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        sortOrder={sortOrder}
+        onSortChange={setSortOrder}
+        totalRepos={manualRepos.length}
+        filteredCount={filteredCount}
+        onOpenColumnSettings={() => setIsSettingsModalOpen(true)}
+      />
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] hover:bg-[var(--accent-blue-hover)] transition-colors font-medium text-body-sm border border-[var(--accent-blue-border)]"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            列の管理
-          </button>
-          {manualRepos.length > 0 && (
-            <>
+      {/* Additional Toolbar for ManualRepoBoard specific actions */}
+      {manualRepos.length > 0 && (
+        <div className="flex items-center justify-end px-8 py-2 bg-surface-primary border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleDeleteMode}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-body-sm border ${
+                isDeleteMode
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-300'
+                  : 'bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] hover:bg-[var(--accent-red-hover)] border-[var(--accent-red-border)]'
+              }`}
+              title={isDeleteMode ? '削除操作を終了' : '削除操作を開始'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              削除操作
+            </button>
+            {isDeleteMode && selectedRepos.size === manualRepos.length && (
               <button
-                onClick={handleToggleDeleteMode}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium text-body-sm border ${
-                  isDeleteMode
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200 border-red-300'
-                    : 'bg-[var(--accent-red-muted)] text-[var(--accent-red-emphasis)] hover:bg-[var(--accent-red-hover)] border-[var(--accent-red-border)]'
-                }`}
-                title={isDeleteMode ? '削除操作を終了' : '削除操作を開始'}
+                onClick={handleClearAll}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-body-sm border border-red-300"
+                title="すべてのリポジトリを削除"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -420,29 +439,12 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
-                削除操作
+                すべてクリア
               </button>
-              {isDeleteMode && selectedRepos.size === manualRepos.length && (
-                <button
-                  onClick={handleClearAll}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors font-medium text-body-sm border border-red-300"
-                  title="すべてのリポジトリを削除"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                  すべてクリア
-                </button>
-              )}
-            </>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Board Columns */}
       <div className="flex-1 flex gap-inline-lg p-inset-md overflow-x-auto relative">

@@ -4,6 +4,9 @@
 
 import type { Tag, RepoTagsMap } from '../types/tag';
 
+// Tag scope types
+export type TagScope = 'kanban' | 'manual';
+
 // Storage keys
 const TAGS_STORAGE_KEY = 'github-dashboard-tags';
 const REPO_TAGS_STORAGE_KEY = 'github-dashboard-repo-tags';
@@ -20,20 +23,20 @@ function generateUUID(): string {
 }
 
 /**
- * Get storage key with account ID
+ * Get storage key with account ID and scope
  */
-function getStorageKey(baseKey: string, accountId: string): string {
-  return `${baseKey}:${accountId}`;
+function getStorageKey(baseKey: string, accountId: string, scope: TagScope): string {
+  return `${baseKey}:${scope}:${accountId}`;
 }
 
 // ==================== Tag CRUD Operations ====================
 
 /**
- * Get all tags for an account
+ * Get all tags for an account and scope
  */
-export function getTags(accountId: string): Tag[] {
+export function getTags(accountId: string, scope: TagScope): Tag[] {
   try {
-    const key = getStorageKey(TAGS_STORAGE_KEY, accountId);
+    const key = getStorageKey(TAGS_STORAGE_KEY, accountId, scope);
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
   } catch (error) {
@@ -43,11 +46,11 @@ export function getTags(accountId: string): Tag[] {
 }
 
 /**
- * Save tags for an account
+ * Save tags for an account and scope
  */
-export function saveTags(accountId: string, tags: Tag[]): void {
+export function saveTags(accountId: string, scope: TagScope, tags: Tag[]): void {
   try {
-    const key = getStorageKey(TAGS_STORAGE_KEY, accountId);
+    const key = getStorageKey(TAGS_STORAGE_KEY, accountId, scope);
     localStorage.setItem(key, JSON.stringify(tags));
   } catch (error) {
     console.error('Failed to save tags:', error);
@@ -60,10 +63,11 @@ export function saveTags(accountId: string, tags: Tag[]): void {
  */
 export function createTag(
   accountId: string,
+  scope: TagScope,
   name: string,
   color: string
 ): Tag {
-  const tags = getTags(accountId);
+  const tags = getTags(accountId, scope);
 
   // Check for duplicate names
   const normalizedName = name.trim().toLowerCase();
@@ -94,7 +98,7 @@ export function createTag(
 
   // Save
   const updatedTags = [...tags, newTag];
-  saveTags(accountId, updatedTags);
+  saveTags(accountId, scope, updatedTags);
 
   return newTag;
 }
@@ -104,10 +108,11 @@ export function createTag(
  */
 export function updateTag(
   accountId: string,
+  scope: TagScope,
   tagId: string,
   updates: Partial<Omit<Tag, 'id' | 'createdAt'>>
 ): Tag {
-  const tags = getTags(accountId);
+  const tags = getTags(accountId, scope);
   const tagIndex = tags.findIndex((t) => t.id === tagId);
 
   if (tagIndex === -1) {
@@ -140,7 +145,7 @@ export function updateTag(
 
   const updatedTags = [...tags];
   updatedTags[tagIndex] = updatedTag;
-  saveTags(accountId, updatedTags);
+  saveTags(accountId, scope, updatedTags);
 
   return updatedTag;
 }
@@ -148,13 +153,13 @@ export function updateTag(
 /**
  * Delete a tag
  */
-export function deleteTag(accountId: string, tagId: string): void {
-  const tags = getTags(accountId);
+export function deleteTag(accountId: string, scope: TagScope, tagId: string): void {
+  const tags = getTags(accountId, scope);
   const updatedTags = tags.filter((tag) => tag.id !== tagId);
-  saveTags(accountId, updatedTags);
+  saveTags(accountId, scope, updatedTags);
 
   // Also remove this tag from all repositories
-  const repoTags = getRepoTags(accountId);
+  const repoTags = getRepoTags(accountId, scope);
   const updatedRepoTags: RepoTagsMap = {};
 
   for (const [repoId, tagIds] of Object.entries(repoTags)) {
@@ -164,17 +169,17 @@ export function deleteTag(accountId: string, tagId: string): void {
     }
   }
 
-  saveRepoTags(accountId, updatedRepoTags);
+  saveRepoTags(accountId, scope, updatedRepoTags);
 }
 
 // ==================== Repo Tag Mapping Operations ====================
 
 /**
- * Get all repo-tag mappings for an account
+ * Get all repo-tag mappings for an account and scope
  */
-export function getRepoTags(accountId: string): RepoTagsMap {
+export function getRepoTags(accountId: string, scope: TagScope): RepoTagsMap {
   try {
-    const key = getStorageKey(REPO_TAGS_STORAGE_KEY, accountId);
+    const key = getStorageKey(REPO_TAGS_STORAGE_KEY, accountId, scope);
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : {};
   } catch (error) {
@@ -184,14 +189,15 @@ export function getRepoTags(accountId: string): RepoTagsMap {
 }
 
 /**
- * Save repo-tag mappings for an account
+ * Save repo-tag mappings for an account and scope
  */
 export function saveRepoTags(
   accountId: string,
+  scope: TagScope,
   repoTags: RepoTagsMap
 ): void {
   try {
-    const key = getStorageKey(REPO_TAGS_STORAGE_KEY, accountId);
+    const key = getStorageKey(REPO_TAGS_STORAGE_KEY, accountId, scope);
     localStorage.setItem(key, JSON.stringify(repoTags));
   } catch (error) {
     console.error('Failed to save repo tags:', error);
@@ -204,10 +210,11 @@ export function saveRepoTags(
  */
 export function assignTagToRepo(
   accountId: string,
+  scope: TagScope,
   repoId: string,
   tagId: string
 ): void {
-  const repoTags = getRepoTags(accountId);
+  const repoTags = getRepoTags(accountId, scope);
   const currentTags = repoTags[repoId] || [];
 
   // Avoid duplicates
@@ -216,7 +223,7 @@ export function assignTagToRepo(
       ...repoTags,
       [repoId]: [...currentTags, tagId],
     };
-    saveRepoTags(accountId, updatedRepoTags);
+    saveRepoTags(accountId, scope, updatedRepoTags);
   }
 }
 
@@ -225,10 +232,11 @@ export function assignTagToRepo(
  */
 export function removeTagFromRepo(
   accountId: string,
+  scope: TagScope,
   repoId: string,
   tagId: string
 ): void {
-  const repoTags = getRepoTags(accountId);
+  const repoTags = getRepoTags(accountId, scope);
   const currentTags = repoTags[repoId] || [];
 
   const updatedTags = currentTags.filter((id) => id !== tagId);
@@ -238,20 +246,20 @@ export function removeTagFromRepo(
       ...repoTags,
       [repoId]: updatedTags,
     };
-    saveRepoTags(accountId, updatedRepoTags);
+    saveRepoTags(accountId, scope, updatedRepoTags);
   } else {
     // Remove repo entry if no tags remain
     const updatedRepoTags = { ...repoTags };
     delete updatedRepoTags[repoId];
-    saveRepoTags(accountId, updatedRepoTags);
+    saveRepoTags(accountId, scope, updatedRepoTags);
   }
 }
 
 /**
  * Get all tag IDs for a specific repository
  */
-export function getTagsForRepo(accountId: string, repoId: string): string[] {
-  const repoTags = getRepoTags(accountId);
+export function getTagsForRepo(accountId: string, scope: TagScope, repoId: string): string[] {
+  const repoTags = getRepoTags(accountId, scope);
   return repoTags[repoId] || [];
 }
 
@@ -260,30 +268,31 @@ export function getTagsForRepo(accountId: string, repoId: string): string[] {
  */
 export function setTagsForRepo(
   accountId: string,
+  scope: TagScope,
   repoId: string,
   tagIds: string[]
 ): void {
-  const repoTags = getRepoTags(accountId);
+  const repoTags = getRepoTags(accountId, scope);
 
   if (tagIds.length > 0) {
     const updatedRepoTags = {
       ...repoTags,
       [repoId]: tagIds,
     };
-    saveRepoTags(accountId, updatedRepoTags);
+    saveRepoTags(accountId, scope, updatedRepoTags);
   } else {
     // Remove repo entry if no tags
     const updatedRepoTags = { ...repoTags };
     delete updatedRepoTags[repoId];
-    saveRepoTags(accountId, updatedRepoTags);
+    saveRepoTags(accountId, scope, updatedRepoTags);
   }
 }
 
 /**
  * Get count of repositories using a specific tag
  */
-export function getTagUsageCount(accountId: string, tagId: string): number {
-  const repoTags = getRepoTags(accountId);
+export function getTagUsageCount(accountId: string, scope: TagScope, tagId: string): number {
+  const repoTags = getRepoTags(accountId, scope);
   let count = 0;
 
   for (const tagIds of Object.values(repoTags)) {

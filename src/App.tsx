@@ -259,13 +259,15 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
 
       <div className={activeTab === 'board' ? 'animate-slide-fade-in' : 'hidden'}>
         {activeTab === 'board' && (
-          <RepoBoard
-            repos={repos}
-            onRefresh={handleRefresh}
-            onStatsUpdate={handleStatsUpdate}
-            lastUpdateTime={lastUpdateTime}
-            isLoading={isRepoLoading}
-          />
+          <TagsProvider scope="kanban">
+            <RepoBoard
+              repos={repos}
+              onRefresh={handleRefresh}
+              onStatsUpdate={handleStatsUpdate}
+              lastUpdateTime={lastUpdateTime}
+              isLoading={isRepoLoading}
+            />
+          </TagsProvider>
         )}
       </div>
 
@@ -277,7 +279,9 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
 
       <div className={activeTab === 'manual' ? 'animate-slide-fade-in' : 'hidden'}>
         {activeTab === 'manual' && (
-          <ManualRepoBoard manualRepos={manualRepos} onReposChange={setManualRepos} />
+          <TagsProvider scope="manual">
+            <ManualRepoBoard manualRepos={manualRepos} onReposChange={setManualRepos} />
+          </TagsProvider>
         )}
       </div>
 
@@ -319,11 +323,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <TagsProvider>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
-        </TagsProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

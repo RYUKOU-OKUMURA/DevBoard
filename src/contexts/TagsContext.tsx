@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import type { Tag, RepoTagsMap } from '../types/tag';
+import type { TagScope } from '../utils/tagStorage';
 import * as tagStorage from '../utils/tagStorage';
 
 interface TagsContextType {
@@ -12,6 +13,7 @@ interface TagsContextType {
   tags: Tag[];
   repoTags: RepoTagsMap;
   loading: boolean;
+  scope: TagScope;
 
   // Tag CRUD
   createTag: (name: string, color: string) => Tag | null;
@@ -30,13 +32,18 @@ interface TagsContextType {
 
 const TagsContext = createContext<TagsContextType | undefined>(undefined);
 
-export function TagsProvider({ children }: { children: React.ReactNode }) {
+interface TagsProviderProps {
+  children: React.ReactNode;
+  scope: TagScope;
+}
+
+export function TagsProvider({ children, scope }: TagsProviderProps) {
   const { user } = useAuth();
   const [tags, setTags] = useState<Tag[]>([]);
   const [repoTags, setRepoTags] = useState<RepoTagsMap>({});
   const [loading, setLoading] = useState(true);
 
-  // Load tags and repo-tag mappings when user changes
+  // Load tags and repo-tag mappings when user or scope changes
   useEffect(() => {
     if (!user) {
       setTags([]);
@@ -46,13 +53,13 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
     }
 
     const accountId = user.userId;
-    const loadedTags = tagStorage.getTags(accountId);
-    const loadedRepoTags = tagStorage.getRepoTags(accountId);
+    const loadedTags = tagStorage.getTags(accountId, scope);
+    const loadedRepoTags = tagStorage.getRepoTags(accountId, scope);
 
     setTags(loadedTags);
     setRepoTags(loadedRepoTags);
     setLoading(false);
-  }, [user]);
+  }, [user, scope]);
 
   // ==================== Tag CRUD Operations ====================
 
@@ -67,7 +74,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const newTag = tagStorage.createTag(user.userId, name, color);
+        const newTag = tagStorage.createTag(user.userId, scope, name, color);
         setTags((prev) => [...prev, newTag]);
         return newTag;
       } catch (error) {
@@ -75,7 +82,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -92,7 +99,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const updatedTag = tagStorage.updateTag(user.userId, tagId, updates);
+        const updatedTag = tagStorage.updateTag(user.userId, scope, tagId, updates);
         setTags((prev) =>
           prev.map((tag) => (tag.id === tagId ? updatedTag : tag))
         );
@@ -102,7 +109,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -116,7 +123,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        tagStorage.deleteTag(user.userId, tagId);
+        tagStorage.deleteTag(user.userId, scope, tagId);
         setTags((prev) => prev.filter((tag) => tag.id !== tagId));
 
         // Also update repoTags state to remove deleted tag
@@ -135,7 +142,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -154,9 +161,9 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
   const getTagUsageCount = useCallback(
     (tagId: string): number => {
       if (!user) return 0;
-      return tagStorage.getTagUsageCount(user.userId, tagId);
+      return tagStorage.getTagUsageCount(user.userId, scope, tagId);
     },
-    [user, repoTags] // eslint-disable-line react-hooks/exhaustive-deps
+    [user, scope, repoTags] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // ==================== Repo Tag Assignment Operations ====================
@@ -172,7 +179,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        tagStorage.assignTagToRepo(user.userId, repoId, tagId);
+        tagStorage.assignTagToRepo(user.userId, scope, repoId, tagId);
         setRepoTags((prev) => {
           const currentTags = prev[repoId] || [];
           if (currentTags.includes(tagId)) {
@@ -188,7 +195,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -202,7 +209,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        tagStorage.removeTagFromRepo(user.userId, repoId, tagId);
+        tagStorage.removeTagFromRepo(user.userId, scope, repoId, tagId);
         setRepoTags((prev) => {
           const currentTags = prev[repoId] || [];
           const updatedTags = currentTags.filter((id) => id !== tagId);
@@ -222,7 +229,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -259,7 +266,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        tagStorage.setTagsForRepo(user.userId, repoId, tagIds);
+        tagStorage.setTagsForRepo(user.userId, scope, repoId, tagIds);
         setRepoTags((prev) => {
           if (tagIds.length === 0) {
             const { [repoId]: _, ...rest } = prev;
@@ -275,7 +282,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   const value: TagsContextType = {
@@ -283,6 +290,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
     tags,
     repoTags,
     loading,
+    scope,
 
     // Tag CRUD
     createTag,
