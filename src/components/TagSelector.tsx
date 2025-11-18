@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassModal } from './ui/GlassModal';
-import { useTags } from '../hooks/useTags';
+import { useTagsContext } from '../contexts/TagsContext';
 import { useToast } from '../hooks/useToast';
 import { TAG_COLOR_PRESETS } from '../types/tag';
 import { focusRing } from '../lib/focusRing';
@@ -23,7 +23,7 @@ export function TagSelector({
   repoId,
   repoName,
 }: TagSelectorProps) {
-  const { tags, getTagsForRepo, setTagsForRepo, createTag } = useTags();
+  const { tags, getTagsForRepo, setTagsForRepo, createTag } = useTagsContext();
   const { showToast } = useToast();
 
   // Local state for selected tags

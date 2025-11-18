@@ -6,6 +6,7 @@ import AccountSwitcher from './components/AccountSwitcher';
 import { AuthProvider, useAuth, type User } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { TagsProvider } from './contexts/TagsContext';
 import { useToast } from './hooks/useToast';
 import { useRepositories } from './hooks/useRepositories';
 import { useRecentActivities } from './hooks/useRecentActivities';
@@ -318,9 +319,11 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
+        <TagsProvider>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </TagsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

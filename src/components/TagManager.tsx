@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassModal } from './ui/GlassModal';
-import { useTags } from '../hooks/useTags';
+import { useTagsContext } from '../contexts/TagsContext';
 import { useToast } from '../hooks/useToast';
 import { TAG_COLOR_PRESETS } from '../types/tag';
 import { focusRing } from '../lib/focusRing';
@@ -17,7 +17,7 @@ export type TagManagerProps = {
 
 export function TagManager({ isOpen, onClose }: TagManagerProps) {
   const { tags, createTag, updateTag, deleteTag, getTagUsageCount } =
-    useTags();
+    useTagsContext();
   const { showToast } = useToast();
 
   // Form state

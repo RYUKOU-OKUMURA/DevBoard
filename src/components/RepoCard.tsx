@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ColumnKey, Repo } from '../types';
 import { timeAgo } from '../lib/timeAgo';
 import { focusRing } from '../lib/focusRing';
-import { useTags } from '../hooks/useTags';
+import { useTagsContext } from '../contexts/TagsContext';
 import { TagSelector } from './TagSelector';
 
 interface RepoCardProps {
@@ -31,7 +31,7 @@ export const RepoCard: React.FC<RepoCardProps> = ({
   todoCount = 0,
   onTodoClick,
 }) => {
-  const { getTagObjectsForRepo } = useTags();
+  const { getTagObjectsForRepo } = useTagsContext();
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
 
   // Get tags for this repository
