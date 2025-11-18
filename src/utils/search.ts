@@ -1,4 +1,5 @@
 import { Repo, SortOrder } from '../types';
+import type { Tag } from '../types/tag';
 
 /**
  * Normalize a string for case-insensitive comparison
@@ -9,9 +10,13 @@ export function normalizeString(str: string): string {
 
 /**
  * Check if a repository matches a search query
- * Searches across: nameWithOwner, primaryLanguage, description, topics
+ * Searches across: nameWithOwner, primaryLanguage, description, topics, tags
  */
-export function matchesSearch(repo: Repo, query: string): boolean {
+export function matchesSearch(
+  repo: Repo,
+  query: string,
+  repoTags?: Tag[]
+): boolean {
   if (!query || query.trim() === '') {
     return true;
   }
@@ -38,18 +43,32 @@ export function matchesSearch(repo: Repo, query: string): boolean {
     return true;
   }
 
+  // Search in tags
+  if (repoTags && repoTags.length > 0) {
+    if (repoTags.some(tag => normalizeString(tag.name).includes(normalizedQuery))) {
+      return true;
+    }
+  }
+
   return false;
 }
 
 /**
  * Filter repositories based on search query
  */
-export function filterRepos(repos: Repo[], query: string): Repo[] {
+export function filterRepos(
+  repos: Repo[],
+  query: string,
+  getRepoTags?: (repoId: string) => Tag[]
+): Repo[] {
   if (!query || query.trim() === '') {
     return repos;
   }
 
-  return repos.filter(repo => matchesSearch(repo, query));
+  return repos.filter(repo => {
+    const repoTags = getRepoTags ? getRepoTags(repo.id) : undefined;
+    return matchesSearch(repo, query, repoTags);
+  });
 }
 
 /**
@@ -117,8 +136,9 @@ export function sortRepos(repos: Repo[], sortOrder: SortOrder): Repo[] {
 export function searchAndSortRepos(
   repos: Repo[],
   query: string,
-  sortOrder: SortOrder
+  sortOrder: SortOrder,
+  getRepoTags?: (repoId: string) => Tag[]
 ): Repo[] {
-  const filtered = filterRepos(repos, query);
+  const filtered = filterRepos(repos, query, getRepoTags);
   return sortRepos(filtered, sortOrder);
 }

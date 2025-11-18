@@ -7,6 +7,7 @@ import { RepoColumn } from './RepoColumn';
 import { TopBar } from './TopBar';
 import { MainColumnSettingsModal } from './MainColumnSettingsModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useTagsContext } from '../contexts/TagsContext';
 import { getStorageItem, setStorageItem } from '../utils/storage';
 import { devWarn } from '../utils/logger';
 
@@ -43,6 +44,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   lastUpdateTime,
 }) => {
   const { user } = useAuth(); // Get current user for account-scoped presets
+  const { getTagObjectsForRepo } = useTagsContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
 
@@ -122,10 +124,10 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   }, [user?.userId]);
 
   const filteredRepos = useMemo(() => {
-    const searchResults = searchAndSortRepos(repos, searchQuery, sortOrder);
+    const searchResults = searchAndSortRepos(repos, searchQuery, sortOrder, getTagObjectsForRepo);
     // Filter out hidden repos
     return searchResults.filter((repo) => !hiddenRepoIds.has(repo.id));
-  }, [repos, searchQuery, sortOrder, hiddenRepoIds]);
+  }, [repos, searchQuery, sortOrder, hiddenRepoIds, getTagObjectsForRepo]);
 
   const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
 

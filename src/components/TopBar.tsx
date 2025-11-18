@@ -239,7 +239,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="リポジトリを検索（名前、言語、トピック、説明...）"
+                placeholder="リポジトリを検索（名前、言語、トピック、説明、タグ...）"
                 aria-label="リポジトリを検索"
                 className={`
                   w-full px-inset-md py-inset-sm pl-inset-xl border border-[var(--border-subtle)] rounded-xl
