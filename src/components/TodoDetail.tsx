@@ -349,7 +349,7 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
                   text-white text-caption
                   hover:bg-[var(--accent-green-hover)]
                   transition-colors
-                  ${focusRing()}
+                  ${focusRing.default}
                 `}
               >
                 Issueを開く
@@ -367,7 +367,7 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
                 hover:border-[var(--accent-green)] hover:text-[var(--accent-green)]
                 transition-colors
                 disabled:opacity-50 disabled:cursor-not-allowed
-                ${focusRing()}
+                ${focusRing.default}
               `}
             >
               新しいIssueを作成
@@ -386,7 +386,7 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
               text-[var(--text-secondary)]
               hover:bg-[var(--surface-secondary)]
               transition-colors
-              ${focusRing()}
+              ${focusRing.default}
             `}
           >
             キャンセル
@@ -402,7 +402,7 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
               hover:bg-[var(--accent-green-hover)]
               transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${focusRing()}
+              ${focusRing.default}
             `}
           >
             保存

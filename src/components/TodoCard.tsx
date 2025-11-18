@@ -143,7 +143,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           hover:text-[var(--accent-green)]
           transition-colors
           line-clamp-2
-          ${focusRing()}
+          ${focusRing.default}
         `}
       >
         {todo.title}

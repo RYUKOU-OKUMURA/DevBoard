@@ -90,7 +90,7 @@ export const TodoColumn: React.FC<TodoColumnProps> = ({
               text-[var(--text-secondary)]
               hover:bg-[var(--accent-green)] hover:text-white
               transition-colors
-              ${focusRing()}
+              ${focusRing.default}
             `}
             aria-label="ToDoを追加"
           >

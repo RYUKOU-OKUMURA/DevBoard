@@ -136,7 +136,7 @@ export const IssueImportDialog: React.FC<IssueImportDialogProps> = ({
                       ? 'bg-[var(--accent-green)] text-white'
                       : 'bg-[var(--surface-secondary)] text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
                   }
-                  ${focusRing()}
+                  ${focusRing.default}
                 `}
               >
                 {f === 'all' ? 'すべて' : f === 'open' ? 'オープン' : 'クローズ済み'}
@@ -171,7 +171,7 @@ export const IssueImportDialog: React.FC<IssueImportDialogProps> = ({
             <div className="flex items-center justify-between">
               <button
                 onClick={handleSelectAll}
-                className={`text-body-sm text-[var(--accent-green)] hover:underline ${focusRing()}`}
+                className={`text-body-sm text-[var(--accent-green)] hover:underline ${focusRing.default}`}
               >
                 {selectedIssues.size === filteredIssues.length
                   ? 'すべて選択解除'
@@ -273,7 +273,7 @@ export const IssueImportDialog: React.FC<IssueImportDialogProps> = ({
               text-[var(--text-secondary)]
               hover:bg-[var(--surface-secondary)]
               transition-colors
-              ${focusRing()}
+              ${focusRing.default}
             `}
           >
             キャンセル
@@ -289,7 +289,7 @@ export const IssueImportDialog: React.FC<IssueImportDialogProps> = ({
               hover:bg-[var(--accent-green-hover)]
               transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${focusRing()}
+              ${focusRing.default}
             `}
           >
             {isImporting

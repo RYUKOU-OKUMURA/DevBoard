@@ -175,7 +175,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
                 ${todo.status === 'done' ? 'line-through text-[var(--text-tertiary)]' : 'text-[var(--text-primary)]'}
                 hover:text-[var(--accent-green)]
                 transition-colors
-                ${focusRing()}
+                ${focusRing.default}
               `}
             >
               {todo.title}
@@ -227,7 +227,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
                   text-caption text-[var(--accent-green)]
                   hover:text-[var(--accent-green-hover)]
                   transition-colors
-                  ${focusRing()}
+                  ${focusRing.default}
                 `}
               >
                 🔗 #{todo.issueNumber}
@@ -308,7 +308,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
                 text-[var(--text-secondary)]
                 hover:bg-[var(--accent-green)] hover:text-white
                 transition-colors
-                ${focusRing()}
+                ${focusRing.default}
               `}
             >
               編集
@@ -321,7 +321,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
                 text-[var(--text-secondary)]
                 hover:bg-[#EF4444] hover:text-white
                 transition-colors
-                ${focusRing()}
+                ${focusRing.default}
               `}
             >
               削除

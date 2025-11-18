@@ -4,7 +4,6 @@ import { ColumnKey, Repo } from '../types';
 import { timeAgo } from '../lib/timeAgo';
 import { focusRing } from '../lib/focusRing';
 import { useTags } from '../hooks/useTags';
-import { TagBadgeList } from './TagBadge';
 import { TagSelector } from './TagSelector';
 
 interface RepoCardProps {
@@ -278,6 +277,47 @@ export const RepoCard: React.FC<RepoCardProps> = ({
           </div>
         )}
 
+        {/* Tags */}
+        {repoTags.length > 0 && (
+          <div className="flex items-center gap-inline-xs flex-wrap">
+            {repoTags.slice(0, 3).map((tag) => (
+              <button
+                key={tag.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsTagSelectorOpen(true);
+                }}
+                className="inline-flex items-center gap-inline-xs px-inset-sm py-inline-xs rounded-lg text-caption font-medium transition-all hover:opacity-80 shadow-sm"
+                style={{
+                  backgroundColor: `${tag.color}15`,
+                  color: tag.color,
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  borderColor: `${tag.color}50`,
+                }}
+                title={`タグを編集: ${tag.name}`}
+                aria-label={`タグ: ${tag.name}`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: tag.color }}></span>
+                <span>{tag.name}</span>
+              </button>
+            ))}
+            {repoTags.length > 3 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsTagSelectorOpen(true);
+                }}
+                className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-caption font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                title="すべてのタグを表示"
+                aria-label={`他${repoTags.length - 3}個のタグ`}
+              >
+                +{repoTags.length - 3}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Stars */}
         {repo.stargazers_count !== undefined && repo.stargazers_count > 0 && (
           <div className="flex items-center gap-inline-xs">
@@ -316,17 +356,6 @@ export const RepoCard: React.FC<RepoCardProps> = ({
               +{repo.topics.length - 3}
             </span>
           )}
-        </div>
-      )}
-
-      {/* Tags */}
-      {repoTags.length > 0 && (
-        <div className="pt-stack-xs border-t border-[var(--border-subtle)]">
-          <TagBadgeList
-            tags={repoTags}
-            maxVisible={3}
-            size="sm"
-          />
         </div>
       )}
 

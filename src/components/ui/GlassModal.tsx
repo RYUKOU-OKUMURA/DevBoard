@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { focusRing } from '../../lib/focusRing';
 
 interface GlassModalProps {
@@ -101,31 +102,39 @@ export const GlassModal: React.FC<GlassModalProps> = ({
     };
   }, [isOpen]);
 
-  return (
+  // Portalを使ってdocument.bodyに直接レンダリングし、親要素の影響を受けないようにする
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
         >
           <motion.div
             className="absolute inset-0"
             style={{
-              backgroundColor: isLightTone ? 'rgba(247, 242, 255, 0.75)' : 'rgba(103, 58, 183, 0.25)',
+              backgroundColor: isLightTone ? 'rgba(247, 242, 255, 0.85)' : 'rgba(103, 58, 183, 0.35)',
               backdropFilter: isLightTone ? 'blur(8px)' : 'blur(12px)',
+              WebkitBackdropFilter: isLightTone ? 'blur(8px)' : 'blur(12px)', // Safari対応
+              // フォールバック: backdrop-filterがサポートされていない場合の半透明背景
+              filter: 'none', // backdrop-filterのフォールバックとして使用
             }}
             onClick={handleClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
           />
 
           <motion.div
             ref={dialogRef}
             className={`relative w-full ${className} rounded-3xl border ${
-              isLightTone ? 'border-[var(--border-subtle)] bg-surface-primary' : 'border-transparent'
+              isLightTone ? 'border-[var(--border-subtle)] bg-[var(--surface-primary)]' : 'border-transparent'
             } shadow-2xl`}
             style={{
               background: isLightTone
@@ -179,6 +188,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

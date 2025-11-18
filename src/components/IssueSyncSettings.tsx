@@ -202,7 +202,7 @@ export const IssueSyncSettings: React.FC<IssueSyncSettingsProps> = ({
                       : 'border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--accent-green-border)]'
                   }
                   ${!config.enabled ? 'opacity-50 cursor-not-allowed' : ''}
-                  ${focusRing()}
+                  ${focusRing.default}
                 `}
               >
                 <div className="text-body-sm font-medium">{minutes}分</div>
@@ -235,7 +235,7 @@ export const IssueSyncSettings: React.FC<IssueSyncSettingsProps> = ({
               hover:bg-[var(--accent-green)] hover:text-white
               transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed
-              ${focusRing()}
+              ${focusRing.default}
             `}
           >
             {isSyncing ? '同期中...' : '今すぐ同期'}

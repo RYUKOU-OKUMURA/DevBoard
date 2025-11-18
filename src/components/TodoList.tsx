@@ -64,7 +64,7 @@ export const TodoList: React.FC<TodoListProps> = ({
               text-white font-medium
               hover:bg-[var(--accent-green-hover)]
               transition-colors
-              ${focusRing()}
+              ${focusRing.default}
             `}
           >
             最初のToDoを作成
@@ -114,7 +114,7 @@ export const TodoList: React.FC<TodoListProps> = ({
                 rounded-lg
                 hover:bg-[var(--surface-tertiary)]
                 transition-colors
-                ${focusRing()}
+                ${focusRing.default}
               `}
             >
               <div className="flex items-center gap-inline-sm">
