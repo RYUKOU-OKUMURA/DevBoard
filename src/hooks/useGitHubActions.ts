@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { GitHubBot, WorkflowStatus, AIExecutionHistory } from '@/types/githubActions';
-import { useAuth } from './useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import {
   saveAIExecution,
   updateAIExecutionStatus,
