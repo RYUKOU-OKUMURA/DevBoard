@@ -19,6 +19,9 @@ export type ColumnKey = string; // "Active" | "Stale" | "Dormant" | "Archived" |
 
 export type SortOrder = "lastUpdated" | "name" | "stars" | "language";
 
+// View modes for repository display
+export type ViewMode = 'kanban' | 'grid' | 'list';
+
 // Enhanced preset type that includes all dashboard state
 export type ViewPreset = {
   id: string;

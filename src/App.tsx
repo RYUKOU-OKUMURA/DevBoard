@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard, TodosTab } from './components';
+import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard, TodosTab, SplitPanel, SidebarSummary, Workspace } from './components';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import AccountSwitcher from './components/AccountSwitcher';
@@ -7,6 +7,7 @@ import { AuthProvider, useAuth, type User } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { TagsProvider } from './contexts/TagsContext';
+import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
 import { useToast } from './hooks/useToast';
 import { useRepositories } from './hooks/useRepositories';
 import { useRecentActivities } from './hooks/useRecentActivities';
@@ -35,6 +36,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const { isDark, toggleTheme } = useTheme();
   const { showToast } = useToast();
   const { activeTab, setActiveTab } = useActiveTab();
+  const { selectedRepo, isOpen: isWorkspaceOpen, panelHeight, setPanelHeight, toggleWorkspace } = useWorkspace();
 
   const [customInput, setCustomInput] = useState('');
   const [displayedRepoCount, setDisplayedRepoCount] = useState<number | null>(null);
@@ -53,6 +55,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
   const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const {
     repos,
@@ -127,13 +130,31 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     setRepoError(null);
   };
 
+  // Summary stats for sidebar
+  const summaryStats = {
+    totalRepos: repos.length,
+    activeRepos: displayedCategoryCounts.Active,
+    todoStats: {
+      total: todoStats?.total || 0,
+      completed: todoStats?.completed || 0,
+      inProgress: todoStats?.inProgress || 0,
+      overdue: todoStats?.overdue || 0,
+    },
+    syncStats: {
+      synced: 0, // TODO: Implement sync tracking
+      pending: 0,
+      error: 0,
+    },
+  };
+
   return (
-    <div className="App min-h-screen bg-surface-app flex flex-col transition-colors">
-      <div className="bg-surface-primary border-b border-[var(--border-subtle)] px-8 py-4 shadow-md">
+    <div className="App h-screen bg-surface-app flex flex-col transition-colors overflow-hidden">
+      {/* Top Header */}
+      <div className="flex-shrink-0 bg-surface-primary border-b border-[var(--border-subtle)] px-6 py-3 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-inline-md">
             <svg
-              className="w-8 h-8 text-[var(--text-primary)]"
+              className="w-7 h-7 text-[var(--text-primary)]"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -154,14 +175,14 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
               <line x1="12.5" y1="10" x2="15.5" y2="10" />
               <line x1="17.5" y1="7" x2="20.5" y2="7" />
             </svg>
-            <h1 className="text-title-2 font-semibold text-[var(--text-primary)]">DevBoard</h1>
+            <h1 className="text-title-3 font-semibold text-[var(--text-primary)]">DevBoard</h1>
           </div>
           <div className="flex items-center gap-inline-md">
             <button
               onClick={() => setIsAddRepoModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-accent-green text-text-inverse rounded-xl hover:bg-accent-green-strong transition-colors font-semibold shadow-sm motion-safe:duration-250 motion-safe:ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50"
+              className="flex items-center gap-2 px-3 py-1.5 bg-accent-green text-text-inverse rounded-lg hover:bg-accent-green-strong transition-colors font-medium text-body-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -169,12 +190,12 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-surface-hover transition-colors motion-safe:duration-250 motion-safe:ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2 focus-visible:ring-opacity-50"
+              className="p-2 rounded-lg hover:bg-surface-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2"
               aria-label="Toggle theme"
               title={isDark ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
             >
               {isDark ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="5" />
                   <line x1="12" y1="1" x2="12" y2="3" />
                   <line x1="12" y1="21" x2="12" y2="23" />
@@ -186,7 +207,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                   <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                 </svg>
               ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
               )}
@@ -194,34 +215,11 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
             <AccountSwitcher />
           </div>
         </div>
-        {repos.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-caption sm:text-body-sm text-[var(--text-muted)]">
-            <div className="flex items-center gap-2">
-              <span className="uppercase tracking-wide text-[var(--text-muted)] text-[11px] sm:text-caption">総数</span>
-              <span className="text-body font-semibold text-[var(--text-primary)]">{totalReposDisplayed}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[var(--text-muted)]">{columnTitles.Active}</span>
-              <span className="text-body-sm font-semibold text-[var(--accent-green-emphasis)]">{displayedCategoryCounts.Active}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[var(--text-muted)]">{columnTitles.Stale}</span>
-              <span className="text-body-sm font-semibold text-[var(--accent-yellow-emphasis)]">{displayedCategoryCounts.Stale}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[var(--text-muted)]">{columnTitles.Dormant}</span>
-              <span className="text-body-sm font-semibold text-[var(--accent-orange-emphasis)]">{displayedCategoryCounts.Dormant}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[var(--text-muted)]">{columnTitles.Archived}</span>
-              <span className="text-body-sm font-semibold text-[var(--text-secondary)]">{displayedCategoryCounts.Archived}</span>
-            </div>
-          </div>
-        )}
       </div>
 
+      {/* Error Banner */}
       {error && (
-        <div className="bg-[var(--accent-red-muted)] border-b border-[var(--accent-red-border)] px-inset-lg py-inset-sm text-[var(--text-primary)]">
+        <div className="flex-shrink-0 bg-[var(--accent-red-muted)] border-b border-[var(--accent-red-border)] px-inset-lg py-inset-sm text-[var(--text-primary)]">
           <div className="flex items-center">
             <svg className="h-5 w-5 text-[var(--accent-red)] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -236,8 +234,9 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         </div>
       )}
 
+      {/* Data Source Banner */}
       {dataSource === 'custom' && (
-        <div className="bg-[var(--accent-green-muted)] border-b border-[var(--accent-green-border)] px-inset-lg py-inset-sm text-[var(--text-primary)]">
+        <div className="flex-shrink-0 bg-[var(--accent-green-muted)] border-b border-[var(--accent-green-border)] px-inset-lg py-inset-sm text-[var(--text-primary)]">
           <div className="flex items-center">
             <div className="flex items-center gap-2">
               <svg className="h-5 w-5 text-[var(--accent-green)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,6 +248,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         </div>
       )}
 
+      {/* Tab Navigation */}
       <TabNavigation
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -257,36 +257,74 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         todoCount={todoStats?.total || 0}
       />
 
-      <div className={activeTab === 'board' ? 'animate-slide-fade-in' : 'hidden'}>
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar - Only show on board tab */}
         {activeTab === 'board' && (
-          <TagsProvider scope="kanban">
-            <RepoBoard
-              repos={repos}
-              onRefresh={handleRefresh}
-              onStatsUpdate={handleStatsUpdate}
-              lastUpdateTime={lastUpdateTime}
-              isLoading={isRepoLoading}
-            />
-          </TagsProvider>
+          <SidebarSummary
+            stats={summaryStats}
+            isCollapsed={isSidebarCollapsed}
+            onCollapseToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onCardClick={(type) => {
+              // Handle card clicks - could filter view or navigate
+              console.log('Card clicked:', type);
+            }}
+          />
         )}
-      </div>
 
-      <div className={activeTab === 'updates' ? 'animate-slide-fade-in' : 'hidden'}>
-        {activeTab === 'updates' && (
-          <UpdatesTab recentItems={recentItems} isLoadingActivities={isLoadingActivities} />
-        )}
-      </div>
+        {/* Main Content with Split Panel */}
+        <div className="flex-1 overflow-hidden">
+          {/* Board Tab with Split Panel */}
+          <div className={activeTab === 'board' ? 'h-full animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'board' && (
+              <TagsProvider scope="kanban">
+                <SplitPanel
+                  topPanel={
+                    <RepoBoard
+                      repos={repos}
+                      onRefresh={handleRefresh}
+                      onStatsUpdate={handleStatsUpdate}
+                      lastUpdateTime={lastUpdateTime}
+                      isLoading={isRepoLoading}
+                    />
+                  }
+                  bottomPanel={<Workspace />}
+                  initialBottomHeight={panelHeight}
+                  minBottomHeight={200}
+                  maxBottomHeightPercent={60}
+                  isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
+                  onCollapseChange={(collapsed) => {
+                    if (collapsed) {
+                      toggleWorkspace();
+                    }
+                  }}
+                  onHeightChange={setPanelHeight}
+                />
+              </TagsProvider>
+            )}
+          </div>
 
-      <div className={activeTab === 'manual' ? 'animate-slide-fade-in' : 'hidden'}>
-        {activeTab === 'manual' && (
-          <TagsProvider scope="manual">
-            <ManualRepoBoard manualRepos={manualRepos} onReposChange={setManualRepos} />
-          </TagsProvider>
-        )}
-      </div>
+          {/* Updates Tab */}
+          <div className={activeTab === 'updates' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'updates' && (
+              <UpdatesTab recentItems={recentItems} isLoadingActivities={isLoadingActivities} />
+            )}
+          </div>
 
-      <div className={activeTab === 'todos' ? 'animate-slide-fade-in' : 'hidden'}>
-        {activeTab === 'todos' && <TodosTab repos={repos} />}
+          {/* Manual Repos Tab */}
+          <div className={activeTab === 'manual' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'manual' && (
+              <TagsProvider scope="manual">
+                <ManualRepoBoard manualRepos={manualRepos} onReposChange={setManualRepos} />
+              </TagsProvider>
+            )}
+          </div>
+
+          {/* TODOs Tab */}
+          <div className={activeTab === 'todos' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'todos' && <TodosTab repos={repos} />}
+          </div>
+        </div>
       </div>
 
       <AddRepoModal
@@ -324,7 +362,9 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <AppContent />
+          <WorkspaceProvider>
+            <AppContent />
+          </WorkspaceProvider>
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>

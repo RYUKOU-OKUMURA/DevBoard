@@ -5,6 +5,7 @@ import { timeAgo } from '../lib/timeAgo';
 import { focusRing } from '../lib/focusRing';
 import { useTagsContext } from '../contexts/TagsContext';
 import { TagSelector } from './TagSelector';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
 interface RepoCardProps {
   repo: Repo;
@@ -33,6 +34,14 @@ export const RepoCard: React.FC<RepoCardProps> = ({
 }) => {
   const { getTagObjectsForRepo } = useTagsContext();
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
+  
+  // Workspace context - wrapped in try/catch for cases where provider is not available
+  let workspaceContext: ReturnType<typeof useWorkspace> | null = null;
+  try {
+    workspaceContext = useWorkspace();
+  } catch {
+    // WorkspaceProvider not available, which is fine for some use cases
+  }
 
   // Get tags for this repository
   const repoTags = getTagObjectsForRepo(repo.id);
@@ -86,6 +95,13 @@ export const RepoCard: React.FC<RepoCardProps> = ({
     e.stopPropagation();
     if (onTodoClick) {
       onTodoClick(repo.id);
+    }
+  };
+
+  const handleOpenWorkspace = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (workspaceContext) {
+      workspaceContext.selectRepo(repo);
     }
   };
 
@@ -201,6 +217,20 @@ export const RepoCard: React.FC<RepoCardProps> = ({
             <span className="inline-flex items-center px-inset-sm py-inline-xs rounded-lg text-caption font-medium bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)] shadow-sm transition-colors">
               Public
             </span>
+          )}
+
+          {/* Workspace Button */}
+          {workspaceContext && (
+            <button
+              onClick={handleOpenWorkspace}
+              className={`inline-flex items-center gap-inline-xs px-inset-sm py-inline-xs rounded-lg text-caption font-medium bg-[var(--accent-blue-muted)] text-[var(--accent-blue-emphasis)] border border-[var(--accent-blue-border)] shadow-sm transition-all hover:bg-[var(--accent-blue)] hover:text-white opacity-0 group-hover:opacity-100 ${focusRing.default}`}
+              title="ワークスペースを開く"
+              aria-label={`Open workspace for ${repo.nameWithOwner}`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+              </svg>
+            </button>
           )}
 
           {/* TODO Badge */}

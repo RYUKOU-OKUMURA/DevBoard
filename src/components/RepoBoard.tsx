@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Repo, ColumnKey, SortOrder, AppConfig, ViewPreset } from '../types';
+import { Repo, ColumnKey, SortOrder, AppConfig, ViewPreset, ViewMode } from '../types';
 import { classifyRepo, DEFAULT_CLASSIFY_CONFIG, configToOptions } from '../lib/classifyRepo';
 import { searchAndSortRepos } from '../utils/search';
 import { getPresets, savePreset, deletePreset, getPresetById, createPresetSnapshot } from '../utils/presetStorage';
 import { RepoColumn } from './RepoColumn';
+import { RepoGrid } from './RepoGrid';
+import { RepoList } from './RepoList';
 import { TopBar } from './TopBar';
 import { MainColumnSettingsModal } from './MainColumnSettingsModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,6 +36,7 @@ const COLUMN_TITLES_STORAGE_KEY = 'github-dashboard-column-titles';
 const COLUMN_ASSIGNMENTS_STORAGE_KEY = 'github-dashboard-column-assignments';
 const HIDDEN_REPOS_STORAGE_KEY = 'github-dashboard-hidden-repos';
 const COLUMN_DISPLAY_ORDER_KEY = 'github-dashboard-column-display-order';
+const VIEW_MODE_STORAGE_KEY = 'github-dashboard-view-mode';
 
 export const RepoBoard: React.FC<RepoBoardProps> = ({
   repos,
@@ -47,6 +50,13 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   const { getTagObjectsForRepo } = useTagsContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      return getStorageItem<ViewMode>(VIEW_MODE_STORAGE_KEY, 'kanban');
+    } catch {
+      return 'kanban';
+    }
+  });
 
   // Preset management
   const [presets, setPresets] = useState<ViewPreset[]>([]);
@@ -431,8 +441,33 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     setColumnDisplayOrder(newOrder);
   };
 
+  // Handle view mode change
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    setStorageItem(VIEW_MODE_STORAGE_KEY, mode);
+  };
+
+  // View mode button component
+  const ViewModeButton = ({ mode, icon, label }: { mode: ViewMode; icon: React.ReactNode; label: string }) => (
+    <button
+      onClick={() => handleViewModeChange(mode)}
+      className={`
+        p-2 rounded-lg transition-all
+        ${viewMode === mode
+          ? 'bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border border-[var(--accent-green-border)]'
+          : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+        }
+      `}
+      title={label}
+      aria-label={label}
+      aria-pressed={viewMode === mode}
+    >
+      {icon}
+    </button>
+  );
+
   return (
-    <div className="h-screen flex flex-col bg-surface-app transition-colors">
+    <div className="h-full flex flex-col bg-surface-app transition-colors">
       <TopBar
         title={user?.username ? `${user.username} の DevBoard` : 'DevBoard'}
         searchQuery={searchQuery}
@@ -456,6 +491,45 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         lastUpdateTime={lastUpdateTime}
         onOpenColumnSettings={() => setIsColumnSettingsModalOpen(true)}
       />
+
+      {/* View Mode Switcher */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-subtle)]">
+        <div className="flex items-center gap-2">
+          <span className="text-caption font-medium text-[var(--text-muted)]">表示:</span>
+          <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] rounded-lg p-1">
+            <ViewModeButton
+              mode="kanban"
+              label="カンバン表示"
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                </svg>
+              }
+            />
+            <ViewModeButton
+              mode="grid"
+              label="グリッド表示"
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              }
+            />
+            <ViewModeButton
+              mode="list"
+              label="リスト表示"
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              }
+            />
+          </div>
+        </div>
+        <div className="text-caption text-[var(--text-muted)]">
+          {filteredCount} / {totalRepos} リポジトリ
+        </div>
+      </div>
 
       {filteredRepos.length === 0 && !isLoading ? (
         <div className="flex-1 flex items-center justify-center p-8">
@@ -506,21 +580,40 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex gap-4 p-4 overflow-x-auto" aria-live="polite">
-          {columnDisplayOrder.map((columnKey) => (
-            <RepoColumn
-              key={columnKey}
-              title={columnTitles[columnKey] || columnKey}
-              repos={getOrderedRepos(columnKey)}
-              columnKey={columnKey}
-              onReorder={handleReorderWithinColumn}
-              onReorderBetween={handleReorderBetween}
-              onTitleChange={handleColumnTitleChange}
-              onHide={handleHideRepo}
-              isLoading={isLoading}
-            />
-          ))}
-        </div>
+        <>
+          {/* Kanban View */}
+          {viewMode === 'kanban' && (
+            <div className="flex-1 flex gap-4 p-4 overflow-x-auto" aria-live="polite">
+              {columnDisplayOrder.map((columnKey) => (
+                <RepoColumn
+                  key={columnKey}
+                  title={columnTitles[columnKey] || columnKey}
+                  repos={getOrderedRepos(columnKey)}
+                  columnKey={columnKey}
+                  onReorder={handleReorderWithinColumn}
+                  onReorderBetween={handleReorderBetween}
+                  onTitleChange={handleColumnTitleChange}
+                  onHide={handleHideRepo}
+                  isLoading={isLoading}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Grid View */}
+          {viewMode === 'grid' && (
+            <div className="flex-1 overflow-auto">
+              <RepoGrid repos={filteredRepos} isLoading={isLoading} />
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === 'list' && (
+            <div className="flex-1 overflow-auto">
+              <RepoList repos={filteredRepos} isLoading={isLoading} />
+            </div>
+          )}
+        </>
       )}
 
       {/* Column Settings Modal */}

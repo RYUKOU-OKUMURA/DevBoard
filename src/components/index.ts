@@ -14,3 +14,10 @@ export { TodosTab } from './TodosTab';
 export { TodoFilters } from './TodoFilters';
 export { TodoBoard } from './TodoBoard';
 export { TodoStats } from './TodoStats';
+
+// New UI components
+export { SplitPanel } from './ui/SplitPanel';
+export { SidebarSummary } from './SidebarSummary';
+export { Workspace } from './Workspace';
+export { RepoGrid } from './RepoGrid';
+export { RepoList } from './RepoList';
