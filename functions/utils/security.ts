@@ -18,25 +18,50 @@ export const generateCodeChallenge = async (verifier: string): Promise<string> =
     .replace(/=/g, '');
 };
 
+export interface OriginValidationResult {
+  origin: string | null;
+  matchedWildcard: boolean;
+}
+
 /** オリジン検証 */
 export const validateOrigin = (
   origin: string | null,
-  allowed: string | undefined
-): string | null => {
-  if (!origin) return null;
-  
-  // 環境変数が未設定の場合は全オリジンを許可（後方互換性）
-  if (!allowed || allowed.trim() === '') {
-    return origin;
+  allowed: string | undefined,
+  requestOrigin?: string
+): OriginValidationResult => {
+  if (!origin) {
+    return { origin: null, matchedWildcard: false };
   }
-  
-  const list = allowed.split(',').map(o => o.trim());
-  if (list.includes(origin)) return origin;
-  
-  // ワイルドカード対応: *.example.com
-  return list.some(pattern => 
-    pattern.startsWith('*.') && origin.endsWith(pattern.slice(1))
-  ) ? origin : null;
+
+  const list = (allowed ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  // 環境変数未設定時はデフォルト拒否。同一オリジンは許可。
+  if (list.length === 0) {
+    return {
+      origin: requestOrigin && origin === requestOrigin ? origin : null,
+      matchedWildcard: false,
+    };
+  }
+
+  if (list.includes(origin)) {
+    return { origin, matchedWildcard: false };
+  }
+
+  const subdomainAllowed = list.some(
+    (pattern) => pattern.startsWith('*.') && origin.endsWith(pattern.slice(1))
+  );
+  if (subdomainAllowed) {
+    return { origin, matchedWildcard: false };
+  }
+
+  if (list.includes('*')) {
+    return { origin, matchedWildcard: true };
+  }
+
+  return { origin: null, matchedWildcard: false };
 };
 
 /** セッションクッキーの型定義 */

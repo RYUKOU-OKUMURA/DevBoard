@@ -10,36 +10,60 @@ import {
   createRateLimitResponse,
 } from './utils/security';
 
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env, next } = context;
-  const { pathname } = new URL(request.url);
+  const { pathname, origin: requestOrigin } = new URL(request.url);
   const origin = request.headers.get('Origin');
 
-  // 1. オリジン検証
-  const validOrigin = validateOrigin(origin, env.ALLOWED_ORIGINS);
+  // 1. オリジン検証（デフォルト deny）
+  const { origin: validOrigin, matchedWildcard } = validateOrigin(
+    origin,
+    env.ALLOWED_ORIGINS,
+    requestOrigin
+  );
+  const isApiPath = pathname.startsWith('/api/');
+  const isWriteMethod = WRITE_METHODS.has(request.method);
+  const isPreflight = request.method === 'OPTIONS';
+  const isAuthPath = pathname.startsWith('/api/auth/') && 
+                     !pathname.includes('/login') && 
+                     !pathname.includes('/callback');
+  const isGithubPath = pathname.startsWith('/api/github/');
+  const requiresAuth = isAuthPath || isGithubPath;
 
   // 2. preflight処理（レート制限の対象外）
-  if (request.method === 'OPTIONS') {
-    if (validOrigin) {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': validOrigin,
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Credentials': 'true',
-          'Access-Control-Max-Age': '86400',
-          'Vary': 'Origin'
-        }
-      });
-    } else {
+  if (isPreflight) {
+    const allowCredentials =
+      Boolean(validOrigin) &&
+      !matchedWildcard &&
+      (requiresAuth || pathname.startsWith('/api/auth/'));
+
+    if (!validOrigin) {
       return new Response(null, { status: 403 });
     }
+
+    const headers = new Headers({
+      'Access-Control-Allow-Origin': validOrigin,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+      'Vary': 'Origin',
+    });
+
+    if (allowCredentials) {
+      headers.set('Access-Control-Allow-Credentials', 'true');
+    }
+
+    return new Response(null, {
+      status: 204,
+      headers,
+    });
   }
 
   // 2.5. レート制限チェック（APIエンドポイントのみ）
   let rateLimitResult: { allowed: boolean; remaining: number; resetAt: number } | null = null;
-  if (pathname.startsWith('/api/')) {
+  if (isApiPath) {
     const clientIP = getClientIP(request);
     rateLimitResult = await checkRateLimit(env.SESSIONS, clientIP);
     
@@ -48,12 +72,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     }
   }
 
-  // 3. 認証パスの判定
-  const isAuthPath = pathname.startsWith('/api/auth/') && 
-                     !pathname.includes('/login') && 
-                     !pathname.includes('/callback');
-  const isGithubPath = pathname.startsWith('/api/github/');
-  const requiresAuth = isAuthPath || isGithubPath;
+  // 3.5. CSRF/Origin ガード（APIの書き込み系は Origin 必須）
+  if (isApiPath && isWriteMethod) {
+    if (!origin || !validOrigin) {
+      return new Response('Forbidden', { status: 403 });
+    }
+  }
 
   // 4. 認証が必要なパスでオリジン検証
   // 同一オリジンリクエスト（Originヘッダーがない場合）は許可
@@ -96,6 +120,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   // CORS適用
   return applyCORS(modifiedResponse, {
     origin: validOrigin,
-    credentials: requiresAuth || pathname.startsWith('/api/auth/')
+    credentials: Boolean(validOrigin) && !matchedWildcard && (requiresAuth || pathname.startsWith('/api/auth/'))
   });
 };
