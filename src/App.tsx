@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RepoBoard, TabNavigation, AddRepoModal, ManualRepoBoard, ActivityTab, SplitPanel, SidebarSummary, Workspace } from './components';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
@@ -179,15 +179,18 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     setActivityRefreshToken((prev) => prev + 1);
   }, [refreshRepos]);
 
-  const handleStatsUpdate = (
-    totalVisible: number,
-    categoryCounts: Record<ColumnKey, number>,
-    updatedColumnTitles: Record<ColumnKey, string>
-  ) => {
-    setDisplayedRepoCount(totalVisible);
-    setDisplayedCategoryCounts(categoryCounts);
-    setColumnTitles(updatedColumnTitles);
-  };
+  const memoizedHandleStatsUpdate = useCallback(
+    (
+      totalVisible: number,
+      categoryCounts: Record<ColumnKey, number>,
+      updatedColumnTitles: Record<ColumnKey, string>
+    ) => {
+      setDisplayedRepoCount(totalVisible);
+      setDisplayedCategoryCounts(categoryCounts);
+      setColumnTitles(updatedColumnTitles);
+    },
+    []
+  );
 
   const handleClearError = () => {
     setUiError(null);
@@ -195,21 +198,38 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   };
 
   // Summary stats for sidebar
-  const summaryStats = {
-    totalRepos: repos.length,
-    activeRepos: displayedCategoryCounts.Active,
-    todoStats: {
-      total: todoStats?.total || 0,
-      done: todoStats?.done || 0,
-      inProgress: todoStats?.inProgress || 0,
-      overdue: todoStats?.overdue || 0,
-    },
-    syncStats: {
-      synced: 0, // TODO: Implement sync tracking
-      pending: 0,
-      error: 0,
-    },
-  };
+  const summaryStats = useMemo(
+    () => ({
+      totalRepos: repos.length,
+      activeRepos: displayedCategoryCounts.Active,
+      todoStats: {
+        total: todoStats?.total || 0,
+        done: todoStats?.done || 0,
+        inProgress: todoStats?.inProgress || 0,
+        overdue: todoStats?.overdue || 0,
+      },
+      syncStats: {
+        synced: 0, // TODO: Implement sync tracking
+        pending: 0,
+        error: 0,
+      },
+    }),
+    [
+      repos.length,
+      displayedCategoryCounts.Active,
+      displayedCategoryCounts.Stale,
+      displayedCategoryCounts.Dormant,
+      displayedCategoryCounts.Archived,
+      todoStats?.total,
+      todoStats?.done,
+      todoStats?.inProgress,
+      todoStats?.overdue,
+    ]
+  );
+
+  const handleSidebarToggle = useCallback(() => {
+    setIsSidebarCollapsed((prev) => !prev);
+  }, []);
 
   return (
     <div className="App h-screen bg-surface-app flex flex-col transition-colors overflow-hidden">
@@ -333,7 +353,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
           <SidebarSummary
             stats={summaryStats}
             isCollapsed={isSidebarCollapsed}
-            onCollapseToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onCollapseToggle={handleSidebarToggle}
             onCardClick={(type) => {
               // Handle card clicks - could filter view or navigate
               console.log('Card clicked:', type);
@@ -352,7 +372,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                     <RepoBoard
                       repos={repos}
                       onRefresh={handleRefresh}
-                      onStatsUpdate={handleStatsUpdate}
+                      onStatsUpdate={memoizedHandleStatsUpdate}
                       lastUpdateTime={lastUpdateTime}
                       isLoading={isRepoLoading}
                     />

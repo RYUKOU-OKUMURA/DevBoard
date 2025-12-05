@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Repo, ColumnKey, SortOrder, AppConfig, ViewPreset, ViewMode } from '../types';
 import { classifyRepo, DEFAULT_CLASSIFY_CONFIG, configToOptions } from '../lib/classifyRepo';
 import { searchAndSortRepos } from '../utils/search';
@@ -141,6 +141,14 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo] as const)), [repos]);
 
+  const hiddenReposList = useMemo(
+    () =>
+      Array.from(hiddenRepoIds)
+        .map((id) => repoMap.get(id))
+        .filter((repo): repo is Repo => Boolean(repo)),
+    [hiddenRepoIds, repoMap]
+  );
+
   // Apply search and sort, then classify into columns with manual overrides
   const classifiedRepos = useMemo(() => {
     // Initialize all columns (fixed + custom)
@@ -247,23 +255,34 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     0
   );
 
-  // Provide ordered repos per column
-  const getOrderedRepos = (col: ColumnKey): Repo[] => {
-    const idOrder = orderMap[col] || [];
-    const map = new Map(classifiedRepos[col].map((r) => [r.id, r] as const));
-    const ordered: Repo[] = [];
-    idOrder.forEach((id) => {
-      const r = map.get(id);
-      if (r) ordered.push(r);
-    });
-    // append any leftover (shouldn’t happen normally)
-    classifiedRepos[col].forEach((r) => {
-      if (!idOrder.includes(r.id)) ordered.push(r);
+  // Provide ordered repos per column with stable references
+  const orderedReposByColumn = useMemo(() => {
+    const ordered: Record<ColumnKey, Repo[]> = {} as Record<ColumnKey, Repo[]>;
+    columnDisplayOrder.forEach((col) => {
+      const idOrder = orderMap[col] || [];
+      const repoList = classifiedRepos[col] || [];
+      const repoLookup = new Map(repoList.map((repo) => [repo.id, repo] as const));
+      const next: Repo[] = [];
+
+      idOrder.forEach((id) => {
+        const repo = repoLookup.get(id);
+        if (repo) {
+          next.push(repo);
+        }
+      });
+
+      repoList.forEach((repo) => {
+        if (!idOrder.includes(repo.id)) {
+          next.push(repo);
+        }
+      });
+
+      ordered[col] = next;
     });
     return ordered;
-  };
+  }, [orderMap, classifiedRepos, columnDisplayOrder]);
 
-  const handleColumnTitleChange = (col: ColumnKey, newTitle: string) => {
+  const handleColumnTitleChange = useCallback((col: ColumnKey, newTitle: string) => {
     setColumnTitles((prev) => {
       const trimmed = newTitle.trim();
       if (!trimmed || prev[col] === trimmed) {
@@ -271,92 +290,93 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       }
       return { ...prev, [col]: trimmed };
     });
-  };
+  }, []);
 
 
-  const handleReorderWithinColumn = (col: ColumnKey, fromId: string, toId?: string) => {
-    setOrderMap((prev) => {
-      const list = [...(prev[col] || [])];
-      const fromIdx = list.indexOf(fromId);
-      if (fromIdx === -1) return prev;
+  const handleReorderWithinColumn = useCallback(
+    (col: ColumnKey, fromId: string, toId?: string) => {
+      setOrderMap((prev) => {
+        const list = [...(prev[col] || [])];
+        const fromIdx = list.indexOf(fromId);
+        if (fromIdx === -1) return prev;
 
-      list.splice(fromIdx, 1);
+        list.splice(fromIdx, 1);
 
-      if (toId) {
-        const toIdx = list.indexOf(toId);
-        const insertIdx = toIdx === -1 ? list.length : toIdx;
-        list.splice(insertIdx, 0, fromId);
-      } else {
-        list.push(fromId);
+        if (toId) {
+          const toIdx = list.indexOf(toId);
+          const insertIdx = toIdx === -1 ? list.length : toIdx;
+          list.splice(insertIdx, 0, fromId);
+        } else {
+          list.push(fromId);
+        }
+
+        return { ...prev, [col]: list };
+      });
+    },
+    []
+  );
+
+  const handleReorderBetween = useCallback(
+    (fromCol: ColumnKey, toCol: ColumnKey, fromId: string, toId?: string) => {
+      if (fromCol === toCol) {
+        handleReorderWithinColumn(fromCol, fromId, toId);
+        return;
       }
 
-      return { ...prev, [col]: list };
-    });
-  };
-
-  const handleReorderBetween = (
-    fromCol: ColumnKey,
-    toCol: ColumnKey,
-    fromId: string,
-    toId?: string
-  ) => {
-    if (fromCol === toCol) {
-      handleReorderWithinColumn(fromCol, fromId, toId);
-      return;
-    }
-
-    const repo = repoMap.get(fromId);
-    if (!repo) {
-      return;
-    }
-
-    setColumnAssignments((prev) => {
-      const next = { ...prev };
-      const defaultColumn = classifyRepo(repo, configToOptions(config));
-      if (toCol === defaultColumn) {
-        delete next[fromId];
-      } else {
-        next[fromId] = toCol;
-      }
-      return next;
-    });
-
-    setOrderMap((prev) => {
-      const fromList = [...(prev[fromCol] || [])].filter((id) => id !== fromId);
-      const toListRaw = prev[toCol] || [];
-      const toList = toListRaw.filter((id) => id !== fromId);
-
-      if (toId) {
-        const targetIdx = toList.indexOf(toId);
-        const insertIdx = targetIdx === -1 ? toList.length : targetIdx;
-        toList.splice(insertIdx, 0, fromId);
-      } else {
-        toList.push(fromId);
+      const repo = repoMap.get(fromId);
+      if (!repo) {
+        return;
       }
 
-      return {
-        ...prev,
-        [fromCol]: fromList,
-        [toCol]: toList,
-      };
-    });
-  };
+      setColumnAssignments((prev) => {
+        const next = { ...prev };
+        const defaultColumn = classifyRepo(repo, configToOptions(config));
+        if (toCol === defaultColumn) {
+          delete next[fromId];
+        } else {
+          next[fromId] = toCol;
+        }
+        return next;
+      });
 
-  const handleHideRepo = (repoId: string) => {
+      setOrderMap((prev) => {
+        const fromList = [...(prev[fromCol] || [])].filter((id) => id !== fromId);
+        const toListRaw = prev[toCol] || [];
+        const toList = toListRaw.filter((id) => id !== fromId);
+
+        if (toId) {
+          const targetIdx = toList.indexOf(toId);
+          const insertIdx = targetIdx === -1 ? toList.length : targetIdx;
+          toList.splice(insertIdx, 0, fromId);
+        } else {
+          toList.push(fromId);
+        }
+
+        return {
+          ...prev,
+          [fromCol]: fromList,
+          [toCol]: toList,
+        };
+      });
+    },
+    [config, handleReorderWithinColumn, repoMap]
+  );
+
+  const handleHideRepo = useCallback((repoId: string) => {
     setHiddenRepoIds((prev) => new Set([...prev, repoId]));
-  };
+  }, []);
 
-  const handleUnhideRepo = (repoId: string) => {
+  const handleUnhideRepo = useCallback((repoId: string) => {
     setHiddenRepoIds((prev) => {
       const next = new Set(prev);
       next.delete(repoId);
       return next;
     });
-  };
+  }, []);
 
-  const handleUnhideAll = () => {
+  const handleUnhideAll = useCallback(() => {
     setHiddenRepoIds(new Set());
-  };
+  }, []);
 
   // Preset handlers
   const handlePresetSelect = (presetId: string) => {
@@ -418,34 +438,41 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
     return false;
   };
 
-  const handleColumnSettingsSave = (newTitles: Record<ColumnKey, string>, newOrder: ColumnKey[]) => {
-    // Find deleted columns
-    const deletedColumns = columnDisplayOrder.filter((col) => !newOrder.includes(col));
-    
-    // Reassign repos from deleted columns to their default classification
-    if (deletedColumns.length > 0) {
-      const updatedAssignments = { ...columnAssignments };
-      deletedColumns.forEach((deletedCol) => {
-        // Find repos assigned to deleted column
-        Object.keys(columnAssignments).forEach((repoId) => {
-          if (columnAssignments[repoId] === deletedCol) {
-            // Remove assignment to let it use default classification
-            delete updatedAssignments[repoId];
-          }
+  const handleColumnSettingsSave = useCallback(
+    (newTitles: Record<ColumnKey, string>, newOrder: ColumnKey[]) => {
+      // Find deleted columns
+      const deletedColumns = columnDisplayOrder.filter((col) => !newOrder.includes(col));
+      
+      // Reassign repos from deleted columns to their default classification
+      if (deletedColumns.length > 0) {
+        const updatedAssignments = { ...columnAssignments };
+        deletedColumns.forEach((deletedCol) => {
+          // Find repos assigned to deleted column
+          Object.keys(columnAssignments).forEach((repoId) => {
+            if (columnAssignments[repoId] === deletedCol) {
+              // Remove assignment to let it use default classification
+              delete updatedAssignments[repoId];
+            }
+          });
         });
-      });
-      setColumnAssignments(updatedAssignments);
-    }
-    
-    setColumnTitles(newTitles);
-    setColumnDisplayOrder(newOrder);
-  };
+        setColumnAssignments(updatedAssignments);
+      }
+      
+      setColumnTitles(newTitles);
+      setColumnDisplayOrder(newOrder);
+    },
+    [columnAssignments, columnDisplayOrder]
+  );
 
   // Handle view mode change
-  const handleViewModeChange = (mode: ViewMode) => {
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
     setStorageItem(VIEW_MODE_STORAGE_KEY, mode);
-  };
+  }, []);
+
+  const openColumnSettings = useCallback(() => {
+    setIsColumnSettingsModalOpen(true);
+  }, []);
 
   // View mode button component
   const ViewModeButton = ({ mode, icon, label }: { mode: ViewMode; icon: React.ReactNode; label: string }) => (
@@ -485,11 +512,11 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
         onDeletePreset={handleDeletePreset}
         columnTitles={columnTitles}
         thresholds={thresholds}
-        hiddenRepos={Array.from(hiddenRepoIds).map((id) => repoMap.get(id)).filter((r): r is Repo => r !== undefined)}
+        hiddenRepos={hiddenReposList}
         onUnhideRepo={handleUnhideRepo}
         onUnhideAll={handleUnhideAll}
         lastUpdateTime={lastUpdateTime}
-        onOpenColumnSettings={() => setIsColumnSettingsModalOpen(true)}
+        onOpenColumnSettings={openColumnSettings}
       />
 
       {/* View Mode Switcher */}
@@ -588,7 +615,7 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
                 <RepoColumn
                   key={columnKey}
                   title={columnTitles[columnKey] || columnKey}
-                  repos={getOrderedRepos(columnKey)}
+                  repos={orderedReposByColumn[columnKey] || []}
                   columnKey={columnKey}
                   onReorder={handleReorderWithinColumn}
                   onReorderBetween={handleReorderBetween}

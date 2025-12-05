@@ -2,7 +2,7 @@
  * TodoList component - Display a list of todos with grouping and filtering
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Todo, TodoGroup } from '../types';
 import { TodoItem } from './TodoItem';
@@ -21,7 +21,7 @@ interface TodoListProps {
 
 export const TodoList: React.FC<TodoListProps> = ({
   todos,
-  repoMap = new Map(),
+  repoMap,
   groupBy = 'none',
   onUpdate,
   onDelete,
@@ -31,19 +31,26 @@ export const TodoList: React.FC<TodoListProps> = ({
 }) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+  const safeRepoMap = useMemo(
+    () => repoMap ?? new Map<string, string>(),
+    [repoMap]
+  );
+
   // Group todos
-  const groups = groupTodos(todos, groupBy);
+  const groups = useMemo(() => groupTodos(todos, groupBy), [todos, groupBy]);
 
   // Toggle group expansion
-  const toggleGroup = (groupKey: string) => {
-    const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(groupKey)) {
-      newExpanded.delete(groupKey);
-    } else {
-      newExpanded.add(groupKey);
-    }
-    setExpandedGroups(newExpanded);
-  };
+  const toggleGroup = useCallback((groupKey: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      return next;
+    });
+  }, []);
 
   // Empty state
   if (todos.length === 0) {
@@ -87,7 +94,7 @@ export const TodoList: React.FC<TodoListProps> = ({
               onDelete={() => onDelete(todo.id)}
               onClick={() => onClick(todo)}
               showRepo={true}
-              repoName={repoMap.get(todo.repoId)}
+              repoName={safeRepoMap.get(todo.repoId)}
             />
           ))}
         </AnimatePresence>
@@ -153,7 +160,7 @@ export const TodoList: React.FC<TodoListProps> = ({
                       onDelete={() => onDelete(todo.id)}
                       onClick={() => onClick(todo)}
                       showRepo={groupBy !== 'repo'}
-                      repoName={repoMap.get(todo.repoId)}
+                      repoName={safeRepoMap.get(todo.repoId)}
                     />
                   ))}
                 </motion.div>
