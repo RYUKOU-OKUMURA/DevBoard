@@ -14,6 +14,7 @@ export { TodosTab } from './TodosTab';
 export { TodoFilters } from './TodoFilters';
 export { TodoBoard } from './TodoBoard';
 export { TodoStats } from './TodoStats';
+export { ActivitySummaryStats } from './ActivitySummaryStats';
 
 // New UI components
 export { SplitPanel } from './ui/SplitPanel';
