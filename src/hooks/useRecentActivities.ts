@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RecentItem } from '../types';
 import { fetchLatestIssues, fetchLatestPullRequests } from '../api/repos';
+import { isAbortError } from '../utils/errorHandling';
 
 interface UseRecentActivitiesOptions {
   enabled?: boolean;
@@ -30,18 +31,22 @@ export function useRecentActivities(
     }
 
     let cancelled = false;
+    const controller = new AbortController();
     async function load() {
       setIsLoading(true);
       try {
         const [issues, pullRequests] = await Promise.all([
-          fetchLatestIssues(),
-          fetchLatestPullRequests(),
+          fetchLatestIssues({ signal: controller.signal }),
+          fetchLatestPullRequests({ signal: controller.signal }),
         ]);
         const combined = [...issues, ...pullRequests];
         if (!cancelled) {
           setRecentItems(combined);
         }
       } catch (err) {
+        if (controller.signal.aborted || isAbortError(err)) {
+          return;
+        }
         console.error('Failed to fetch latest items:', err);
         if (!cancelled) {
           setRecentItems([]);
@@ -55,6 +60,7 @@ export function useRecentActivities(
     load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [user, enabled, refreshToken]);
 

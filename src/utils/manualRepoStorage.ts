@@ -4,6 +4,12 @@ import { devError, devWarn } from './logger';
 
 const LEGACY_MANUAL_REPOS_STORAGE_KEY = 'github-dashboard-manual-repos';
 const MANUAL_REPOS_STORAGE_PREFIX = 'manual-repos:';
+const MANUAL_REPOS_VERSION = 1;
+
+type ManualRepoEnvelope = {
+  version: number;
+  repos: Repo[];
+};
 
 function assertAccountId(accountId: string): string {
   if (!accountId || accountId.trim().length === 0) {
@@ -14,6 +20,19 @@ function assertAccountId(accountId: string): string {
 
 function getManualRepoKey(accountId: string): string {
   return `${MANUAL_REPOS_STORAGE_PREFIX}${assertAccountId(accountId)}`;
+}
+
+function parseManualRepoEnvelope(value: unknown): Repo[] | null {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (value && typeof value === 'object' && 'repos' in (value as Record<string, unknown>)) {
+    const envelope = value as ManualRepoEnvelope;
+    if (Array.isArray(envelope.repos)) {
+      return envelope.repos;
+    }
+  }
+  return null;
 }
 
 function migrateLegacyManualRepos(accountId: string): Repo[] | null {
@@ -32,7 +51,7 @@ function migrateLegacyManualRepos(accountId: string): Repo[] | null {
 
   const legacyRepos = getStorageItem<Repo[]>(LEGACY_MANUAL_REPOS_STORAGE_KEY, []);
   if (legacyRepos.length > 0) {
-    setStorageItem(targetKey, legacyRepos);
+    saveManualRepos(accountId, legacyRepos);
   }
 
   // 旧キーは必ず削除
@@ -49,7 +68,13 @@ export function getManualRepos(accountId: string): Repo[] {
   if (migrated) {
     return migrated;
   }
-  return getStorageItem<Repo[]>(key, []);
+  const stored = getStorageItem<ManualRepoEnvelope | Repo[]>(key, []);
+  const parsed = parseManualRepoEnvelope(stored);
+  if (parsed === null) {
+    removeStorageItem(key);
+    return [];
+  }
+  return parsed;
 }
 
 /**
@@ -57,7 +82,11 @@ export function getManualRepos(accountId: string): Repo[] {
  */
 export function saveManualRepos(accountId: string, repos: Repo[]): boolean {
   const key = getManualRepoKey(accountId);
-  return setStorageItem(key, repos);
+  const payload: ManualRepoEnvelope = {
+    version: MANUAL_REPOS_VERSION,
+    repos,
+  };
+  return setStorageItem(key, payload);
 }
 
 /**

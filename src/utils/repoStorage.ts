@@ -17,6 +17,7 @@ export const REPO_CACHE_TTL_MS = 2 * 60 * 1000; // 2分
 type RepoSourceType = "viewer" | "manual";
 
 export type StoredRepoData = {
+  version?: number;
   repos: Repo[];
   timestamp: number;
 };
@@ -315,6 +316,7 @@ function loadReposFromStorageInternal(key: string, type: RepoSourceType): Repo[]
 
 function saveReposToStorage(key: string, repos: Repo[], type: RepoSourceType): void {
   const payload: StoredRepoData = {
+    version: 1,
     repos: attachSource(repos, type),
     timestamp: Date.now(),
   };

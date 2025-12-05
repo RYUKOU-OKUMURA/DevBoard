@@ -1,7 +1,7 @@
 import { createGraphQLClient } from "./octokit";
 import { GraphQLOperations } from "./githubQueryIds";
 import type { Repo, RecentItem, IssueState, PullRequestState } from "../types";
-import { validateRepos, getErrorMessage } from "../utils/validators";
+import { validateRepos, ensureArray } from "../utils/validators";
 import {
   transformRepository,
   transformRepositories,
@@ -20,6 +20,8 @@ import {
   recordRequest,
   getRateLimitErrorMessage,
 } from "../utils/rateLimiter";
+import { getUserFriendlyErrorMessage, parseGraphQLError } from "../utils/errorHandling";
+import { devError } from "../utils/logger";
 
 /**
  * GitHub GraphQL API レスポンスの型定義
@@ -40,6 +42,17 @@ interface SingleRepositoryResponse {
   repository: GraphQLRepository | null;
 }
 
+function ensureRepositoryConnection(response: GraphQLResponse) {
+  if (!response.viewer || !response.viewer.repositories) {
+    throw new Error("Invalid API response: missing repository connection");
+  }
+  const { nodes, pageInfo } = response.viewer.repositories;
+  if (!Array.isArray(nodes) || !pageInfo) {
+    throw new Error("Invalid API response: malformed repositories connection");
+  }
+  return { nodes, pageInfo };
+}
+
 /**
  * すべてのリポジトリを取得（ページネーション対応）
  * @param accountId - アカウント（username）
@@ -47,9 +60,9 @@ interface SingleRepositoryResponse {
  */
 export async function fetchAllRepositories(
   accountId: string,
-  options: { retryAttempt?: boolean; forceRefresh?: boolean } = {}
+  options: { retryAttempt?: boolean; forceRefresh?: boolean; signal?: AbortSignal } = {}
 ): Promise<Repo[]> {
-  const { retryAttempt = false, forceRefresh = false } = options;
+  const { retryAttempt = false, forceRefresh = false, signal } = options;
   if (!accountId) {
     throw new Error('accountId is required to fetch viewer repositories.');
   }
@@ -97,15 +110,12 @@ export async function fetchAllRepositories(
         {
           first: 100,
           after: cursor,
-        }
+        },
+        { signal }
       );
 
-      // レスポンスのバリデーション
-      if (!response.viewer?.repositories?.nodes) {
-        throw new Error("Invalid API response: missing repositories data");
-      }
-
-      const repos = transformRepositories(response.viewer.repositories.nodes);
+      const { nodes, pageInfo } = ensureRepositoryConnection(response);
+      const repos = transformRepositories(nodes);
 
       // 変換後のデータをバリデーション
       const validRepos = validateRepos(repos);
@@ -115,8 +125,8 @@ export async function fetchAllRepositories(
       }
       repositories.push(...validRepos);
 
-      hasNextPage = response.viewer.repositories.pageInfo.hasNextPage;
-      cursor = response.viewer.repositories.pageInfo.endCursor;
+      hasNextPage = pageInfo.hasNextPage;
+      cursor = pageInfo.endCursor;
 
       console.log(
         `Fetched ${repos.length} repositories (${validRepos.length} valid, total: ${repositories.length})`
@@ -127,7 +137,7 @@ export async function fetchAllRepositories(
       console.warn("Repository fetch completed but returned no data.");
       if (!retryAttempt) {
         console.info("Retrying repository fetch once due to empty result...");
-        return fetchAllRepositories(accountId, { retryAttempt: true, forceRefresh });
+        return fetchAllRepositories(accountId, { retryAttempt: true, forceRefresh, signal });
       }
       console.warn("Retry attempt also returned an empty repository list.");
     }
@@ -140,8 +150,9 @@ export async function fetchAllRepositories(
 
     return sortedRepos;
   } catch (error) {
-    const errorMessage = getErrorMessage(error);
-    console.error("Failed to fetch repositories:", errorMessage);
+    const parsed = parseGraphQLError(error);
+    const errorMessage = getUserFriendlyErrorMessage(parsed);
+    devError("Failed to fetch repositories:", parsed);
 
     // エラー時にキャッシュがあればそれを返す
     const cached = loadViewerRepos(accountId);
@@ -150,6 +161,9 @@ export async function fetchAllRepositories(
       return cached;
     }
 
+    if (parsed instanceof Error) {
+      throw parsed;
+    }
     throw new Error(`Failed to fetch repositories: ${errorMessage}`);
   }
 }
@@ -199,9 +213,9 @@ function parseRepositoryIdentifier(input: string): RepositoryIdentifier | null {
 export async function fetchRepositoriesByUrls(
   accountId: string,
   inputs: string[],
-  options: { forceRefresh?: boolean } = {}
+  options: { forceRefresh?: boolean; signal?: AbortSignal } = {}
 ): Promise<{ repos: Repo[]; failed: string[] }> {
-  const { forceRefresh = false } = options;
+  const { forceRefresh = false, signal } = options;
   if (!accountId) {
     throw new Error('accountId is required to fetch custom repositories.');
   }
@@ -276,7 +290,8 @@ export async function fetchRepositoriesByUrls(
         {
           owner: identifier.owner,
           name: identifier.name,
-        }
+        },
+        { signal }
       );
 
       if (!data.repository) {
@@ -292,9 +307,10 @@ export async function fetchRepositoriesByUrls(
       }
       repos.push(validated[0]);
     } catch (error) {
-      console.error(
+      const parsed = parseGraphQLError(error);
+      devError(
         `Failed to fetch repository ${identifier.owner}/${identifier.name}:`,
-        error
+        parsed
       );
       failed.push(identifier.raw);
     }
@@ -327,7 +343,7 @@ export interface RecentActivity {
 /**
  * Fetch recent repository activities (last 7 days) from GitHub events
  */
-export async function fetchRecentActivities(): Promise<RecentActivity[]> {
+export async function fetchRecentActivities(options: { signal?: AbortSignal } = {}): Promise<RecentActivity[]> {
   // Recent activities用のエンドポイントを使用
   const graphqlClient = createGraphQLClient("/github/graphql/activities/recent");
   const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -349,28 +365,33 @@ export async function fetchRecentActivities(): Promise<RecentActivity[]> {
           }>;
         };
       };
-    }>(GraphQLOperations.recentEvents, { from: FROM });
+    }>(GraphQLOperations.recentEvents, { from: FROM }, { signal: options.signal });
 
-    const activities: RecentActivity[] = response.viewer.contributionsCollection.commitContributionsByRepository
+    const contributionRepos = ensureArray(
+      response.viewer?.contributionsCollection?.commitContributionsByRepository,
+      "recent activities contributions"
+    );
+
+    const activities: RecentActivity[] = contributionRepos
       .map((item) => {
-        const latestContribution = item.contributions.nodes[0];
-        if (!latestContribution) return null;
-
-        const relative = timeAgo(latestContribution.occurredAt);
+        const nodes = ensureArray(item.contributions?.nodes ?? [], "recent activity nodes");
+        const latestContribution = nodes[0];
+        if (!latestContribution?.occurredAt) return null;
 
         return {
           repo: {
             nameWithOwner: item.repository.nameWithOwner,
             htmlUrl: item.repository.url,
           },
-          lastActivity: relative,
+          lastActivity: timeAgo(latestContribution.occurredAt),
         };
       })
       .filter((activity): activity is RecentActivity => activity !== null);
 
     return activities;
   } catch (error) {
-    console.error('Failed to fetch recent activities:', error);
+    const parsed = parseGraphQLError(error);
+    devError("Failed to fetch recent activities:", parsed);
     return [];
   }
 }
@@ -378,7 +399,7 @@ export async function fetchRecentActivities(): Promise<RecentActivity[]> {
 /**
  * Fetch latest Issues contributed by the viewer within last 7 days
  */
-export async function fetchLatestIssues(): Promise<RecentItem[]> {
+export async function fetchLatestIssues(options: { signal?: AbortSignal } = {}): Promise<RecentItem[]> {
   // Issues用のエンドポイントを使用
   const graphqlClient = createGraphQLClient("/github/graphql/activities/issues");
   const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -393,31 +414,41 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
           }>;
         };
       };
-    }>(GraphQLOperations.recentIssues, { from: FROM });
+    }>(GraphQLOperations.recentIssues, { from: FROM }, { signal: options.signal });
 
-    const items: RecentItem[] = data.viewer.contributionsCollection.issueContributionsByRepository
-      .flatMap((repoBlock) =>
-        repoBlock.contributions.nodes.map((node) => {
-          const occurredAt = node.occurredAt;
-          const repo = node.issue.repository;
-          return {
-            type: 'Issue' as const,
-            repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
-            title: node.issue.title,
-            number: node.issue.number,
-            url: node.issue.url,
-            occurredAt,
-            relativeTime: timeAgo(occurredAt),
-            state: node.issue.state,
-          };
-        })
-      )
+    const repoBlocks = ensureArray(
+      data.viewer?.contributionsCollection?.issueContributionsByRepository,
+      "recent issues contributions"
+    );
+
+    const items: RecentItem[] = repoBlocks
+      .flatMap((repoBlock) => {
+        const contributionNodes = ensureArray(repoBlock.contributions?.nodes ?? [], "recent issues nodes");
+        return contributionNodes
+          .map((node) => {
+            if (!node?.issue) return null;
+            const repo = node.issue.repository;
+            const occurredAt = node.occurredAt;
+            return {
+              type: 'Issue' as const,
+              repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
+              title: node.issue.title,
+              number: node.issue.number,
+              url: node.issue.url,
+              occurredAt,
+              relativeTime: timeAgo(occurredAt),
+              state: node.issue.state,
+            };
+          })
+          .filter((item): item is RecentItem => Boolean(item));
+      })
       .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1))
       .slice(0, 10);
 
     return items;
   } catch (error) {
-    console.error('Failed to fetch latest issues:', error);
+    const parsed = parseGraphQLError(error);
+    devError('Failed to fetch latest issues:', parsed);
     return [];
   }
 }
@@ -425,7 +456,7 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
 /**
  * Fetch latest Pull Requests contributed by the viewer within last 7 days
  */
-export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
+export async function fetchLatestPullRequests(options: { signal?: AbortSignal } = {}): Promise<RecentItem[]> {
   // Pull Requests用のエンドポイントを使用
   const graphqlClient = createGraphQLClient("/github/graphql/activities/pullrequests");
   const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -440,31 +471,41 @@ export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
           }>;
         };
       };
-    }>(GraphQLOperations.recentPullRequests, { from: FROM });
+    }>(GraphQLOperations.recentPullRequests, { from: FROM }, { signal: options.signal });
 
-    const items: RecentItem[] = data.viewer.contributionsCollection.pullRequestContributionsByRepository
-      .flatMap((repoBlock) =>
-        repoBlock.contributions.nodes.map((node) => {
-          const occurredAt = node.occurredAt;
-          const repo = node.pullRequest.repository;
-          return {
-            type: 'PullRequest' as const,
-            repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
-            title: node.pullRequest.title,
-            number: node.pullRequest.number,
-            url: node.pullRequest.url,
-            occurredAt,
-            relativeTime: timeAgo(occurredAt),
-            state: node.pullRequest.state,
-          };
-        })
-      )
+    const repoBlocks = ensureArray(
+      data.viewer?.contributionsCollection?.pullRequestContributionsByRepository,
+      "recent pull requests contributions"
+    );
+
+    const items: RecentItem[] = repoBlocks
+      .flatMap((repoBlock) => {
+        const contributionNodes = ensureArray(repoBlock.contributions?.nodes ?? [], "recent pull request nodes");
+        return contributionNodes
+          .map((node) => {
+            if (!node?.pullRequest) return null;
+            const repo = node.pullRequest.repository;
+            const occurredAt = node.occurredAt;
+            return {
+              type: 'PullRequest' as const,
+              repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
+              title: node.pullRequest.title,
+              number: node.pullRequest.number,
+              url: node.pullRequest.url,
+              occurredAt,
+              relativeTime: timeAgo(occurredAt),
+              state: node.pullRequest.state,
+            };
+          })
+          .filter((item): item is RecentItem => Boolean(item));
+      })
       .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1))
       .slice(0, 10);
 
     return items;
   } catch (error) {
-    console.error('Failed to fetch latest pull requests:', error);
+    const parsed = parseGraphQLError(error);
+    devError('Failed to fetch latest pull requests:', parsed);
     return [];
   }
 }

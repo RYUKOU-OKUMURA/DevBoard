@@ -3,6 +3,8 @@
  * Uses the proxy server for authenticated requests
  */
 
+import { NetworkError, RateLimitError } from '../utils/errorHandling';
+
 const API_PROXY_BASE_URL = "/api/github";
 
 export interface GitHubLabel {
@@ -86,14 +88,30 @@ async function callGitHubRest<T>(
     ...(options.headers as Record<string, string> | undefined),
   };
 
-  const response = await fetch(`${API_PROXY_BASE_URL}${path}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_PROXY_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
+  } catch (error) {
+    throw new NetworkError('Failed to reach GitHub REST API', error);
+  }
+
+  const resetHeader = response.headers.get('x-ratelimit-reset');
+  const remainingHeader = response.headers.get('x-ratelimit-remaining');
+  const resetAt =
+    resetHeader && Number.isFinite(Number(resetHeader))
+      ? new Date(Number(resetHeader) * 1000)
+      : undefined;
 
   if (response.status === 401) {
     throw new Error('Authentication required. Please log in again.');
+  }
+
+  if (response.status === 429 || (response.status === 403 && remainingHeader === '0')) {
+    throw new RateLimitError('GitHub API rate limit exceeded.', resetAt);
   }
 
   if (!response.ok) {
@@ -103,7 +121,11 @@ async function callGitHubRest<T>(
     );
   }
 
-  return response.json() as Promise<T>;
+  try {
+    return (await response.json()) as T;
+  } catch (error) {
+    throw new Error('Failed to parse GitHub REST API response as JSON');
+  }
 }
 
 /**

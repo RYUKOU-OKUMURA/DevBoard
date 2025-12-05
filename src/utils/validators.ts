@@ -1,6 +1,32 @@
 import type { Repo } from "../types";
 
 /**
+ * プレーンオブジェクト判定
+ */
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * 期待する型でなければ例外を投げるユーティリティ
+ */
+export function ensureString(value: unknown, context: string): string {
+  if (typeof value !== "string") {
+    throw new Error(`${context}: expected string`);
+  }
+  return value;
+}
+
+export function ensureArray<T>(value: unknown, context: string): T[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${context}: expected array`);
+  }
+  return value as T[];
+}
+
+/**
  * 値が文字列かどうかをチェック
  */
 function isString(value: unknown): value is string {

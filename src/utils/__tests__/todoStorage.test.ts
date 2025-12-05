@@ -19,7 +19,7 @@ import {
 } from '../todoStorage';
 import type { Todo } from '../../types/todo';
 
-// Mock localStorage
+// Mock localStorage (Node環境用に window をポリフィル)
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
 
@@ -37,7 +37,19 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', {
+const globalAny = globalThis as typeof globalThis & {
+  window?: typeof globalThis;
+};
+
+if (!globalAny.window) {
+  globalAny.window = {} as typeof globalThis;
+}
+
+Object.defineProperty(globalAny.window, 'localStorage', {
+  value: localStorageMock,
+});
+
+Object.defineProperty(globalAny, 'localStorage', {
   value: localStorageMock,
 });
 

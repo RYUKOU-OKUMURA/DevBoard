@@ -23,12 +23,106 @@ const STORAGE_KEYS = {
 // Constants
 const MAX_TODOS = 500;
 const ARCHIVE_DAYS = 30;
+const DEFAULT_SYNC_CONFIG: IssueSyncConfig = {
+  enabled: false,
+  autoImport: false,
+  autoClose: false,
+  syncInterval: 15,
+};
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isIsoDate(value: unknown): value is string {
+  return isString(value) && !Number.isNaN(Date.parse(value));
+}
+
+function sanitizeLabels(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((label): label is string => typeof label === 'string');
+}
+
+function sanitizeTodo(raw: unknown): Todo | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const candidate = raw as Partial<Todo>;
+
+  if (!isString(candidate.id) || !isString(candidate.title) || !isString(candidate.repoId)) {
+    return null;
+  }
+
+  if (candidate.status !== 'todo' && candidate.status !== 'in_progress' && candidate.status !== 'done') {
+    return null;
+  }
+
+  if (candidate.priority !== 'high' && candidate.priority !== 'medium' && candidate.priority !== 'low') {
+    return null;
+  }
+
+  if (!isIsoDate(candidate.createdAt) || !isIsoDate(candidate.updatedAt)) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    title: candidate.title,
+    description: isString(candidate.description) ? candidate.description : undefined,
+    repoId: candidate.repoId,
+    status: candidate.status,
+    priority: candidate.priority,
+    dueDate: isIsoDate(candidate.dueDate) ? candidate.dueDate : undefined,
+    assignee: isString(candidate.assignee) ? candidate.assignee : undefined,
+    labels: sanitizeLabels(candidate.labels),
+    issueNumber: typeof candidate.issueNumber === 'number' ? candidate.issueNumber : undefined,
+    issueUrl: isString(candidate.issueUrl) ? candidate.issueUrl : undefined,
+    syncEnabled: Boolean(candidate.syncEnabled),
+    createdAt: candidate.createdAt,
+    updatedAt: candidate.updatedAt,
+    completedAt: isIsoDate(candidate.completedAt) ? candidate.completedAt : undefined,
+  };
+}
+
+function sanitizeTodos(rawTodos: Todo[]): Todo[] {
+  const sanitized = rawTodos
+    .map((todo) => sanitizeTodo(todo))
+    .filter((todo): todo is Todo => todo !== null);
+  return sanitized;
+}
+
+function normalizeIssueSyncConfig(value: unknown): IssueSyncConfig {
+  if (typeof value !== 'object' || value === null) {
+    return { ...DEFAULT_SYNC_CONFIG };
+  }
+  const partial = value as Partial<IssueSyncConfig>;
+  const syncInterval =
+    typeof partial.syncInterval === 'number' && Number.isFinite(partial.syncInterval)
+      ? partial.syncInterval
+      : DEFAULT_SYNC_CONFIG.syncInterval;
+
+  return {
+    enabled: Boolean(partial.enabled),
+    autoImport: Boolean(partial.autoImport),
+    autoClose: Boolean(partial.autoClose),
+    syncInterval,
+    lastSyncAt: isIsoDate(partial.lastSyncAt) ? partial.lastSyncAt : undefined,
+  };
+}
+
+function readTodos(accountId: string): Todo[] {
+  const stored = getStorageItem<Todo[]>(STORAGE_KEYS.todos(accountId), []);
+  const sanitized = sanitizeTodos(stored);
+  if (sanitized.length !== stored.length) {
+    // 壊れたデータを検知した場合は正規化した値で上書き
+    setStorageItem(STORAGE_KEYS.todos(accountId), sanitized);
+  }
+  return sanitized;
+}
 
 /**
  * Get all ToDos for an account
  */
 export function getTodos(accountId: string): Todo[] {
-  return getStorageItem<Todo[]>(STORAGE_KEYS.todos(accountId), []);
+  return readTodos(accountId);
 }
 
 /**
@@ -41,7 +135,8 @@ export function saveTodos(accountId: string, todos: Todo[]): boolean {
     todosToSave = archiveOldCompletedTodos(todos, MAX_TODOS);
   }
 
-  return setStorageItem(STORAGE_KEYS.todos(accountId), todosToSave);
+  const sanitized = sanitizeTodos(todosToSave);
+  return setStorageItem(STORAGE_KEYS.todos(accountId), sanitized);
 }
 
 /**
@@ -81,10 +176,17 @@ export function updateTodo(
     return null;
   }
 
+  const now = Date.now();
+  const previousUpdatedAt = Date.parse(todos[index].updatedAt ?? '');
+  const updatedAt =
+    Number.isFinite(previousUpdatedAt) && previousUpdatedAt >= now
+      ? new Date(previousUpdatedAt + 1).toISOString()
+      : new Date(now).toISOString();
+
   const updatedTodo: Todo = {
     ...todos[index],
     ...updates,
-    updatedAt: new Date().toISOString(),
+    updatedAt,
     // If status changed to 'done', set completedAt
     completedAt:
       updates.status === 'done' && todos[index].status !== 'done'
@@ -175,15 +277,11 @@ export function getTodoStats(accountId: string): TodoStats {
  * Get Issue sync configuration
  */
 export function getIssueSyncConfig(accountId: string): IssueSyncConfig {
-  return getStorageItem<IssueSyncConfig>(
-    STORAGE_KEYS.syncConfig(accountId),
-    {
-      enabled: false,
-      autoImport: false,
-      autoClose: false,
-      syncInterval: 15, // 15 minutes default
-    }
-  );
+  const raw = getStorageItem<Partial<IssueSyncConfig>>(STORAGE_KEYS.syncConfig(accountId), DEFAULT_SYNC_CONFIG);
+  const normalized = normalizeIssueSyncConfig(raw);
+  // Persist normalized config if it differs from raw shape
+  setStorageItem(STORAGE_KEYS.syncConfig(accountId), normalized);
+  return normalized;
 }
 
 /**

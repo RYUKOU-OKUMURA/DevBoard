@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Repo } from '../types';
 import { fetchUserRepos, fetchRepositoriesByUrls } from '../api/repos';
 import { getViewerReposTimestamp, getCustomReposTimestamp } from '../utils/repoStorage';
 import { useToast } from './useToast';
-import { devError } from '../utils/logger';
+import { handleErrorWithToast } from '../utils/errorHandling';
 
 type DataSource = 'viewer' | 'custom';
 
@@ -40,14 +40,28 @@ export function useRepositories(options: UseRepositoriesOptions): UseRepositorie
   const [dataSource, setDataSource] = useState<DataSource>('viewer');
   const [customRepoSources, setCustomRepoSources] = useState<string[]>([]);
   const [lastUpdateTime, setLastUpdateTime] = useState<number | null>(null);
+  const isMountedRef = useRef(true);
+  const requestControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const loadRepos = useCallback(
     async (forceRefresh = false, options: { notify?: boolean } = {}) => {
       const { notify = false } = options;
+      requestControllerRef.current?.abort();
+      const controller = new AbortController();
+      requestControllerRef.current = controller;
       setIsLoading(true);
       setError(null);
       try {
-        const realRepos = await fetchUserRepos(accountId, { forceRefresh });
+        const realRepos = await fetchUserRepos(accountId, { forceRefresh, signal: controller.signal });
+        if (!isMountedRef.current) {
+          return false;
+        }
         setRepos(realRepos);
         setDataSource('viewer');
 
@@ -65,22 +79,27 @@ export function useRepositories(options: UseRepositoriesOptions): UseRepositorie
 
         return true;
       } catch (err) {
-        devError('Failed to load repositories:', err);
-        const message = err instanceof Error ? err.message : 'Failed to load repositories';
-        setError(message);
-        if (notify) {
-          showToast({
-            variant: 'error',
-            title: 'リポジトリの読み込みに失敗しました',
-            description: message,
-          });
+        if (controller.signal.aborted) {
+          return false;
+        }
+        const message = handleErrorWithToast(err, 'リポジトリの読み込み', {
+          showToast: notify ? showToast : undefined,
+          defaultTitle: 'リポジトリの読み込みに失敗しました',
+        });
+        if (isMountedRef.current) {
+          setError(message);
         }
         return false;
       } finally {
-        setIsLoading(false);
+        if (requestControllerRef.current === controller) {
+          requestControllerRef.current = null;
+        }
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [showToast]
+    [accountId, showToast]
   );
 
   const loadCustomRepos = useCallback(
@@ -90,12 +109,19 @@ export function useRepositories(options: UseRepositoriesOptions): UseRepositorie
       options: { notify?: boolean } = {}
     ) => {
       const { notify = false } = options;
+      requestControllerRef.current?.abort();
+      const controller = new AbortController();
+      requestControllerRef.current = controller;
       setIsLoading(true);
       setError(null);
       try {
         const { repos: fetched, failed } = await fetchRepositoriesByUrls(accountId, sources, {
           forceRefresh,
+          signal: controller.signal,
         });
+        if (!isMountedRef.current) {
+          return false;
+        }
         if (fetched.length === 0) {
           const message = failed.length
             ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
@@ -134,22 +160,27 @@ export function useRepositories(options: UseRepositoriesOptions): UseRepositorie
 
         return true;
       } catch (err) {
-        devError('Failed to load custom repositories:', err);
-        const message = err instanceof Error ? err.message : 'リポジトリの読み込みに失敗しました';
-        setError(message);
-        if (notify) {
-          showToast({
-            variant: 'error',
-            title: 'カスタムリポジトリの読み込みに失敗しました',
-            description: message,
-          });
+        if (controller.signal.aborted) {
+          return false;
+        }
+        const message = handleErrorWithToast(err, 'カスタムリポジトリの読み込み', {
+          showToast: notify ? showToast : undefined,
+          defaultTitle: 'カスタムリポジトリの読み込みに失敗しました',
+        });
+        if (isMountedRef.current) {
+          setError(message);
         }
         return false;
       } finally {
-        setIsLoading(false);
+        if (requestControllerRef.current === controller) {
+          requestControllerRef.current = null;
+        }
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [showToast]
+    [accountId, showToast]
   );
 
   const refresh = useCallback(async () => {

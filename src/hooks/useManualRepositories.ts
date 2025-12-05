@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { Repo } from '../types';
 import { fetchRepositoriesByUrls } from '../api/repos';
 import { addMultipleManualRepos, getManualRepos, saveManualRepos } from '../utils/manualRepoStorage';
-import { devError } from '../utils/logger';
 import type { ToastContextValue } from '../contexts/ToastContextValue';
+import { handleErrorWithToast } from '../utils/errorHandling';
 
 const MAX_MANUAL_REPOS_PER_SUBMIT = 25;
 
@@ -21,6 +21,15 @@ export function useManualRepositories({ accountId, showToast, onErrorChange }: M
   }
   const [manualRepos, setManualRepos] = useState<Repo[]>(() => getManualRepos(accountId));
   const [isSaving, setIsSaving] = useState(false);
+  const isMountedRef = useRef(true);
+  const requestControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      requestControllerRef.current?.abort();
+    };
+  }, []);
 
   const manualRepoCount = manualRepos.length;
 
@@ -49,10 +58,17 @@ export function useManualRepositories({ accountId, showToast, onErrorChange }: M
 
       setIsSaving(true);
       onErrorChange?.(null);
+      requestControllerRef.current?.abort();
+      const controller = new AbortController();
+      requestControllerRef.current = controller;
       try {
         const { repos: fetched, failed } = await fetchRepositoriesByUrls(accountId, sources, {
           forceRefresh: true,
+          signal: controller.signal,
         });
+        if (!isMountedRef.current) {
+          return { success: false, failed: [] as string[] } as const;
+        }
         if (fetched.length === 0) {
           const message = failed.length
             ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
@@ -101,17 +117,22 @@ export function useManualRepositories({ accountId, showToast, onErrorChange }: M
 
         return { success: true, failed, repos: updatedRepos } as const;
       } catch (err) {
-        devError('Failed to add manual repositories:', err);
-        const message = err instanceof Error ? err.message : 'リポジトリの追加に失敗しました';
-        onErrorChange?.(message);
-        showToast({
-          variant: 'error',
-          title: 'リポジトリの追加に失敗しました',
-          description: message,
+        if (controller.signal.aborted) {
+          return { success: false, failed: [] as string[] } as const;
+        }
+        const message = handleErrorWithToast(err, 'リポジトリの追加', {
+          showToast,
+          defaultTitle: 'リポジトリの追加に失敗しました',
         });
+        onErrorChange?.(message);
         return { success: false, failed: [] as string[] } as const;
       } finally {
-        setIsSaving(false);
+        if (requestControllerRef.current === controller) {
+          requestControllerRef.current = null;
+        }
+        if (isMountedRef.current) {
+          setIsSaving(false);
+        }
       }
     },
     [accountId, onErrorChange, parseInput, showToast, syncManualRepos]

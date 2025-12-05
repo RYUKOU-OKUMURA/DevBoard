@@ -72,6 +72,22 @@ describe('manualRepoStorage', () => {
     expect(localStorage.getItem('github-dashboard-manual-repos')).toBeNull();
   });
 
+  it('stores versioned envelope when saving', () => {
+    saveManualRepos(ACCOUNT_A, [manualRepo]);
+    const raw = localStorage.getItem(`manual-repos:${ACCOUNT_A}`);
+    expect(raw).not.toBeNull();
+    const parsed = raw ? JSON.parse(raw) : null;
+    expect(parsed?.version).toBe(1);
+    expect(parsed?.repos?.length).toBe(1);
+  });
+
+  it('drops corrupted data and returns empty array', () => {
+    localStorage.setItem(`manual-repos:${ACCOUNT_A}`, '{invalid-json');
+    const loaded = getManualRepos(ACCOUNT_A);
+    expect(loaded).toHaveLength(0);
+    expect(localStorage.getItem(`manual-repos:${ACCOUNT_A}`)).toBeNull();
+  });
+
   it('throws when accountId is missing', () => {
     expect(() => getManualRepos('')).toThrow('accountId is required');
     expect(() => addMultipleManualRepos('', [manualRepo])).toThrow('accountId is required');

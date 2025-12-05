@@ -1,10 +1,15 @@
 import type { GraphQLOperationId } from './githubQueryIds';
+import { NetworkError, RateLimitError, parseGraphQLError } from '../utils/errorHandling';
 
 const API_PROXY_BASE_URL = "/api";
 
 type GraphQLVariables = Record<string, unknown>;
 
-type GraphQLClient = <T>(operationId: GraphQLOperationId, variables?: GraphQLVariables) => Promise<T>;
+type GraphQLClient = <T>(
+  operationId: GraphQLOperationId,
+  variables?: GraphQLVariables,
+  options?: { signal?: AbortSignal }
+) => Promise<T>;
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -23,17 +28,34 @@ async function callGitHubProxy<T>(
     ...(options.headers as Record<string, string> | undefined),
   };
 
-  const response = await fetch(`${API_PROXY_BASE_URL}${path}`, {
-    ...options,
-    headers,
-    credentials: 'include', // Send cookies for authentication
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_PROXY_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include', // Send cookies for authentication
+    });
+  } catch (error) {
+    throw new NetworkError('Failed to reach GitHub API proxy', error);
+  }
 
   // Handle authentication errors
   if (response.status === 401) {
     throw new Error(
       'Authentication required. Please log in again.'
     );
+  }
+
+  const resetHeader = response.headers.get('x-ratelimit-reset');
+  const remainingHeader = response.headers.get('x-ratelimit-remaining');
+  const resetAt =
+    resetHeader && Number.isFinite(Number(resetHeader))
+      ? new Date(Number(resetHeader) * 1000)
+      : undefined;
+
+  if (response.status === 429 || (response.status === 403 && remainingHeader === '0')) {
+    throw new RateLimitError('GitHub API rate limit exceeded.', resetAt);
   }
 
   if (!response.ok) {
@@ -43,7 +65,11 @@ async function callGitHubProxy<T>(
     );
   }
 
-  return response.json() as Promise<T>;
+  try {
+    return (await response.json()) as T;
+  } catch (error) {
+    throw new Error('Failed to parse GitHub API response as JSON');
+  }
 }
 
 /**
@@ -53,7 +79,8 @@ async function callGitHubProxy<T>(
 export function createGraphQLClient(endpoint = "/github/graphql"): GraphQLClient {
   return async function graphQLRequest<T>(
     operationId: GraphQLOperationId,
-    variables: GraphQLVariables = {}
+    variables: GraphQLVariables = {},
+    options: { signal?: AbortSignal } = {}
   ): Promise<T> {
     const payload = {
       queryId: operationId,
@@ -65,14 +92,16 @@ export function createGraphQLClient(endpoint = "/github/graphql"): GraphQLClient
       {
         method: "POST",
         body: JSON.stringify(payload),
+        signal: options.signal,
       }
     );
 
-    if (result.errors && result.errors.length > 0) {
+    const errors = Array.isArray(result.errors) ? result.errors : [];
+    if (errors.length > 0) {
       const message =
-        result.errors.map((error) => error.message).join(", ") ||
+        errors.map((error) => error?.message).filter(Boolean).join(", ") ||
         "Unknown GraphQL error";
-      throw new Error(`GitHub GraphQL error: ${message}`);
+      throw parseGraphQLError(new Error(`GitHub GraphQL error: ${message}`));
     }
 
     if (!result.data) {

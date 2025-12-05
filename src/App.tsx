@@ -1,8 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RepoBoard, TabNavigation, AddRepoModal, ManualRepoBoard, ActivityTab, SplitPanel, SidebarSummary, Workspace } from './components';
-import LoginPage from './components/LoginPage';
-import LandingPage from './components/LandingPage';
-import AccountSwitcher from './components/AccountSwitcher';
+import { Suspense, lazy, useState, useEffect, useCallback, useMemo } from 'react';
 import { AuthProvider, useAuth, type User } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -17,6 +13,20 @@ import { useActiveTab } from './hooks/useActiveTab';
 import { useManualRepositories } from './hooks/useManualRepositories';
 import { usePreAuthView } from './hooks/usePreAuthView';
 import type { TabType } from './components/TabNavigation';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { buildErrorToast } from './utils/errorHandling';
+
+const TabNavigation = lazy(() => import('./components/TabNavigation').then((m) => ({ default: m.TabNavigation })));
+const RepoBoard = lazy(() => import('./components/RepoBoard').then((m) => ({ default: m.RepoBoard })));
+const ManualRepoBoard = lazy(() => import('./components/ManualRepoBoard').then((m) => ({ default: m.ManualRepoBoard })));
+const ActivityTab = lazy(() => import('./components/ActivityTab').then((m) => ({ default: m.ActivityTab })));
+const SplitPanel = lazy(() => import('./components/ui/SplitPanel').then((m) => ({ default: m.SplitPanel })));
+const SidebarSummary = lazy(() => import('./components/SidebarSummary').then((m) => ({ default: m.SidebarSummary })));
+const Workspace = lazy(() => import('./components/Workspace').then((m) => ({ default: m.Workspace })));
+const AddRepoModal = lazy(() => import('./components/AddRepoModal').then((m) => ({ default: m.AddRepoModal })));
+const AccountSwitcher = lazy(() => import('./components/AccountSwitcher'));
+const LoginPage = lazy(() => import('./components/LoginPage'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
 
 function LoadingScreen() {
   return (
@@ -296,7 +306,16 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                 </svg>
               )}
             </button>
-            <AccountSwitcher />
+            <Suspense
+              fallback={
+                <div
+                  className="h-10 w-10 rounded-lg bg-surface-hover animate-pulse"
+                  aria-hidden
+                />
+              }
+            >
+              <AccountSwitcher />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -339,26 +358,44 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
       />
 
       {/* Tab Navigation */}
-      <TabNavigation
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        activityCount={activityBadgeCount}
-        manualRepoCount={manualRepoCount}
-      />
+      <Suspense
+        fallback={
+          <div
+            className="h-14 bg-surface-primary border-b border-[var(--border-subtle)]"
+            aria-hidden
+          />
+        }
+      >
+        <TabNavigation
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          activityCount={activityBadgeCount}
+          manualRepoCount={manualRepoCount}
+        />
+      </Suspense>
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Only show on board tab */}
         {activeTab === 'board' && (
-          <SidebarSummary
-            stats={summaryStats}
-            isCollapsed={isSidebarCollapsed}
-            onCollapseToggle={handleSidebarToggle}
-            onCardClick={(type) => {
-              // Handle card clicks - could filter view or navigate
-              console.log('Card clicked:', type);
-            }}
-          />
+          <Suspense
+            fallback={
+              <div
+                className="hidden lg:block w-80 border-r border-[var(--border-subtle)] bg-surface-primary animate-pulse"
+                aria-hidden
+              />
+            }
+          >
+            <SidebarSummary
+              stats={summaryStats}
+              isCollapsed={isSidebarCollapsed}
+              onCollapseToggle={handleSidebarToggle}
+              onCardClick={(type) => {
+                // Handle card clicks - could filter view or navigate
+                console.log('Card clicked:', type);
+              }}
+            />
+          </Suspense>
         )}
 
         {/* Main Content with Split Panel */}
@@ -367,60 +404,70 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
           <div className={activeTab === 'board' ? 'h-full animate-slide-fade-in' : 'hidden'}>
             {activeTab === 'board' && (
               <TagsProvider scope="kanban">
-                <SplitPanel
-                  topPanel={
-                    <RepoBoard
-                      repos={repos}
-                      onRefresh={handleRefresh}
-                      onStatsUpdate={memoizedHandleStatsUpdate}
-                      lastUpdateTime={lastUpdateTime}
-                      isLoading={isRepoLoading}
-                    />
-                  }
-                  bottomPanel={<Workspace />}
-                  initialBottomHeight={panelHeight}
-                  minBottomHeight={200}
-                  maxBottomHeightPercent={80}
-                  isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
-                  onCollapseChange={(collapsed) => {
-                    if (collapsed) {
-                      toggleWorkspace();
+                <Suspense fallback={<LoadingScreen />}>
+                  <SplitPanel
+                    topPanel={
+                      <RepoBoard
+                        repos={repos}
+                        onRefresh={handleRefresh}
+                        onStatsUpdate={memoizedHandleStatsUpdate}
+                        lastUpdateTime={lastUpdateTime}
+                        isLoading={isRepoLoading}
+                      />
                     }
-                  }}
-                  onHeightChange={setPanelHeight}
-                />
+                    bottomPanel={<Workspace />}
+                    initialBottomHeight={panelHeight}
+                    minBottomHeight={200}
+                    maxBottomHeightPercent={80}
+                    isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
+                    onCollapseChange={(collapsed) => {
+                      if (collapsed) {
+                        toggleWorkspace();
+                      }
+                    }}
+                    onHeightChange={setPanelHeight}
+                  />
+                </Suspense>
               </TagsProvider>
             )}
           </div>
 
           {/* Activity Tab */}
           <div className={activeTab === 'activity' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
-            {activeTab === 'activity' && <ActivityTab repos={repos} />}
+            {activeTab === 'activity' && (
+              <Suspense fallback={<LoadingScreen />}>
+                <ActivityTab repos={repos} />
+              </Suspense>
+            )}
           </div>
 
           {/* Manual Repos Tab */}
           <div className={activeTab === 'manual' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
             {activeTab === 'manual' && (
               <TagsProvider scope="manual">
-                <ManualRepoBoard
-                  accountId={user.username}
-                  manualRepos={manualRepos}
-                  onReposChange={setManualRepos}
-                />
+                <Suspense fallback={<LoadingScreen />}>
+                  <ManualRepoBoard
+                    accountId={user.username}
+                    manualRepos={manualRepos}
+                    onReposChange={setManualRepos}
+                  />
+                </Suspense>
               </TagsProvider>
             )}
           </div>
         </div>
       </div>
 
-      <AddRepoModal
-        isOpen={isAddRepoModalOpen}
-        onClose={() => setIsAddRepoModalOpen(false)}
-        value={customInput}
-        onChange={setCustomInput}
-        onSubmit={handleManualRepoSubmit}
-        isLoading={isSavingManualRepos}
-      />
+      <Suspense fallback={null}>
+        <AddRepoModal
+          isOpen={isAddRepoModalOpen}
+          onClose={() => setIsAddRepoModalOpen(false)}
+          value={customInput}
+          onChange={setCustomInput}
+          onSubmit={handleManualRepoSubmit}
+          isLoading={isSavingManualRepos}
+        />
+      </Suspense>
     </div>
   );
 }
@@ -435,12 +482,43 @@ function AppContent() {
 
   if (!user) {
     if (view === 'landing') {
-      return <LandingPage onContinue={showLogin} />;
+      return (
+        <Suspense fallback={<LoadingScreen />}>
+          <LandingPage onContinue={showLogin} />
+        </Suspense>
+      );
     }
-    return <LoginPage onBack={showLanding} />;
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <LoginPage onBack={showLanding} />
+      </Suspense>
+    );
   }
 
   return <AuthenticatedApp user={user} />;
+}
+
+function AppErrorBoundaryWrapper() {
+  const { showToast } = useToast();
+  const handleFatalError = useCallback(
+    (error: Error) => {
+      showToast(
+        buildErrorToast(error, 'アプリで予期せぬエラーが発生しました', {
+          defaultTitle: '予期せぬエラー',
+          fallbackDescription: '操作を続行できませんでした。再度お試しください。',
+        })
+      );
+    },
+    [showToast]
+  );
+
+  return (
+    <ErrorBoundary onError={handleFatalError}>
+      <WorkspaceProvider>
+        <AppContent />
+      </WorkspaceProvider>
+    </ErrorBoundary>
+  );
 }
 
 function App() {
@@ -448,9 +526,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <WorkspaceProvider>
-            <AppContent />
-          </WorkspaceProvider>
+          <AppErrorBoundaryWrapper />
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
