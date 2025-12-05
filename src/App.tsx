@@ -291,7 +291,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                   bottomPanel={<Workspace />}
                   initialBottomHeight={panelHeight}
                   minBottomHeight={200}
-                  maxBottomHeightPercent={60}
+                  maxBottomHeightPercent={80}
                   isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
                   onCollapseChange={(collapsed) => {
                     if (collapsed) {

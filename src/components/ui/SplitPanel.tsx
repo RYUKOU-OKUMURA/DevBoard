@@ -41,6 +41,10 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   const [bottomHeight, setBottomHeight] = useState(initialBottomHeight);
   const [isDragging, setIsDragging] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isBottomCollapsed);
+  const dragStartYRef = useRef<number | null>(null);
+  const hasDraggedRef = useRef(false);
+
+  const DRAG_ACTIVATION_DISTANCE = 4;
 
   // Sync external collapse state
   useEffect(() => {
@@ -48,15 +52,39 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   }, [isBottomCollapsed]);
 
   // Handle drag start
-  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
+  const handleDragStart = useCallback((clientY: number) => {
+    dragStartYRef.current = clientY;
+    hasDraggedRef.current = false;
     setIsDragging(true);
   }, []);
+
+  // Toggle collapse
+  const toggleCollapse = useCallback(() => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
+    onCollapseChange?.(newCollapsed);
+  }, [isCollapsed, onCollapseChange]);
 
   // Handle drag move
   const handleDragMove = useCallback(
     (clientY: number) => {
       if (!isDragging || !containerRef.current) return;
+      if (dragStartYRef.current === null) return;
+
+      const distance = Math.abs(clientY - dragStartYRef.current);
+      if (!hasDraggedRef.current && distance < DRAG_ACTIVATION_DISTANCE) {
+        return;
+      }
+
+      if (!hasDraggedRef.current) {
+        hasDraggedRef.current = true;
+
+        // If the panel is collapsed, expand it before resizing
+        if (isCollapsed) {
+          setIsCollapsed(false);
+          onCollapseChange?.(false);
+        }
+      }
 
       const containerRect = containerRef.current.getBoundingClientRect();
       const containerHeight = containerRect.height;
@@ -69,13 +97,29 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
       setBottomHeight(clampedHeight);
       onHeightChange?.(clampedHeight);
     },
-    [isDragging, minBottomHeight, maxBottomHeightPercent, onHeightChange]
+    [
+      isDragging,
+      isCollapsed,
+      minBottomHeight,
+      maxBottomHeightPercent,
+      onHeightChange,
+      onCollapseChange,
+    ]
   );
 
   // Handle drag end
   const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+
     setIsDragging(false);
-  }, []);
+
+    if (!hasDraggedRef.current) {
+      toggleCollapse();
+    }
+
+    dragStartYRef.current = null;
+    hasDraggedRef.current = false;
+  }, [isDragging, toggleCollapse]);
 
   // Mouse event handlers
   useEffect(() => {
@@ -125,13 +169,6 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
-  // Toggle collapse
-  const toggleCollapse = useCallback(() => {
-    const newCollapsed = !isCollapsed;
-    setIsCollapsed(newCollapsed);
-    onCollapseChange?.(newCollapsed);
-  }, [isCollapsed, onCollapseChange]);
-
   return (
     <div
       ref={containerRef}
@@ -150,36 +187,51 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
       {/* Divider */}
       <div
         className={`
-          relative flex-shrink-0
-          ${isCollapsed ? 'h-8' : 'h-2'}
+          relative flex-shrink-0 select-none
+          ${isCollapsed ? 'h-10' : 'h-3'}
           bg-[var(--bg-tertiary)]
           border-t border-b border-[var(--border-subtle)]
           transition-all duration-200
           ${isDragging ? 'bg-[var(--accent-blue-muted)]' : 'hover:bg-[var(--bg-hover)]'}
+          cursor-ns-resize
         `}
+        role="separator"
+        aria-orientation="horizontal"
+        aria-expanded={!isCollapsed}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          handleDragStart(e.clientY);
+        }}
+        onTouchStart={(e) => {
+          if (e.touches.length === 1) {
+            handleDragStart(e.touches[0].clientY);
+          }
+        }}
       >
-        {/* Drag handle */}
+        {/* Drag handle visual */}
         {!isCollapsed && (
           <div
-            onMouseDown={handleDragStart}
-            onTouchStart={handleDragStart}
             className={`
-              absolute inset-x-0 -top-1 -bottom-1
-              cursor-ns-resize
+              absolute inset-x-0 -top-2 -bottom-2
               flex items-center justify-center
-              group
+              pointer-events-none
             `}
           >
             {/* Grip indicator */}
-            <div className="flex gap-0.5">
-              <div className="w-8 h-1 rounded-full bg-[var(--border-strong)] group-hover:bg-[var(--accent-blue)] transition-colors" />
+            <div className="flex gap-1">
+              <div className="w-10 h-1.5 rounded-full bg-[var(--border-strong)]" />
             </div>
           </div>
         )}
 
         {/* Collapse/Expand button */}
         <button
-          onClick={toggleCollapse}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleCollapse();
+          }}
           className={`
             absolute right-4 top-1/2 -translate-y-1/2
             flex items-center gap-2 px-3 py-1
@@ -208,7 +260,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
 
         {/* Panel info when collapsed */}
         {isCollapsed && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-caption text-[var(--text-muted)]">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-caption text-[var(--text-muted)] pointer-events-none">
             ワークスペースを表示するにはクリック
           </div>
         )}
