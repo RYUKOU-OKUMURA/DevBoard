@@ -110,13 +110,13 @@
 
 **ファイル**: `src/components/TodoPanel.tsx`
 
-- 既存のTodoColumn/TodoCardを再利用
-- 3列Kanban（未着手/進行中/完了）
-- ドラッグ&ドロップ対応
-- データロード: アカウント横断TODOを取得。大量件数に備え、初期ロード件数上限（例: 100件）＋絞り込み/検索を前提にする。必要なら仮想化を検討。
-- フィルタ: リポジトリ・ステータス・担当（デフォルト自分）で絞り込み。適用中はバッジ表示。
-- D&D更新は既存hooksを再利用し、更新中は該当カードをローディング表示にする。
-- a11y: カラム/カードに`role`/aria-labelを付与し、フィルタ適用中の状態をテキストで示す。
+- [x] 既存のTodoColumn/TodoCardを再利用
+- [x] 3列Kanban（未着手/進行中/完了）
+- [x] ドラッグ&ドロップ対応
+- [x] データロード: アカウント横断TODOを取得。大量件数に備え、初期ロード件数上限（例: 100件）＋絞り込み/検索を前提にする。必要なら仮想化を検討。
+- [x] フィルタ: リポジトリ・ステータス・担当（デフォルト自分）で絞り込み。適用中はバッジ表示。
+- [x] D&D更新は既存hooksを再利用し、更新中は該当カードをローディング表示にする。
+- [x] a11y: カラム/カードに`role`/aria-labelを付与し、フィルタ適用中の状態をテキストで示す。
 
 ### Phase 5: ActivityTab（メインコンテナ）
 
@@ -165,7 +165,7 @@ type TabType = 'board' | 'activity' | 'manual';
 | 1 | Phase 1 | ActivitySummaryStats.tsx（新規） | [x] |
 | 2 | Phase 2 | ActivityIssueCard.tsx（新規） | [x] |
 | 3 | Phase 3 | ActivityPanel.tsx（新規） | [x] |
-| 4 | Phase 4 | TodoPanel.tsx（新規） | [ ] |
+| 4 | Phase 4 | TodoPanel.tsx（新規） | [x] |
 | 5 | Phase 5 | ActivityTab.tsx（新規） | [ ] |
 | 6 | Phase 6 | TabNavigation.tsx, useActiveTab.ts, App.tsx（変更） | [ ] |
 | 7 | Phase 7 | TodoCard.tsx, TodoColumn.tsx（デザイン改善） | [ ] |

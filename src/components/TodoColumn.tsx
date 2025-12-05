@@ -19,6 +19,7 @@ interface TodoColumnProps {
   repoMap?: Map<string, string>;
   onTodoClick: (todo: Todo) => void;
   onAddTodo?: () => void;
+  busyTodoIds?: Set<string>;
 }
 
 const statusConfig = {
@@ -48,6 +49,7 @@ export const TodoColumn: React.FC<TodoColumnProps> = ({
   repoMap = new Map(),
   onTodoClick,
   onAddTodo,
+  busyTodoIds = new Set<string>(),
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -131,12 +133,22 @@ export const TodoColumn: React.FC<TodoColumnProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
+                  className="relative"
+                  aria-busy={busyTodoIds.has(todo.id)}
                 >
                   <TodoCard
                     todo={todo}
                     onClick={() => onTodoClick(todo)}
                     repoName={repoMap.get(todo.repoId)}
                   />
+                  {busyTodoIds.has(todo.id) && (
+                    <div className="absolute inset-0 rounded-lg bg-[var(--bg-primary)]/70 flex items-center justify-center">
+                      <div
+                        className="w-5 h-5 rounded-full border-2 border-[var(--accent-green-muted)] border-b-[var(--accent-green)] animate-spin"
+                        aria-label="更新中"
+                      />
+                    </div>
+                  )}
                 </motion.div>
               ))
             )}

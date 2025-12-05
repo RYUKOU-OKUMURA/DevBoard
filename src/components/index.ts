@@ -14,6 +14,7 @@ export { TodosTab } from './TodosTab';
 export { TodoFilters } from './TodoFilters';
 export { TodoBoard } from './TodoBoard';
 export { TodoStats } from './TodoStats';
+export { TodoPanel } from './TodoPanel';
 export { ActivitySummaryStats } from './ActivitySummaryStats';
 export { ActivityIssueCard } from './ActivityIssueCard';
 export { ActivityPanel } from './ActivityPanel';
