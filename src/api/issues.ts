@@ -3,9 +3,7 @@
  * Uses the proxy server for authenticated requests
  */
 
-import { NetworkError, RateLimitError } from '../utils/errorHandling';
-
-const API_PROXY_BASE_URL = "/api/github";
+import { githubRestRequest } from '@/services/githubClient';
 
 export interface GitHubLabel {
   id: number;
@@ -77,58 +75,6 @@ interface FetchOptions {
 }
 
 /**
- * Call GitHub REST API via proxy server with authentication
- */
-async function callGitHubRest<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> | undefined),
-  };
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_PROXY_BASE_URL}${path}`, {
-      ...options,
-      headers,
-      credentials: 'include',
-    });
-  } catch (error) {
-    throw new NetworkError('Failed to reach GitHub REST API', error);
-  }
-
-  const resetHeader = response.headers.get('x-ratelimit-reset');
-  const remainingHeader = response.headers.get('x-ratelimit-remaining');
-  const resetAt =
-    resetHeader && Number.isFinite(Number(resetHeader))
-      ? new Date(Number(resetHeader) * 1000)
-      : undefined;
-
-  if (response.status === 401) {
-    throw new Error('Authentication required. Please log in again.');
-  }
-
-  if (response.status === 429 || (response.status === 403 && remainingHeader === '0')) {
-    throw new RateLimitError('GitHub API rate limit exceeded.', resetAt);
-  }
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `GitHub API request failed with status ${response.status}: ${errorBody}`
-    );
-  }
-
-  try {
-    return (await response.json()) as T;
-  } catch (error) {
-    throw new Error('Failed to parse GitHub REST API response as JSON');
-  }
-}
-
-/**
  * Fetch issues for a repository
  */
 export async function fetchIssues(
@@ -146,7 +92,7 @@ export async function fetchIssues(
   const queryString = params.toString();
   const path = `/repos/${owner}/${repo}/issues${queryString ? `?${queryString}` : ''}`;
 
-  const issues = await callGitHubRest<GitHubIssue[]>(path);
+  const issues = await githubRestRequest<GitHubIssue[]>(path);
   
   // Filter out pull requests (they appear in issues endpoint)
   return issues.filter(issue => !issue.pull_request);
@@ -170,7 +116,7 @@ export async function fetchPullRequests(
   const queryString = params.toString();
   const path = `/repos/${owner}/${repo}/pulls${queryString ? `?${queryString}` : ''}`;
 
-  return callGitHubRest<GitHubPullRequest[]>(path);
+  return githubRestRequest<GitHubPullRequest[]>(path);
 }
 
 /**
@@ -186,9 +132,9 @@ export async function createIssue(
     assignees?: string[];
   }
 ): Promise<GitHubIssue> {
-  return callGitHubRest<GitHubIssue>(`/repos/${owner}/${repo}/issues`, {
+  return githubRestRequest<GitHubIssue>(`/repos/${owner}/${repo}/issues`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    json: data,
   });
 }
 
@@ -207,9 +153,9 @@ export async function updateIssue(
     assignees?: string[];
   }
 ): Promise<GitHubIssue> {
-  return callGitHubRest<GitHubIssue>(`/repos/${owner}/${repo}/issues/${issueNumber}`, {
+  return githubRestRequest<GitHubIssue>(`/repos/${owner}/${repo}/issues/${issueNumber}`, {
     method: 'PATCH',
-    body: JSON.stringify(data),
+    json: data,
   });
 }
 
@@ -222,9 +168,9 @@ export async function addIssueComment(
   issueNumber: number,
   body: string
 ): Promise<{ id: number; body: string; created_at: string }> {
-  return callGitHubRest(`/repos/${owner}/${repo}/issues/${issueNumber}/comments`, {
+  return githubRestRequest(`/repos/${owner}/${repo}/issues/${issueNumber}/comments`, {
     method: 'POST',
-    body: JSON.stringify({ body }),
+    json: { body },
   });
 }
 

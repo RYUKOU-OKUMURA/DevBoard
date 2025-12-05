@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createApiClient } from '@/services/apiClient';
 import { devError } from '../utils/logger';
 
 export interface User {
@@ -28,42 +29,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [accounts, setAccounts] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
+  const requestControllerRef = useRef<AbortController | null>(null);
+  const authClient = createApiClient('/api/auth');
 
   // Check authentication status on mount
   useEffect(() => {
     checkAuth();
+    return () => {
+      isMountedRef.current = false;
+      requestControllerRef.current?.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = async () => {
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
     try {
-      // Fetch all accounts
-      const accountsResponse = await fetch('/api/auth/accounts', {
-        credentials: 'include',
+      const accountsData = await authClient.get<AccountsResponse>('/accounts', {
+        signal: controller.signal,
       });
+      if (!isMountedRef.current) return;
+      setAccounts(accountsData.accounts);
 
-      if (accountsResponse.ok) {
-        const accountsData: AccountsResponse = await accountsResponse.json();
-        setAccounts(accountsData.accounts);
-
-        // Find and set active user
-        if (accountsData.activeUserId) {
-          const activeUser = accountsData.accounts.find(
-            (acc) => acc.userId === accountsData.activeUserId
-          );
-          setUser(activeUser || null);
-        } else {
-          setUser(null);
-        }
+      // Find and set active user
+      if (accountsData.activeUserId) {
+        const activeUser = accountsData.accounts.find(
+          (acc) => acc.userId === accountsData.activeUserId
+        );
+        setUser(activeUser || null);
       } else {
         setUser(null);
-        setAccounts([]);
       }
     } catch (error) {
       devError('Auth check failed:', error);
+      if (controller.signal.aborted || !isMountedRef.current) return;
       setUser(null);
       setAccounts([]);
     } finally {
-      setLoading(false);
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -73,84 +84,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const switchAccount = async (userId: string) => {
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
     try {
-      const response = await fetch('/api/auth/switch', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId }),
-      });
+      const data = await authClient.post<AccountsResponse>(
+        '/switch',
+        { userId },
+        { signal: controller.signal }
+      );
+      if (!isMountedRef.current) return;
+      setAccounts(data.accounts);
 
-      if (response.ok) {
-        const data: AccountsResponse = await response.json();
-        setAccounts(data.accounts);
+      const activeUser = data.accounts.find(
+        (acc) => acc.userId === data.activeUserId
+      );
+      setUser(activeUser || null);
 
+      // Reload page to fetch new account's repositories
+      window.location.reload();
+    } catch (error) {
+      devError('Switch account failed:', error);
+    } finally {
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
+    }
+  };
+
+  const removeAccount = async (userId: string) => {
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
+    try {
+      const data = await authClient.post<AccountsResponse>(
+        '/remove',
+        { userId },
+        { signal: controller.signal }
+      );
+      if (!isMountedRef.current) return;
+      setAccounts(data.accounts);
+
+      if (data.activeUserId) {
         const activeUser = data.accounts.find(
           (acc) => acc.userId === data.activeUserId
         );
         setUser(activeUser || null);
 
-        // Reload page to fetch new account's repositories
-        window.location.reload();
-      } else {
-        devError('Failed to switch account');
-      }
-    } catch (error) {
-      devError('Switch account failed:', error);
-    }
-  };
-
-  const removeAccount = async (userId: string) => {
-    try {
-      const response = await fetch('/api/auth/remove', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId }),
-      });
-
-      if (response.ok) {
-        const data: AccountsResponse = await response.json();
-        setAccounts(data.accounts);
-
-        if (data.activeUserId) {
-          const activeUser = data.accounts.find(
-            (acc) => acc.userId === data.activeUserId
-          );
-          setUser(activeUser || null);
-
-          // Reload if we removed the active account
-          if (userId === user?.userId) {
-            window.location.reload();
-          }
-        } else {
-          // All accounts removed
-          setUser(null);
-          window.location.href = '/';
+        // Reload if we removed the active account
+        if (userId === user?.userId) {
+          window.location.reload();
         }
       } else {
-        devError('Failed to remove account');
+        // All accounts removed
+        setUser(null);
+        window.location.href = '/';
       }
     } catch (error) {
       devError('Remove account failed:', error);
+    } finally {
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
     }
   };
 
   const logout = async () => {
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      setUser(null);
-      setAccounts([]);
+      await authClient.post('/logout', undefined, { signal: controller.signal });
+      if (isMountedRef.current) {
+        setUser(null);
+        setAccounts([]);
+      }
       window.location.href = '/';
     } catch (error) {
       devError('Logout failed:', error);
+    } finally {
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
     }
   };
 
