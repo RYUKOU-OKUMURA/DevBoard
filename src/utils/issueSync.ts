@@ -3,6 +3,7 @@
  */
 
 import { createGraphQLClient } from '../api/octokit';
+import { GraphQLOperations } from '../api/githubQueryIds';
 import type {
   Todo,
   GitHubIssue,
@@ -17,100 +18,6 @@ import {
   updateTodo,
   createTodo,
 } from './todoStorage';
-
-/**
- * GraphQL query to fetch repository issues
- */
-const GET_REPOSITORY_ISSUES = `
-  query GetRepositoryIssues($owner: String!, $name: String!, $cursor: String) {
-    repository(owner: $owner, name: $name) {
-      issues(first: 100, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
-        nodes {
-          id
-          number
-          title
-          body
-          state
-          createdAt
-          updatedAt
-          closedAt
-          url
-          labels(first: 10) {
-            nodes {
-              name
-            }
-          }
-          assignees(first: 5) {
-            nodes {
-              login
-            }
-          }
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  }
-`;
-
-/**
- * GraphQL mutation to create an issue
- */
-const CREATE_ISSUE = `
-  mutation CreateIssue($repositoryId: ID!, $title: String!, $body: String, $assigneeIds: [ID!], $labelIds: [ID!]) {
-    createIssue(input: {
-      repositoryId: $repositoryId
-      title: $title
-      body: $body
-      assigneeIds: $assigneeIds
-      labelIds: $labelIds
-    }) {
-      issue {
-        id
-        number
-        url
-      }
-    }
-  }
-`;
-
-/**
- * GraphQL mutation to update an issue
- */
-const UPDATE_ISSUE = `
-  mutation UpdateIssue($issueId: ID!, $title: String, $body: String, $state: IssueState) {
-    updateIssue(input: {
-      id: $issueId
-      title: $title
-      body: $body
-      state: $state
-    }) {
-      issue {
-        id
-        number
-        state
-        updatedAt
-      }
-    }
-  }
-`;
-
-/**
- * GraphQL mutation to close an issue
- */
-const CLOSE_ISSUE = `
-  mutation CloseIssue($issueId: ID!) {
-    closeIssue(input: { issueId: $issueId }) {
-      issue {
-        id
-        state
-        closedAt
-      }
-    }
-  }
-`;
 
 /**
  * Parse repository nameWithOwner into owner and name
@@ -144,7 +51,7 @@ export async function fetchIssuesFromGitHub(
           };
         };
       };
-    }>(GET_REPOSITORY_ISSUES, { owner, name, cursor });
+    }>(GraphQLOperations.repositoryIssues, { owner, name, cursor });
 
     allIssues.push(...result.repository.issues.nodes);
 
@@ -249,7 +156,7 @@ export async function createIssueFromTodo(
         url: string;
       };
     };
-  }>(CREATE_ISSUE, {
+  }>(GraphQLOperations.createIssue, {
     repositoryId,
     title: todo.title,
     body: todo.description || '',
@@ -278,7 +185,7 @@ export async function updateGitHubIssue(
 ): Promise<void> {
   const graphql = createGraphQLClient('/github/graphql');
 
-  await graphql(UPDATE_ISSUE, {
+  await graphql(GraphQLOperations.updateIssue, {
     issueId,
     title: todo.title,
     body: todo.description || '',
@@ -292,7 +199,7 @@ export async function updateGitHubIssue(
 export async function closeGitHubIssue(issueId: string): Promise<void> {
   const graphql = createGraphQLClient('/github/graphql');
 
-  await graphql(CLOSE_ISSUE, {
+  await graphql(GraphQLOperations.closeIssue, {
     issueId,
   });
 }

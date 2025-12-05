@@ -1,85 +1,165 @@
 // GitHub API proxy - forwards requests to GitHub API with user's access token
+// and enforces strict allowlists for REST/GraphQL.
 
 import type { Env } from '../../lib/types';
-import { getSessionIdFromCookie, getActiveAccountSession } from '../../lib/session';
-import { applyNoCache } from '../../utils/security';
+import {
+  getSessionIdFromCookie,
+  getActiveAccountSession,
+} from '../../lib/session';
+import {
+  applyNoCache,
+} from '../../utils/security';
+import {
+  GRAPHQL_OPERATIONS,
+  type GitHubQueryId,
+} from '../../lib/githubQueries';
+
+type RestRule = {
+  pattern: RegExp;
+  methods: Set<string>;
+};
+
+const REST_ALLOWLIST: RestRule[] = [
+  // Issues list / create
+  { pattern: /^repos\/[^/]+\/[^/]+\/issues$/, methods: new Set(['GET', 'POST']) },
+  // Single issue update
+  { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+$/, methods: new Set(['PATCH']) },
+  // Issue comments create
+  { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+\/comments$/, methods: new Set(['POST']) },
+  // Pull requests list
+  { pattern: /^repos\/[^/]+\/[^/]+\/pulls$/, methods: new Set(['GET']) },
+];
+
+const METHODS_WITH_BODY = new Set(['POST', 'PUT', 'PATCH']);
+
+const createErrorResponse = (status: number, message: string) => {
+  const headers = new Headers({ 'Content-Type': 'application/json' });
+  applyNoCache(headers);
+  return new Response(JSON.stringify({ error: message }), { status, headers });
+};
+
+const logRejection = (reason: string, details: Record<string, unknown>) => {
+  console.warn('[GitHub Proxy] Blocked request', { reason, ...details });
+};
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request, params } = context;
 
   try {
-    // Get master session ID from cookie
     const masterSessionId = await getSessionIdFromCookie(request, env);
-
     if (!masterSessionId) {
-      const headers = new Headers({ 'Content-Type': 'application/json' });
-      applyNoCache(headers);
-      return new Response(
-        JSON.stringify({ error: 'Not authenticated' }),
-        {
-          status: 401,
-          headers,
-        }
-      );
+      return createErrorResponse(401, 'Not authenticated');
     }
 
-    // Get active account session from multi-account session
     const session = await getActiveAccountSession(masterSessionId, env);
-
     if (!session) {
-      const headers = new Headers({ 'Content-Type': 'application/json' });
-      applyNoCache(headers);
-      return new Response(
-        JSON.stringify({ error: 'No active account or session expired' }),
-        {
-          status: 401,
-          headers,
-        }
-      );
+      return createErrorResponse(401, 'No active account or session expired');
     }
 
-    // Build GitHub API URL from the path
     const url = new URL(request.url);
-    const pathArray = params.path as string[];
-    const apiPath = pathArray ? pathArray.join('/') : '';
+    const pathArray = (params.path as string[] | undefined) ?? [];
+    const apiPath = pathArray.filter(Boolean).join('/');
 
-    // Map our custom endpoints to GitHub API paths
-    // All our custom GraphQL endpoints map to GitHub's /graphql
-    let githubApiPath = apiPath;
-    let isGraphQL = false;
-
-    if (apiPath.startsWith('graphql')) {
-      // Any path starting with 'graphql' (including graphql/repos/viewer, graphql/activities/issues, etc.)
-      // should be routed to GitHub's /graphql endpoint
-      githubApiPath = 'graphql';
-      isGraphQL = true;
-      console.log(`[GitHub Proxy] Mapped custom endpoint: ${apiPath} -> graphql`);
+    if (!apiPath) {
+      logRejection('empty path', { method: request.method });
+      return createErrorResponse(403, 'Forbidden');
     }
 
-    // Build the full GitHub API URL
-    const githubUrl = `https://api.github.com/${githubApiPath}${url.search}`;
+    const isGraphQLPath = apiPath.startsWith('graphql');
+
+    if (isGraphQLPath) {
+      if (request.method !== 'POST') {
+        logRejection('non-POST GraphQL request', { method: request.method, path: apiPath });
+        return createErrorResponse(405, 'Method Not Allowed');
+      }
+
+      let parsedBody: any;
+      try {
+        parsedBody = await request.json();
+      } catch {
+        logRejection('invalid JSON body', { path: apiPath });
+        return createErrorResponse(400, 'Invalid request');
+      }
+
+      const { queryId, variables } = parsedBody ?? {};
+      if (!queryId || typeof queryId !== 'string') {
+        logRejection('missing queryId', { path: apiPath });
+        return createErrorResponse(400, 'Invalid request');
+      }
+
+      const operation = GRAPHQL_OPERATIONS[queryId as GitHubQueryId];
+      if (!operation) {
+        logRejection('unknown queryId', { path: apiPath, queryId });
+        return createErrorResponse(403, 'Forbidden');
+      }
+
+      if (!operation.allowedPaths.includes(apiPath)) {
+        logRejection('queryId not allowed on path', { path: apiPath, queryId });
+        return createErrorResponse(403, 'Forbidden');
+      }
+
+      if (variables && (typeof variables !== 'object' || Array.isArray(variables))) {
+        logRejection('invalid variables payload', { path: apiPath, queryId });
+        return createErrorResponse(400, 'Invalid request');
+      }
+
+      const githubResponse = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+          'User-Agent': 'GitHub-Dashboard',
+        },
+        body: JSON.stringify({
+          query: operation.document,
+          variables: variables ?? {},
+        }),
+      });
+
+      const responseBody = await githubResponse.text();
+
+      const headers = new Headers({
+        'Content-Type': githubResponse.headers.get('Content-Type') || 'application/json',
+        'X-RateLimit-Limit': githubResponse.headers.get('X-RateLimit-Limit') || '',
+        'X-RateLimit-Remaining': githubResponse.headers.get('X-RateLimit-Remaining') || '',
+        'X-RateLimit-Reset': githubResponse.headers.get('X-RateLimit-Reset') || '',
+      });
+      applyNoCache(headers);
+
+      return new Response(responseBody, {
+        status: githubResponse.status,
+        headers,
+      });
+    }
+
+    const matchedRule = REST_ALLOWLIST.find((rule) => rule.pattern.test(apiPath));
+    if (!matchedRule) {
+      logRejection('path not whitelisted', { path: apiPath, method: request.method });
+      return createErrorResponse(403, 'Forbidden');
+    }
+
+    if (!matchedRule.methods.has(request.method)) {
+      logRejection('method not allowed', { path: apiPath, method: request.method });
+      return createErrorResponse(405, 'Method Not Allowed');
+    }
+
+    const githubUrl = `https://api.github.com/${apiPath}${url.search}`;
     console.log(`[GitHub Proxy] Request to: ${githubUrl}`);
 
-    // Forward the request to GitHub API
     const githubResponse = await fetch(githubUrl, {
       method: request.method,
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
-        Accept: isGraphQL
-          ? 'application/vnd.github.v3+json'
-          : request.headers.get('Accept') || 'application/vnd.github.v3+json',
+        Accept: request.headers.get('Accept') || 'application/vnd.github.v3+json',
         'Content-Type': request.headers.get('Content-Type') || 'application/json',
         'User-Agent': 'GitHub-Dashboard',
       },
-      body: request.method !== 'GET' && request.method !== 'HEAD'
-        ? await request.text()
-        : undefined,
+      body: METHODS_WITH_BODY.has(request.method) ? await request.text() : undefined,
     });
 
-    // Get response body
     const responseBody = await githubResponse.text();
 
-    // Forward the response back to the client
     const headers = new Headers({
       'Content-Type': githubResponse.headers.get('Content-Type') || 'application/json',
       'X-RateLimit-Limit': githubResponse.headers.get('X-RateLimit-Limit') || '',
@@ -94,14 +174,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     });
   } catch (error) {
     console.error('GitHub API proxy error:', error);
-    const headers = new Headers({ 'Content-Type': 'application/json' });
-    applyNoCache(headers);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      {
-        status: 500,
-        headers,
-      }
-    );
+    return createErrorResponse(500, 'Internal server error');
   }
 };

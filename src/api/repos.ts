@@ -1,4 +1,5 @@
 import { createGraphQLClient } from "./octokit";
+import { GraphQLOperations } from "./githubQueryIds";
 import type { Repo, RecentItem, IssueState, PullRequestState } from "../types";
 import { validateRepos, getErrorMessage } from "../utils/validators";
 import {
@@ -34,67 +35,6 @@ interface GraphQLResponse {
     };
   };
 }
-
-/**
- * リポジトリ一覧を取得する GraphQL クエリ
- */
-const REPOSITORIES_QUERY = `
-  query GetRepositories($first: Int!, $after: String) {
-    viewer {
-      repositories(first: $first, after: $after, affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]) {
-        nodes {
-          id
-          nameWithOwner
-          url
-          pushedAt
-          isArchived
-          isPrivate
-          description
-          stargazerCount
-          primaryLanguage {
-            name
-          }
-          repositoryTopics(first: 10) {
-            nodes {
-              topic {
-                name
-              }
-            }
-          }
-        }
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-      }
-    }
-  }
-`;
-
-const SINGLE_REPOSITORY_QUERY = `
-  query GetRepository($owner: String!, $name: String!) {
-    repository(owner: $owner, name: $name) {
-      id
-      nameWithOwner
-      url
-      pushedAt
-      isArchived
-      isPrivate
-      description
-      stargazerCount
-      primaryLanguage {
-        name
-      }
-      repositoryTopics(first: 10) {
-        nodes {
-          topic {
-            name
-          }
-        }
-      }
-    }
-  }
-`;
 
 interface SingleRepositoryResponse {
   repository: GraphQLRepository | null;
@@ -146,10 +86,13 @@ export async function fetchAllRepositories(
     recordRequest();
 
     while (hasNextPage) {
-      const response = await graphqlClient<GraphQLResponse>(REPOSITORIES_QUERY, {
-        first: 100,
-        after: cursor,
-      });
+      const response = await graphqlClient<GraphQLResponse>(
+        GraphQLOperations.viewerRepos,
+        {
+          first: 100,
+          after: cursor,
+        }
+      );
 
       // レスポンスのバリデーション
       if (!response.viewer?.repositories?.nodes) {
@@ -317,10 +260,13 @@ export async function fetchRepositoriesByUrls(
 
   for (const identifier of identifiers) {
     try {
-      const data = await graphqlClient<SingleRepositoryResponse>(SINGLE_REPOSITORY_QUERY, {
-        owner: identifier.owner,
-        name: identifier.name,
-      });
+      const data = await graphqlClient<SingleRepositoryResponse>(
+        GraphQLOperations.singleRepository,
+        {
+          owner: identifier.owner,
+          name: identifier.name,
+        }
+      );
 
       if (!data.repository) {
         failed.push(identifier.raw);
@@ -373,26 +319,7 @@ export interface RecentActivity {
 export async function fetchRecentActivities(): Promise<RecentActivity[]> {
   // Recent activities用のエンドポイントを使用
   const graphqlClient = createGraphQLClient("/github/graphql/activities/recent");
-
-  const RECENT_EVENTS_QUERY = `
-    query GetRecentEvents {
-      viewer {
-        contributionsCollection(from: "${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}") {
-          commitContributionsByRepository(maxRepositories: 3) {
-            repository {
-              nameWithOwner
-              url
-            }
-            contributions(first: 1, orderBy: {direction: DESC}) {
-              nodes {
-                occurredAt
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
+  const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   try {
     const response = await graphqlClient<{
@@ -411,7 +338,7 @@ export async function fetchRecentActivities(): Promise<RecentActivity[]> {
           }>;
         };
       };
-    }>(RECENT_EVENTS_QUERY);
+    }>(GraphQLOperations.recentEvents, { from: FROM });
 
     const activities: RecentActivity[] = response.viewer.contributionsCollection.commitContributionsByRepository
       .map((item) => {
@@ -445,24 +372,6 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
   const graphqlClient = createGraphQLClient("/github/graphql/activities/issues");
   const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const QUERY = `
-    query GetRecentIssues($from: DateTime!) {
-      viewer {
-        contributionsCollection(from: $from) {
-          issueContributionsByRepository(maxRepositories: 10) {
-            repository { nameWithOwner url }
-            contributions(first: 5, orderBy: { direction: DESC }) {
-              nodes {
-                occurredAt
-                issue { title number url state repository { nameWithOwner url } }
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
   try {
     const data = await graphqlClient<{
       viewer: {
@@ -473,7 +382,7 @@ export async function fetchLatestIssues(): Promise<RecentItem[]> {
           }>;
         };
       };
-    }>(QUERY, { from: FROM });
+    }>(GraphQLOperations.recentIssues, { from: FROM });
 
     const items: RecentItem[] = data.viewer.contributionsCollection.issueContributionsByRepository
       .flatMap((repoBlock) =>
@@ -510,24 +419,6 @@ export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
   const graphqlClient = createGraphQLClient("/github/graphql/activities/pullrequests");
   const FROM = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const QUERY = `
-    query GetRecentPRs($from: DateTime!) {
-      viewer {
-        contributionsCollection(from: $from) {
-          pullRequestContributionsByRepository(maxRepositories: 10) {
-            repository { nameWithOwner url }
-            contributions(first: 5, orderBy: { direction: DESC }) {
-              nodes {
-                occurredAt
-                pullRequest { title number url state repository { nameWithOwner url } }
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
   try {
     const data = await graphqlClient<{
       viewer: {
@@ -538,7 +429,7 @@ export async function fetchLatestPullRequests(): Promise<RecentItem[]> {
           }>;
         };
       };
-    }>(QUERY, { from: FROM });
+    }>(GraphQLOperations.recentPullRequests, { from: FROM });
 
     const items: RecentItem[] = data.viewer.contributionsCollection.pullRequestContributionsByRepository
       .flatMap((repoBlock) =>

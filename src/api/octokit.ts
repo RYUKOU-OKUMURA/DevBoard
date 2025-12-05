@@ -1,8 +1,10 @@
+import type { GraphQLOperationId } from './githubQueryIds';
+
 const API_PROXY_BASE_URL = "/api";
 
 type GraphQLVariables = Record<string, unknown>;
 
-type GraphQLClient = <T>(query: string, variables?: GraphQLVariables) => Promise<T>;
+type GraphQLClient = <T>(operationId: GraphQLOperationId, variables?: GraphQLVariables) => Promise<T>;
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -50,11 +52,11 @@ async function callGitHubProxy<T>(
  */
 export function createGraphQLClient(endpoint = "/github/graphql"): GraphQLClient {
   return async function graphQLRequest<T>(
-    query: string,
+    operationId: GraphQLOperationId,
     variables: GraphQLVariables = {}
   ): Promise<T> {
     const payload = {
-      query,
+      queryId: operationId,
       variables,
     };
 
