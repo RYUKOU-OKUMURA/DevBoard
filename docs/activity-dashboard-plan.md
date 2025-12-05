@@ -167,7 +167,7 @@ type TabType = 'board' | 'activity' | 'manual';
 | 3 | Phase 3 | ActivityPanel.tsx（新規） | [x] |
 | 4 | Phase 4 | TodoPanel.tsx（新規） | [x] |
 | 5 | Phase 5 | ActivityTab.tsx（新規） | [x] |
-| 6 | Phase 6 | TabNavigation.tsx, useActiveTab.ts, App.tsx（変更） | [ ] |
+| 6 | Phase 6 | TabNavigation.tsx, useActiveTab.ts, App.tsx（変更） | [x] |
 | 7 | Phase 7 | TodoCard.tsx, TodoColumn.tsx（デザイン改善） | [ ] |
 
 ---

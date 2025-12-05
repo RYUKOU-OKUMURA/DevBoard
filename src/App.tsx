@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RepoBoard, TabNavigation, AddRepoModal, UpdatesTab, ManualRepoBoard, TodosTab, SplitPanel, SidebarSummary, Workspace } from './components';
+import { RepoBoard, TabNavigation, AddRepoModal, ManualRepoBoard, ActivityTab, SplitPanel, SidebarSummary, Workspace } from './components';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
 import AccountSwitcher from './components/AccountSwitcher';
@@ -16,6 +16,7 @@ import { ColumnKey } from './types';
 import { useActiveTab } from './hooks/useActiveTab';
 import { useManualRepositories } from './hooks/useManualRepositories';
 import { usePreAuthView } from './hooks/usePreAuthView';
+import type { TabType } from './components/TabNavigation';
 
 function LoadingScreen() {
   return (
@@ -28,6 +29,62 @@ function LoadingScreen() {
   );
 }
 
+interface TabMigrationDialogProps {
+  open: boolean;
+  legacyTab?: string | null;
+  onSelect: (tab: TabType) => void;
+}
+
+function TabMigrationDialog({ open, legacyTab, onSelect }: TabMigrationDialogProps) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="タブ統合の選択"
+        className="w-full max-w-md rounded-xl bg-surface-primary border border-[var(--border-strong)] shadow-lg p-inset-xl space-y-4"
+      >
+        <div className="space-y-2">
+          <p className="text-caption text-[var(--text-muted)] font-semibold uppercase tracking-wide">タブ統合</p>
+          <h2 className="text-title-3 font-semibold text-[var(--text-primary)]">Activityに統合されました</h2>
+          <p className="text-body-sm text-[var(--text-secondary)] leading-relaxed">
+            以前のタブ{legacyTab ? `（${legacyTab}）` : ''}は廃止され、Activityビューに統合されました。
+            お好みの初期ビューを選んで保存してください（おすすめ: Activity）。
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--accent-green)] text-text-inverse font-semibold shadow-sm hover:bg-[var(--accent-green-strong)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2"
+            onClick={() => onSelect('activity')}
+          >
+            <span>Activityを使う</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border-strong)] bg-surface-secondary text-[var(--text-primary)] font-semibold shadow-sm hover:bg-surface-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2"
+            onClick={() => onSelect('board')}
+          >
+            <span>カンバンを使う</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface AuthenticatedAppProps {
   user: User;
 }
@@ -35,7 +92,7 @@ interface AuthenticatedAppProps {
 function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const { isDark, toggleTheme } = useTheme();
   const { showToast } = useToast();
-  const { activeTab, setActiveTab } = useActiveTab();
+  const { activeTab, setActiveTab, needsMigration, pendingLegacyTab, resolveMigration } = useActiveTab();
   const { selectedRepo, isOpen: isWorkspaceOpen, panelHeight, setPanelHeight, toggleWorkspace } = useWorkspace();
 
   const [customInput, setCustomInput] = useState('');
@@ -80,11 +137,18 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const totalReposDisplayed = displayedRepoCount ?? repos.length;
   const error = uiError ?? repoError ?? null;
 
-  const { recentItems, isLoading: isLoadingActivities } = useRecentActivities(user, {
+  const { recentItems } = useRecentActivities(user, {
     enabled: true,
     refreshToken: activityRefreshToken,
   });
   const { stats: todoStats } = useTodos({ autoLoad: true });
+  const activityBadgeCount = (recentItems?.length || 0) + (todoStats?.total || 0);
+  const handleResolveMigration = useCallback(
+    (tab: TabType) => {
+      resolveMigration(tab);
+    },
+    [resolveMigration]
+  );
 
   useEffect(() => {
     if (user && repos.length === 0 && !isRepoLoading) {
@@ -248,13 +312,18 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         </div>
       )}
 
+      <TabMigrationDialog
+        open={needsMigration}
+        legacyTab={pendingLegacyTab}
+        onSelect={handleResolveMigration}
+      />
+
       {/* Tab Navigation */}
       <TabNavigation
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        updateCount={recentItems.length}
+        activityCount={activityBadgeCount}
         manualRepoCount={manualRepoCount}
-        todoCount={todoStats?.total || 0}
       />
 
       {/* Main Content Area */}
@@ -304,11 +373,9 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
             )}
           </div>
 
-          {/* Updates Tab */}
-          <div className={activeTab === 'updates' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
-            {activeTab === 'updates' && (
-              <UpdatesTab recentItems={recentItems} isLoadingActivities={isLoadingActivities} />
-            )}
+          {/* Activity Tab */}
+          <div className={activeTab === 'activity' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'activity' && <ActivityTab repos={repos} />}
           </div>
 
           {/* Manual Repos Tab */}
@@ -322,11 +389,6 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                 />
               </TagsProvider>
             )}
-          </div>
-
-          {/* TODOs Tab */}
-          <div className={activeTab === 'todos' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
-            {activeTab === 'todos' && <TodosTab repos={repos} />}
           </div>
         </div>
       </div>
