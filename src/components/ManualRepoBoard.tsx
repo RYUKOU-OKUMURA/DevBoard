@@ -18,16 +18,21 @@ import { searchAndSortRepos } from '../utils/search';
 import { TopBar } from './TopBar';
 
 interface ManualRepoBoardProps {
+  accountId: string;
   onStatsUpdate?: (manualRepoCount: number) => void;
   manualRepos?: Repo[];
   onReposChange?: (repos: Repo[]) => void;
 }
 
 export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
+  accountId,
   onStatsUpdate,
   manualRepos: externalManualRepos,
   onReposChange,
 }) => {
+  if (!accountId) {
+    throw new Error('accountId is required for ManualRepoBoard when using local storage.');
+  }
   const { getTagObjectsForRepo } = useTagsContext();
   
   // Use external props if provided, otherwise use internal state
@@ -58,13 +63,13 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
 
   const persistRemoval = (ids: string[]) => {
     if (!externalManualRepos && ids.length > 0) {
-      removeManualRepos(ids);
+      removeManualRepos(accountId, ids);
     }
   };
 
   const persistClear = () => {
     if (!externalManualRepos) {
-      clearManualRepos();
+      clearManualRepos(accountId);
     }
   };
 
@@ -84,11 +89,11 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   // Load manual repos on mount (only if not controlled by props)
   useEffect(() => {
     if (!externalManualRepos) {
-      const repos = getManualRepos();
+      const repos = getManualRepos(accountId);
       setInternalManualRepos(repos);
       onStatsUpdate?.(repos.length);
     }
-  }, [externalManualRepos, onStatsUpdate]);
+  }, [accountId, externalManualRepos, onStatsUpdate]);
 
   useEffect(() => {
     onStatsUpdate?.(manualRepos.length);
@@ -97,9 +102,9 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   // Persist changes (only if not controlled by props)
   useEffect(() => {
     if (!externalManualRepos) {
-      saveManualRepos(manualRepos);
+      saveManualRepos(accountId, manualRepos);
     }
-  }, [manualRepos, externalManualRepos]);
+  }, [accountId, manualRepos, externalManualRepos]);
 
   useEffect(() => {
     saveManualColumnConfig(columnConfig);

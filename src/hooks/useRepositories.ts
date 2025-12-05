@@ -8,6 +8,7 @@ import { devError } from '../utils/logger';
 type DataSource = 'viewer' | 'custom';
 
 interface UseRepositoriesOptions {
+  accountId: string;
   autoLoad?: boolean;
 }
 
@@ -27,8 +28,11 @@ interface UseRepositoriesReturn {
 /**
  * リポジトリ読み込みロジックを管理するカスタムフック
  */
-export function useRepositories(options: UseRepositoriesOptions = {}): UseRepositoriesReturn {
-  const { autoLoad = false } = options;
+export function useRepositories(options: UseRepositoriesOptions): UseRepositoriesReturn {
+  const { accountId, autoLoad = false } = options;
+  if (!accountId) {
+    throw new Error('accountId is required to use useRepositories.');
+  }
   const { showToast } = useToast();
   const [repos, setRepos] = useState<Repo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,12 +47,12 @@ export function useRepositories(options: UseRepositoriesOptions = {}): UseReposi
       setIsLoading(true);
       setError(null);
       try {
-        const realRepos = await fetchUserRepos(false, forceRefresh);
+        const realRepos = await fetchUserRepos(accountId, { forceRefresh });
         setRepos(realRepos);
         setDataSource('viewer');
 
         // Update last update time
-        const timestamp = getViewerReposTimestamp();
+        const timestamp = getViewerReposTimestamp(accountId);
         setLastUpdateTime(timestamp);
 
         if (notify) {
@@ -89,7 +93,9 @@ export function useRepositories(options: UseRepositoriesOptions = {}): UseReposi
       setIsLoading(true);
       setError(null);
       try {
-        const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, forceRefresh);
+        const { repos: fetched, failed } = await fetchRepositoriesByUrls(accountId, sources, {
+          forceRefresh,
+        });
         if (fetched.length === 0) {
           const message = failed.length
             ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
@@ -111,7 +117,7 @@ export function useRepositories(options: UseRepositoriesOptions = {}): UseReposi
         setCustomRepoSources(uniqueNames);
 
         // Update last update time
-        const timestamp = getCustomReposTimestamp();
+        const timestamp = getCustomReposTimestamp(accountId);
         setLastUpdateTime(timestamp);
 
         if (failed.length > 0) {

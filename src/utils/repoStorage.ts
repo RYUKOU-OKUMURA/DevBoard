@@ -2,9 +2,15 @@ import type { Repo } from "../types";
 import { getStorageString, removeStorageItem } from './storage';
 import { devError, devWarn } from './logger';
 
-// ストレージキー
+// ストレージキー（accountId 付き）
 const VIEWER_REPOS_KEY = "devboard_viewer_repos";
 const CUSTOM_REPOS_KEY = "devboard_custom_repos";
+const VIEWER_REPOS_PREFIX = `${VIEWER_REPOS_KEY}:`;
+const CUSTOM_REPOS_PREFIX = `${CUSTOM_REPOS_KEY}:`;
+
+// 旧キー（アカウント非分離）
+const LEGACY_VIEWER_REPOS_KEY = VIEWER_REPOS_KEY;
+const LEGACY_CUSTOM_REPOS_KEY = CUSTOM_REPOS_KEY;
 
 export const REPO_CACHE_TTL_MS = 2 * 60 * 1000; // 2分
 
@@ -178,7 +184,50 @@ function attachSource(repos: Repo[], type: RepoSourceType): Repo[] {
   });
 }
 
-function loadReposFromStorage(key: string, type: RepoSourceType): Repo[] | null {
+function assertAccountId(accountId: string): string {
+  if (!accountId || accountId.trim().length === 0) {
+    throw new Error('accountId is required to access repository cache.');
+  }
+  return accountId;
+}
+
+function getViewerRepoKey(accountId: string): string {
+  return `${VIEWER_REPOS_PREFIX}${assertAccountId(accountId)}`;
+}
+
+function getCustomRepoKey(accountId: string): string {
+  return `${CUSTOM_REPOS_PREFIX}${assertAccountId(accountId)}`;
+}
+
+function migrateLegacyRepoCache(accountId: string, type: RepoSourceType): Repo[] | null {
+  const legacyKey = type === "viewer" ? LEGACY_VIEWER_REPOS_KEY : LEGACY_CUSTOM_REPOS_KEY;
+  const targetKey = type === "viewer" ? getViewerRepoKey(accountId) : getCustomRepoKey(accountId);
+
+  // 旧キーが存在しない場合は何もしない
+  const legacyRaw = getStorageString(legacyKey, "");
+  if (!legacyRaw) {
+    return null;
+  }
+
+  // 既に新キーが存在する場合は旧キーをクリーンアップのみ
+  const targetRaw = getStorageString(targetKey, "");
+  if (targetRaw) {
+    removeStorageItem(legacyKey);
+    return null;
+  }
+
+  // 旧データを読み込んでから新キーに保存（読み込み時に壊れたデータは捨てる）
+  const migrated = loadReposFromStorageInternal(legacyKey, type);
+  if (migrated) {
+    saveReposToStorage(targetKey, migrated, type);
+  }
+
+  // 旧キーは必ず削除
+  removeStorageItem(legacyKey);
+  return migrated;
+}
+
+function loadReposFromStorageInternal(key: string, type: RepoSourceType): Repo[] | null {
   try {
     const stored = getStorageString(key, '');
     if (!stored) {
@@ -301,51 +350,73 @@ function getRepoTimestamp(key: string): number | null {
 /**
  * リポジトリデータをローカルストレージに保存
  */
-export function saveViewerRepos(repos: Repo[]): void {
-  saveReposToStorage(VIEWER_REPOS_KEY, repos, "viewer");
+export function saveViewerRepos(accountId: string, repos: Repo[]): void {
+  const key = getViewerRepoKey(accountId);
+  saveReposToStorage(key, repos, "viewer");
 }
 
 /**
  * viewerリポジトリをローカルストレージから取得
  * 有効期限（2分）を過ぎている場合はnullを返す
  */
-export function loadViewerRepos(): Repo[] | null {
-  return loadReposFromStorage(VIEWER_REPOS_KEY, "viewer");
+export function loadViewerRepos(accountId: string): Repo[] | null {
+  const key = getViewerRepoKey(accountId);
+  const migrated = migrateLegacyRepoCache(accountId, "viewer");
+  if (migrated) {
+    return migrated;
+  }
+  return loadReposFromStorageInternal(key, "viewer");
 }
 
 /**
  * カスタムリポジトリをローカルストレージに保存
  */
-export function saveCustomRepos(repos: Repo[]): void {
-  saveReposToStorage(CUSTOM_REPOS_KEY, repos, "manual");
+export function saveCustomRepos(accountId: string, repos: Repo[]): void {
+  const key = getCustomRepoKey(accountId);
+  saveReposToStorage(key, repos, "manual");
 }
 
 /**
  * カスタムリポジトリをローカルストレージから取得
  * viewerキャッシュとは異なり有効期限は設けない
  */
-export function loadCustomRepos(): Repo[] | null {
-  return loadReposFromStorage(CUSTOM_REPOS_KEY, "manual");
+export function loadCustomRepos(accountId: string): Repo[] | null {
+  const key = getCustomRepoKey(accountId);
+  const migrated = migrateLegacyRepoCache(accountId, "manual");
+  if (migrated) {
+    return migrated;
+  }
+  return loadReposFromStorageInternal(key, "manual");
 }
 
 /**
  * viewerリポジトリのタイムスタンプを取得
  */
-export function getViewerReposTimestamp(): number | null {
-  return getRepoTimestamp(VIEWER_REPOS_KEY);
+export function getViewerReposTimestamp(accountId: string): number | null {
+  const key = getViewerRepoKey(accountId);
+  // タイムスタンプ取得前に旧データがあれば移行
+  migrateLegacyRepoCache(accountId, "viewer");
+  return getRepoTimestamp(key);
 }
 
 /**
  * カスタムリポジトリのタイムスタンプを取得
  */
-export function getCustomReposTimestamp(): number | null {
-  return getRepoTimestamp(CUSTOM_REPOS_KEY);
+export function getCustomReposTimestamp(accountId: string): number | null {
+  const key = getCustomRepoKey(accountId);
+  migrateLegacyRepoCache(accountId, "manual");
+  return getRepoTimestamp(key);
 }
 
 /**
  * すべてのリポジトリキャッシュをクリア
  */
-export function clearRepoCache(): void {
-  removeStorageItem(VIEWER_REPOS_KEY);
-  removeStorageItem(CUSTOM_REPOS_KEY);
+export function clearRepoCache(accountId: string): void {
+  const viewerKey = getViewerRepoKey(accountId);
+  const customKey = getCustomRepoKey(accountId);
+  removeStorageItem(viewerKey);
+  removeStorageItem(customKey);
+  // 念のため旧キーも削除
+  removeStorageItem(LEGACY_VIEWER_REPOS_KEY);
+  removeStorageItem(LEGACY_CUSTOM_REPOS_KEY);
 }

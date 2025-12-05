@@ -67,7 +67,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     loadRepos,
     refresh: refreshRepos,
     setError: setRepoError,
-  } = useRepositories({ autoLoad: false });
+  } = useRepositories({ accountId: user.username, autoLoad: false });
 
   const {
     manualRepos,
@@ -75,7 +75,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     setManualRepos,
     isSaving: isSavingManualRepos,
     addManualReposFromInput,
-  } = useManualRepositories({ showToast, onErrorChange: setUiError });
+  } = useManualRepositories({ accountId: user.username, showToast, onErrorChange: setUiError });
 
   const totalReposDisplayed = displayedRepoCount ?? repos.length;
   const error = uiError ?? repoError ?? null;
@@ -315,7 +315,11 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
           <div className={activeTab === 'manual' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
             {activeTab === 'manual' && (
               <TagsProvider scope="manual">
-                <ManualRepoBoard manualRepos={manualRepos} onReposChange={setManualRepos} />
+                <ManualRepoBoard
+                  accountId={user.username}
+                  manualRepos={manualRepos}
+                  onReposChange={setManualRepos}
+                />
               </TagsProvider>
             )}
           </div>

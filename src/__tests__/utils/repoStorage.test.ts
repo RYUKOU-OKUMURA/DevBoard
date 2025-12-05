@@ -31,6 +31,12 @@ const localStorageMock = (() => {
 Object.defineProperty(global, 'localStorage', {
   value: localStorageMock,
 });
+Object.defineProperty(global, 'window', {
+  value: { localStorage: localStorageMock },
+});
+
+const ACCOUNT_A = 'alice';
+const ACCOUNT_B = 'bob';
 
 const baseRepo: Repo = {
   id: '1',
@@ -56,9 +62,9 @@ describe('repoStorage', () => {
     const now = new Date('2024-01-01T00:00:00Z');
     vi.setSystemTime(now);
 
-    saveViewerRepos([baseRepo]);
+    saveViewerRepos(ACCOUNT_A, [baseRepo]);
 
-    const stored = localStorage.getItem('devboard_viewer_repos');
+    const stored = localStorage.getItem(`devboard_viewer_repos:${ACCOUNT_A}`);
     expect(stored).not.toBeNull();
 
     const parsed = JSON.parse(stored!);
@@ -66,7 +72,7 @@ describe('repoStorage', () => {
     expect(parsed.repos).toHaveLength(1);
     expect(parsed.repos[0].source).toEqual({ type: 'viewer' });
 
-    const loaded = loadViewerRepos();
+    const loaded = loadViewerRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
     expect(loaded).toHaveLength(1);
     expect(loaded![0].source?.type).toBe('viewer');
@@ -77,27 +83,27 @@ describe('repoStorage', () => {
     const now = new Date('2024-01-01T00:00:00Z');
     vi.setSystemTime(now);
 
-    saveViewerRepos([baseRepo]);
+    saveViewerRepos(ACCOUNT_A, [baseRepo]);
 
     vi.advanceTimersByTime(REPO_CACHE_TTL_MS + 1);
 
-    const loaded = loadViewerRepos();
+    const loaded = loadViewerRepos(ACCOUNT_A);
     expect(loaded).toBeNull();
-    expect(localStorage.getItem('devboard_viewer_repos')).toBeNull();
+    expect(localStorage.getItem(`devboard_viewer_repos:${ACCOUNT_A}`)).toBeNull();
   });
 
   it('removes invalid viewer cache payloads gracefully', () => {
-    localStorage.setItem('devboard_viewer_repos', 'invalid-json');
+    localStorage.setItem(`devboard_viewer_repos:${ACCOUNT_A}`, 'invalid-json');
 
-    const loaded = loadViewerRepos();
+    const loaded = loadViewerRepos(ACCOUNT_A);
     expect(loaded).toBeNull();
-    expect(localStorage.getItem('devboard_viewer_repos')).toBeNull();
+    expect(localStorage.getItem(`devboard_viewer_repos:${ACCOUNT_A}`)).toBeNull();
   });
 
   it('removes legacy viewer payload without timestamp', () => {
     localStorage.setItem('devboard_viewer_repos', JSON.stringify([baseRepo]));
 
-    const loaded = loadViewerRepos();
+    const loaded = loadViewerRepos(ACCOUNT_A);
     expect(loaded).toBeNull();
     expect(localStorage.getItem('devboard_viewer_repos')).toBeNull();
   });
@@ -111,9 +117,9 @@ describe('repoStorage', () => {
       id: 'manual-1',
     };
 
-    saveCustomRepos([manualRepo]);
+    saveCustomRepos(ACCOUNT_A, [manualRepo]);
 
-    const loaded = loadCustomRepos();
+    const loaded = loadCustomRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
     expect(loaded![0].source?.type).toBe('manual');
   });
@@ -127,11 +133,11 @@ describe('repoStorage', () => {
       id: 'manual-ttl',
     };
 
-    saveCustomRepos([manualRepo]);
+    saveCustomRepos(ACCOUNT_A, [manualRepo]);
 
     vi.advanceTimersByTime(REPO_CACHE_TTL_MS + 60_000);
 
-    const loaded = loadCustomRepos();
+    const loaded = loadCustomRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
     expect(loaded).toHaveLength(1);
     expect(loaded![0].id).toBe('manual-ttl');
@@ -142,15 +148,16 @@ describe('repoStorage', () => {
 
     localStorage.setItem('devboard_custom_repos', JSON.stringify([legacyManual]));
 
-    const loaded = loadCustomRepos();
+    const loaded = loadCustomRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
     expect(loaded).toHaveLength(1);
     expect(loaded![0].source?.type).toBe('manual');
 
-    const persisted = JSON.parse(localStorage.getItem('devboard_custom_repos')!);
+    const persisted = JSON.parse(localStorage.getItem(`devboard_custom_repos:${ACCOUNT_A}`)!);
     expect(persisted).toHaveProperty('timestamp');
     expect(typeof persisted.timestamp).toBe('number');
     expect(persisted.repos[0].source).toEqual({ type: 'manual' });
+    expect(localStorage.getItem('devboard_custom_repos')).toBeNull();
   });
 
   it('returns timestamps when available', () => {
@@ -158,14 +165,55 @@ describe('repoStorage', () => {
     const now = new Date('2024-01-01T00:00:00Z');
     vi.setSystemTime(now);
 
-    saveViewerRepos([baseRepo]);
-    saveCustomRepos([baseRepo]);
+    saveViewerRepos(ACCOUNT_A, [baseRepo]);
+    saveCustomRepos(ACCOUNT_A, [baseRepo]);
 
-    const viewerTimestamp = getViewerReposTimestamp();
-    const customTimestamp = getCustomReposTimestamp();
+    const viewerTimestamp = getViewerReposTimestamp(ACCOUNT_A);
+    const customTimestamp = getCustomReposTimestamp(ACCOUNT_A);
 
     expect(viewerTimestamp).toBeTypeOf('number');
     expect(customTimestamp).toBeTypeOf('number');
     expect(viewerTimestamp).toBe(customTimestamp);
+  });
+
+  it('keeps caches separated by accountId', () => {
+    saveViewerRepos(ACCOUNT_A, [baseRepo]);
+    saveViewerRepos(ACCOUNT_B, [{ ...baseRepo, id: 'b', nameWithOwner: 'other/repo' }]);
+
+    const loadedA = loadViewerRepos(ACCOUNT_A);
+    const loadedB = loadViewerRepos(ACCOUNT_B);
+
+    expect(loadedA?.[0].nameWithOwner).toBe('octocat/Hello-World');
+    expect(loadedB?.[0].nameWithOwner).toBe('other/repo');
+  });
+
+  it('separates custom caches by accountId', () => {
+    const repoA = { ...baseRepo, id: 'custom-a', nameWithOwner: 'alice/repo' };
+    const repoB = { ...baseRepo, id: 'custom-b', nameWithOwner: 'bob/repo' };
+
+    saveCustomRepos(ACCOUNT_A, [repoA]);
+    saveCustomRepos(ACCOUNT_B, [repoB]);
+
+    expect(loadCustomRepos(ACCOUNT_A)?.[0].nameWithOwner).toBe('alice/repo');
+    expect(loadCustomRepos(ACCOUNT_B)?.[0].nameWithOwner).toBe('bob/repo');
+  });
+
+  it('migrates viewer cache from legacy key to account-scoped key', () => {
+    const payload = {
+      repos: [{ ...baseRepo, source: { type: 'viewer' as const } }],
+      timestamp: Date.now(),
+    };
+    localStorage.setItem('devboard_viewer_repos', JSON.stringify(payload));
+
+    const loaded = loadViewerRepos(ACCOUNT_A);
+
+    expect(loaded).not.toBeNull();
+    expect(localStorage.getItem(`devboard_viewer_repos:${ACCOUNT_A}`)).not.toBeNull();
+    expect(localStorage.getItem('devboard_viewer_repos')).toBeNull();
+  });
+
+  it('throws when accountId is missing', () => {
+    expect(() => loadViewerRepos('')).toThrow('accountId is required');
+    expect(() => saveCustomRepos('', [baseRepo])).toThrow('accountId is required');
   });
 });

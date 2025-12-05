@@ -10,21 +10,25 @@ const MAX_MANUAL_REPOS_PER_SUBMIT = 25;
 export type PreAuthView = 'landing' | 'login';
 
 export interface ManualRepoManagerOptions {
+  accountId: string;
   showToast: ToastContextValue['showToast'];
   onErrorChange?: (message: string | null) => void;
 }
 
-export function useManualRepositories({ showToast, onErrorChange }: ManualRepoManagerOptions) {
-  const [manualRepos, setManualRepos] = useState<Repo[]>(() => getManualRepos());
+export function useManualRepositories({ accountId, showToast, onErrorChange }: ManualRepoManagerOptions) {
+  if (!accountId) {
+    throw new Error('accountId is required to manage manual repositories.');
+  }
+  const [manualRepos, setManualRepos] = useState<Repo[]>(() => getManualRepos(accountId));
   const [isSaving, setIsSaving] = useState(false);
 
   const manualRepoCount = manualRepos.length;
 
   const syncManualRepos = useCallback(() => {
-    const repos = getManualRepos();
+    const repos = getManualRepos(accountId);
     setManualRepos(repos);
     return repos;
-  }, []);
+  }, [accountId]);
 
   const parseInput = useCallback((value: string): string[] => {
     return value
@@ -46,7 +50,9 @@ export function useManualRepositories({ showToast, onErrorChange }: ManualRepoMa
       setIsSaving(true);
       onErrorChange?.(null);
       try {
-        const { repos: fetched, failed } = await fetchRepositoriesByUrls(sources, true);
+        const { repos: fetched, failed } = await fetchRepositoriesByUrls(accountId, sources, {
+          forceRefresh: true,
+        });
         if (fetched.length === 0) {
           const message = failed.length
             ? `指定されたリポジトリを読み込めませんでした: ${failed.join(', ')}`
@@ -68,7 +74,7 @@ export function useManualRepositories({ showToast, onErrorChange }: ManualRepoMa
           },
         }));
 
-        const saved = addMultipleManualRepos(reposWithSource);
+        const saved = addMultipleManualRepos(accountId, reposWithSource);
         if (!saved) {
           const message = 'リポジトリの保存に失敗しました';
           onErrorChange?.(message);
@@ -108,7 +114,7 @@ export function useManualRepositories({ showToast, onErrorChange }: ManualRepoMa
         setIsSaving(false);
       }
     },
-    [onErrorChange, parseInput, showToast, syncManualRepos]
+    [accountId, onErrorChange, parseInput, showToast, syncManualRepos]
   );
 
   const manualStats = useMemo(() => ({ count: manualRepoCount }), [manualRepoCount]);
@@ -117,11 +123,11 @@ export function useManualRepositories({ showToast, onErrorChange }: ManualRepoMa
     (next: Repo[] | ((prev: Repo[]) => Repo[])) => {
       setManualRepos((prev) => {
         const resolved = typeof next === 'function' ? (next as (prev: Repo[]) => Repo[])(prev) : next;
-        saveManualRepos(resolved);
+        saveManualRepos(accountId, resolved);
         return resolved;
       });
     },
-    []
+    [accountId]
   );
 
   return {

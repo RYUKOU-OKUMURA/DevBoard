@@ -42,15 +42,21 @@ interface SingleRepositoryResponse {
 
 /**
  * すべてのリポジトリを取得（ページネーション対応）
- * @param forceRefresh - trueの場合、キャッシュを無視してAPIから取得
+ * @param accountId - アカウント（username）
+ * @param options - キャッシュ無視やリトライの指定
  */
 export async function fetchAllRepositories(
-  retryAttempt = false,
-  forceRefresh = false
+  accountId: string,
+  options: { retryAttempt?: boolean; forceRefresh?: boolean } = {}
 ): Promise<Repo[]> {
+  const { retryAttempt = false, forceRefresh = false } = options;
+  if (!accountId) {
+    throw new Error('accountId is required to fetch viewer repositories.');
+  }
+
   // ローカルストレージをチェック（forceRefreshがfalseの場合のみ）
   if (!forceRefresh) {
-    const cached = loadViewerRepos();
+    const cached = loadViewerRepos(accountId);
     if (cached) {
       console.log(
         `Using cached viewer repositories (${cached.length} repos)`
@@ -66,7 +72,7 @@ export async function fetchAllRepositories(
     console.warn(errorMessage);
 
     // キャッシュがあればそれを返す
-    const cached = loadViewerRepos();
+    const cached = loadViewerRepos(accountId);
     if (cached) {
       console.log("Using cached data due to rate limit");
       return cached;
@@ -121,7 +127,7 @@ export async function fetchAllRepositories(
       console.warn("Repository fetch completed but returned no data.");
       if (!retryAttempt) {
         console.info("Retrying repository fetch once due to empty result...");
-        return fetchAllRepositories(true, forceRefresh);
+        return fetchAllRepositories(accountId, { retryAttempt: true, forceRefresh });
       }
       console.warn("Retry attempt also returned an empty repository list.");
     }
@@ -130,7 +136,7 @@ export async function fetchAllRepositories(
     const sortedRepos = sortRepositories(repositories, "lastUpdated");
 
     // ローカルストレージに保存
-    saveViewerRepos(sortedRepos);
+    saveViewerRepos(accountId, sortedRepos);
 
     return sortedRepos;
   } catch (error) {
@@ -138,7 +144,7 @@ export async function fetchAllRepositories(
     console.error("Failed to fetch repositories:", errorMessage);
 
     // エラー時にキャッシュがあればそれを返す
-    const cached = loadViewerRepos();
+    const cached = loadViewerRepos(accountId);
     if (cached) {
       console.log("Using cached data due to API error");
       return cached;
@@ -191,12 +197,17 @@ function parseRepositoryIdentifier(input: string): RepositoryIdentifier | null {
 }
 
 export async function fetchRepositoriesByUrls(
+  accountId: string,
   inputs: string[],
-  forceRefresh = false
+  options: { forceRefresh?: boolean } = {}
 ): Promise<{ repos: Repo[]; failed: string[] }> {
+  const { forceRefresh = false } = options;
+  if (!accountId) {
+    throw new Error('accountId is required to fetch custom repositories.');
+  }
   // ローカルストレージをチェック（forceRefreshがfalseの場合のみ）
   if (!forceRefresh) {
-    const cached = loadCustomRepos();
+    const cached = loadCustomRepos(accountId);
     if (cached) {
       console.log(
         `Using cached custom repositories (${cached.length} repos)`
@@ -212,7 +223,7 @@ export async function fetchRepositoriesByUrls(
     console.warn(errorMessage);
 
     // キャッシュがあればそれを返す
-    const cached = loadCustomRepos();
+    const cached = loadCustomRepos(accountId);
     if (cached) {
       console.log("Using cached custom data due to rate limit");
       return { repos: cached, failed: [] };
@@ -293,7 +304,7 @@ export async function fetchRepositoriesByUrls(
 
   // ローカルストレージに保存
   if (sortedRepos.length > 0) {
-    saveCustomRepos(sortedRepos);
+    saveCustomRepos(accountId, sortedRepos);
   }
 
   return {
