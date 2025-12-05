@@ -27,20 +27,30 @@ function parseRepoName(nameWithOwner: string): { owner: string; name: string } {
   return { owner, name };
 }
 
+const MAX_ISSUE_PAGES = 3;
+const MAX_ISSUE_COUNT = 300;
+
 /**
  * Fetch issues from GitHub for a repository
  */
 export async function fetchIssuesFromGitHub(
   repoNameWithOwner: string
-): Promise<GitHubIssue[]> {
+): Promise<{ issues: GitHubIssue[]; truncated: boolean }> {
   const graphql = createGraphQLClient('/github/graphql');
   const { owner, name } = parseRepoName(repoNameWithOwner);
 
   const allIssues: GitHubIssue[] = [];
   let cursor: string | null = null;
   let hasNextPage = true;
+  let page = 0;
+  let truncated = false;
 
   while (hasNextPage) {
+    if (page >= MAX_ISSUE_PAGES || allIssues.length >= MAX_ISSUE_COUNT) {
+      truncated = true;
+      break;
+    }
+
     const result = await graphql<{
       repository: {
         issues: {
@@ -57,9 +67,19 @@ export async function fetchIssuesFromGitHub(
 
     hasNextPage = result.repository.issues.pageInfo.hasNextPage;
     cursor = result.repository.issues.pageInfo.endCursor;
+    page += 1;
   }
 
-  return allIssues;
+  if (truncated) {
+    console.warn(
+      `[issueSync] Issue fetch truncated at ${allIssues.length} items (${page} pages).`
+    );
+  }
+
+  return {
+    issues: allIssues.slice(0, MAX_ISSUE_COUNT),
+    truncated,
+  };
 }
 
 /**
@@ -107,7 +127,13 @@ export async function importIssuesFromGitHub(
   repoNameWithOwner: string,
   issueNumbers?: number[]
 ): Promise<Todo[]> {
-  const issues = await fetchIssuesFromGitHub(repoNameWithOwner);
+  const { issues, truncated } = await fetchIssuesFromGitHub(repoNameWithOwner);
+
+  if (truncated) {
+    console.warn(
+      '[issueSync] Issue import may be incomplete due to fetch limits (max 300 issues / 3 pages).'
+    );
+  }
 
   // Filter by issue numbers if specified
   const issuesToImport = issueNumbers
@@ -265,7 +291,7 @@ export async function syncTodosWithIssues(
 
   try {
     // Fetch all issues from GitHub
-    const issues = await fetchIssuesFromGitHub(repoNameWithOwner);
+    const { issues, truncated } = await fetchIssuesFromGitHub(repoNameWithOwner);
 
     // Get all todos for this repo
     const todos = getTodos(accountId).filter((t) => t.repoId === repoId);
@@ -302,6 +328,12 @@ export async function syncTodosWithIssues(
         newIssues.map((i) => i.number)
       );
       result.importedCount = importedTodos.length;
+    }
+
+    if (truncated) {
+      result.errors.push(
+        'Issue取得上限に達した可能性があります（最大300件 / 3ページまで取得）。'
+      );
     }
   } catch (error) {
     result.errors.push(

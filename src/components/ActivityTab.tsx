@@ -23,7 +23,10 @@ type PersistedFilters = {
   };
 };
 
-const STORAGE_KEY = 'activityTab.filters.v1';
+const STORAGE_KEY_BASE = 'activityTab.filters.v1';
+
+const getStorageKey = (username?: string) =>
+  username ? `${STORAGE_KEY_BASE}:${username}` : STORAGE_KEY_BASE;
 
 const defaultActivityFilters: ActivityPanelFilters = {
   repo: 'all',
@@ -76,9 +79,10 @@ function readInitialFilters(username?: string): {
   todoFilter: TodoFilter;
   todoSearch?: string;
 } {
+  const storageKey = getStorageKey(username);
   const params =
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const persisted = getStorageItem<PersistedFilters>(STORAGE_KEY, {
+  const persisted = getStorageItem<PersistedFilters>(storageKey, {
     activity: defaultActivityFilters,
     todo: defaultTodoPersisted,
   });
@@ -120,6 +124,7 @@ function mergeTodos(a: Todo[], b: Todo[]): Todo[] {
 
 export const ActivityTab: React.FC<ActivityTabProps> = ({ repos }) => {
   const { user } = useAuth();
+  const storageKey = useMemo(() => getStorageKey(user?.username), [user?.username]);
 
   const repoIdMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -249,6 +254,14 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({ repos }) => {
     [issueCounts.closed, issueCounts.open, prCounts.closed, prCounts.merged, prCounts.open, todoStats]
   );
 
+  // アカウント切替時にフィルタをリセット（アカウント別永続化）
+  useEffect(() => {
+    const next = readInitialFilters(user?.username);
+    setActivityFilters(next.activity);
+    setTodoFilter(next.todoFilter);
+    setTodoSearch(next.todoSearch);
+  }, [user?.username]);
+
   // Persist filters to URL & localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -274,7 +287,7 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({ repos }) => {
     const newUrl = `${window.location.pathname}${queryString ? `?${queryString}` : ''}`;
     window.history.replaceState({}, '', newUrl);
 
-    setStorageItem<PersistedFilters>(STORAGE_KEY, {
+    setStorageItem<PersistedFilters>(storageKey, {
       activity: activityFilters,
       todo: {
         repoId: todoFilter.repoIds?.[0],
@@ -283,7 +296,7 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({ repos }) => {
         searchQuery: todoSearch,
       },
     });
-  }, [activityFilters, todoFilter, todoSearch]);
+  }, [activityFilters, todoFilter, todoSearch, storageKey]);
 
   const handleOptimisticCreate = useCallback(
     (payload: ActivityIssueToTodoInput) => {

@@ -200,7 +200,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     activeRepos: displayedCategoryCounts.Active,
     todoStats: {
       total: todoStats?.total || 0,
-      completed: todoStats?.completed || 0,
+      done: todoStats?.done || 0,
       inProgress: todoStats?.inProgress || 0,
       overdue: todoStats?.overdue || 0,
     },

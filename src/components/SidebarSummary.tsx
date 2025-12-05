@@ -14,7 +14,7 @@ interface SummaryStats {
   /** TODO statistics */
   todoStats: {
     total: number;
-    completed: number;
+    done: number;
     inProgress: number;
     overdue: number;
   };
@@ -157,7 +157,7 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   const todoCompletionRate = stats.todoStats.total > 0
-    ? Math.round((stats.todoStats.completed / stats.todoStats.total) * 100)
+    ? Math.round((stats.todoStats.done / stats.todoStats.total) * 100)
     : 0;
 
   if (isCollapsed) {
@@ -266,12 +266,12 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
             </svg>
           }
           label="TODO進捗"
-          value={`${stats.todoStats.completed}/${stats.todoStats.total}`}
+          value={`${stats.todoStats.done}/${stats.todoStats.total}`}
           subValue={`${todoCompletionRate}% 完了`}
           variant="success"
           onClick={() => onCardClick?.('todos')}
           progress={{
-            value: stats.todoStats.completed,
+            value: stats.todoStats.done,
             max: stats.todoStats.total || 1,
           }}
         />
