@@ -18,6 +18,7 @@ export { TodoPanel } from './TodoPanel';
 export { ActivitySummaryStats } from './ActivitySummaryStats';
 export { ActivityIssueCard } from './ActivityIssueCard';
 export { ActivityPanel } from './ActivityPanel';
+export { ActivityTab } from './ActivityTab';
 
 // New UI components
 export { SplitPanel } from './ui/SplitPanel';

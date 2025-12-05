@@ -9,7 +9,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { Repo, Todo, TodoStatus } from '../types';
+import type { Repo, Todo, TodoStatus, TodoFilter } from '../types';
 import { TodoColumn } from './TodoColumn';
 import { TodoCard } from './TodoCard';
 import { TodoDetail } from './TodoDetail';
@@ -22,6 +22,14 @@ interface TodoPanelProps {
   repos: Repo[];
   initialLimit?: number;
   className?: string;
+  /** 初期フィルターを親から注入（例: assignee や repoIds） */
+  initialFilter?: Partial<TodoFilter>;
+  /** 初期検索クエリを親から注入 */
+  initialSearchQuery?: string;
+  /** 親からのリフレッシュシグナル（値が変わると再取得） */
+  refreshToken?: number;
+  /** フィルター変更を親に伝えるコールバック */
+  onFilterChange?: (filter: TodoFilter) => void;
 }
 
 const statusLabel: Record<TodoStatus, string> = {
@@ -36,6 +44,10 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
   repos,
   initialLimit = 100,
   className = '',
+  initialFilter,
+  initialSearchQuery,
+  refreshToken,
+  onFilterChange,
 }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -49,6 +61,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [assigneeInitialized, setAssigneeInitialized] = useState(false);
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+  const [initialFilterApplied, setInitialFilterApplied] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -167,6 +180,31 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
       assignee: user?.username || undefined,
     });
   };
+
+  // 親提供の初期フィルター/検索を一度だけ適用
+  useEffect(() => {
+    if (initialFilterApplied) return;
+    if (!initialFilter && initialSearchQuery === undefined) return;
+    const merged = { ...filter, ...(initialFilter || {}) };
+    if (initialSearchQuery !== undefined) {
+      merged.searchQuery = initialSearchQuery || undefined;
+    }
+    cleanAndSetFilter(merged);
+    setInitialFilterApplied(true);
+  }, [cleanAndSetFilter, filter, initialFilter, initialFilterApplied, initialSearchQuery]);
+
+  // 親からのリフレッシュシグナル
+  useEffect(() => {
+    if (refreshToken === undefined) return;
+    refresh();
+  }, [refresh, refreshToken]);
+
+  // フィルター変更を親へ通知
+  useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange(filter);
+    }
+  }, [filter, onFilterChange]);
 
   const setTodoLoading = (todoId: string, loading: boolean) => {
     setUpdatingIds((prev) => {
