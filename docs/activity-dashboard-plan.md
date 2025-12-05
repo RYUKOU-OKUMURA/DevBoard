@@ -74,9 +74,9 @@
 
 **ファイル**: `src/components/ActivityIssueCard.tsx`
 
-- Issueカードに「+」ボタンを追加
-- ホバーで表示、クリックでTODOに変換
-- 変換時に自動でissueNumber/issueUrlをリンク
+- [x] Issueカードに「+」ボタンを追加
+- [x] ホバーで表示、クリックでTODOに変換
+- [x] 変換時に自動でissueNumber/issueUrlをリンク
 
 ```tsx
 // 変換時のTODOデータ
@@ -90,10 +90,10 @@
   syncEnabled: true,
 }
 ```
-- 重複防止: `repoId + issueNumber`で既存TODOを判定し、多重作成をブロック。生成中はボタンを一時disableし、完了/失敗をトーストで通知。失敗時はロールバック（楽観更新を戻す）。
-- 引き継ぎ: タイトル/番号/URLは必須。ラベル・アサインの引き継ぎ要否をpropsで選択できるようにしておく（デフォルトは引き継がない）。
-- 変換mutation: 成功でトースト、失敗でロールバック。エラー詳細を表示し再試行を促す。
-- UI: 「+」ボタンはホバー表示、操作中はdisable。ボタンにaria-labelを付与。
+- [x] 重複防止: `repoId + issueNumber`で既存TODOを判定し、多重作成をブロック。生成中はボタンを一時disableし、完了/失敗をトーストで通知。失敗時はロールバック（楽観更新を戻す）。
+- [x] 引き継ぎ: タイトル/番号/URLは必須。ラベル・アサインの引き継ぎ要否をpropsで選択できるようにしておく（デフォルトは引き継がない）。
+- [x] 変換mutation: 成功でトースト、失敗でロールバック。エラー詳細を表示し再試行を促す。
+- [x] UI: 「+」ボタンはホバー表示、操作中はdisable。ボタンにaria-labelを付与。
 
 ### Phase 3: ActivityPanel（左パネル）
 
@@ -160,15 +160,15 @@ type TabType = 'board' | 'activity' | 'manual';
 
 ## 実装順序
 
-| 順序 | Phase | ファイル |
-|------|-------|---------|
-| 1 | Phase 1 | ActivitySummaryStats.tsx（新規） |
-| 2 | Phase 2 | ActivityIssueCard.tsx（新規） |
-| 3 | Phase 3 | ActivityPanel.tsx（新規） |
-| 4 | Phase 4 | TodoPanel.tsx（新規） |
-| 5 | Phase 5 | ActivityTab.tsx（新規） |
-| 6 | Phase 6 | TabNavigation.tsx, useActiveTab.ts, App.tsx（変更） |
-| 7 | Phase 7 | TodoCard.tsx, TodoColumn.tsx（デザイン改善） |
+| 順序 | Phase | ファイル | 進捗 |
+|------|-------|---------|------|
+| 1 | Phase 1 | ActivitySummaryStats.tsx（新規） | [x] |
+| 2 | Phase 2 | ActivityIssueCard.tsx（新規） | [x] |
+| 3 | Phase 3 | ActivityPanel.tsx（新規） | [ ] |
+| 4 | Phase 4 | TodoPanel.tsx（新規） | [ ] |
+| 5 | Phase 5 | ActivityTab.tsx（新規） | [ ] |
+| 6 | Phase 6 | TabNavigation.tsx, useActiveTab.ts, App.tsx（変更） | [ ] |
+| 7 | Phase 7 | TodoCard.tsx, TodoColumn.tsx（デザイン改善） | [ ] |
 
 ---
 
