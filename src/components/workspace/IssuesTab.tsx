@@ -31,24 +31,32 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const loadIssues = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const data = await fetchIssues(owner, repo, {
-        state: filter,
-        per_page: 30,
-        sort: 'updated',
-        direction: 'desc',
-      });
-      setIssues(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load issues');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [owner, repo, filter]);
+  const loadIssues = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent ?? false;
+      if (!isSilent) {
+        setIsLoading(true);
+      }
+      setError(null);
+      
+      try {
+        const data = await fetchIssues(owner, repo, {
+          state: filter,
+          per_page: 30,
+          sort: 'updated',
+          direction: 'desc',
+        });
+        setIssues(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load issues');
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [owner, repo, filter]
+  );
 
   useEffect(() => {
     loadIssues();
@@ -70,6 +78,38 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
     setCreateError(null);
   };
 
+  const addIssueOptimistically = useCallback(
+    (issue: GitHubIssue) => {
+      // 取得値が欠けていてもUIが壊れないようにデフォルトを付与
+      const normalized: GitHubIssue = {
+        ...issue,
+        body: issue.body ?? '',
+        labels: issue.labels ?? [],
+        assignees: issue.assignees ?? [],
+        comments: issue.comments ?? 0,
+      };
+
+      // 現在のフィルターに合わない場合は即時表示しない
+      if (!(filter === 'all' || normalized.state === filter)) {
+        return;
+      }
+
+      const getTime = (item: GitHubIssue) =>
+        new Date(item.updated_at ?? item.created_at).getTime();
+
+      setIssues((prev) => {
+        // IDか番号で重複を避ける
+        const withoutDup = prev.filter(
+          (i) => i.id !== normalized.id && i.number !== normalized.number
+        );
+        return [normalized, ...withoutDup].sort(
+          (a, b) => getTime(b) - getTime(a)
+        );
+      });
+    },
+    [filter]
+  );
+
   const handleCreate = async () => {
     const title = createTitle.trim();
     const body = createBody.trim();
@@ -83,14 +123,23 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
     setCreateError(null);
 
     try {
-      await createIssue(owner, repo, {
+      const created = await createIssue(owner, repo, {
         title,
         ...(body ? { body } : {}),
       });
-      await loadIssues();
+
+      // 楽観的にリストへ即時追加
+      addIssueOptimistically(created);
+
+      // モーダルは即閉じて入力をリセット
       setIsCreateOpen(false);
       setCreateTitle('');
       setCreateBody('');
+
+      // バックグラウンドで最新一覧を取得（UIブロックしない）
+      loadIssues({ silent: true }).catch((err) => {
+        console.error('Failed to refresh issues after create', err);
+      });
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Issueの作成に失敗しました。');
     } finally {
