@@ -477,7 +477,13 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
   // View mode button component
   const ViewModeButton = ({ mode, icon, label }: { mode: ViewMode; icon: React.ReactNode; label: string }) => (
     <button
+      type="button"
       onClick={() => handleViewModeChange(mode)}
+      onPointerDown={(e) => {
+        // 何かが上に被っていても pointerdown で即時反応させる
+        e.preventDefault();
+        handleViewModeChange(mode);
+      }}
       className={`
         p-2 rounded-lg transition-all
         ${viewMode === mode
@@ -520,10 +526,10 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
       />
 
       {/* View Mode Switcher */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-2">
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-subtle)] relative z-10">
+        <div className="flex items-center gap-2 pointer-events-auto">
           <span className="text-caption font-medium text-[var(--text-muted)]">表示:</span>
-          <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] rounded-lg p-1 pointer-events-auto">
             <ViewModeButton
               mode="kanban"
               label="カンバン表示"
@@ -552,6 +558,20 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
               }
             />
           </div>
+          {/* フォールバック用のセレクト（クリックがブロックされる環境向け） */}
+          <label className="sr-only" htmlFor="view-mode-select">
+            表示切替
+          </label>
+          <select
+            id="view-mode-select"
+            className="hidden sm:inline-block text-caption bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-md px-2 py-1 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-green)]"
+            value={viewMode}
+            onChange={(e) => handleViewModeChange(e.target.value as ViewMode)}
+          >
+            <option value="kanban">カンバン</option>
+            <option value="grid">グリッド</option>
+            <option value="list">リスト</option>
+          </select>
         </div>
         <div className="text-caption text-[var(--text-muted)]">
           {filteredCount} / {totalRepos} リポジトリ

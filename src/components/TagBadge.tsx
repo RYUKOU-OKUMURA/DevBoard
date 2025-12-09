@@ -32,12 +32,26 @@ function getLuminance(hexColor: string): number {
 }
 
 /**
+ * Convert hex color to rgba string with alpha
+ */
+function hexToRgba(hexColor: string, alpha: number): string {
+  const hex = hexColor.replace('#', '');
+  const normalized = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex.slice(0, 6);
+  const value = parseInt(normalized, 16);
+  const r = (value >> 16) & 0xff;
+  const g = (value >> 8) & 0xff;
+  const b = value & 0xff;
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
  * Get readable foreground color based on background
  */
 function getReadableForeground(backgroundColor: string): string {
   const lum = getLuminance(backgroundColor);
-  // Use white text for dark backgrounds, black for light backgrounds
-  return lum > 0.5 ? '#000000' : '#FFFFFF';
+  // Prefer darker text for light brand colors, white for darker ones
+  return lum > 0.6 ? '#1f2933' : '#FFFFFF';
 }
 
 export function TagBadge({
@@ -50,12 +64,15 @@ export function TagBadge({
   const foregroundColor = getReadableForeground(tag.color);
   const isClickable = !!onClick;
   const isRemovable = !!onRemove;
+  const isLightBrand = getLuminance(tag.color) > 0.6;
+  const backgroundColor = hexToRgba(tag.color, isLightBrand ? 0.18 : 0.22);
+  const borderColor = hexToRgba(tag.color, isLightBrand ? 0.5 : 0.6);
 
   const baseClasses =
-    'inline-flex items-center gap-1 rounded-full font-medium transition-all motion-reduce:transition-none';
+    'inline-flex items-center gap-1 rounded-full font-semibold transition-all motion-reduce:transition-none';
 
   const sizeClasses = {
-    sm: 'px-2 py-0.5 text-caption', // 11px/16px
+    sm: 'px-2.5 py-0.5 text-[12px] leading-4', // slightly大きめで視認性UP
     md: 'px-3 py-1 text-body-sm', // 13px/18px
   };
 
@@ -67,11 +84,12 @@ export function TagBadge({
     <span
       className={`${baseClasses} ${sizeClasses[size]} ${interactiveClasses} ${className}`}
       style={{
-        backgroundColor: `${tag.color}33`, // 20% opacity
+        backgroundColor,
         color: foregroundColor,
         borderWidth: '1px',
         borderStyle: 'solid',
-        borderColor: `${tag.color}80`, // 50% opacity
+        borderColor,
+        boxShadow: `0 1px 0 ${hexToRgba('#0f172a', 0.05)}`,
       }}
       onClick={onClick}
       onKeyDown={
@@ -148,7 +166,7 @@ export function TagBadgeList({
   const remainingCount = Math.max(0, tags.length - maxVisible);
 
   return (
-    <div className={`flex flex-wrap items-center gap-inline-sm ${className}`}>
+    <div className={`flex flex-wrap items-center gap-1.5 ${className}`}>
       {visibleTags.map((tag) => (
         <TagBadge
           key={tag.id}
