@@ -3,6 +3,20 @@
  */
 import { AIExecutionHistory, WorkflowStatus } from '@/types/githubActions';
 
+// localStorage が利用不可（Firefox プライベート、サードパーティ iframe など）でも
+// アプリが落ちないようにガードする
+function isStorageAvailable(): boolean {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    const testKey = '__ai_exec_storage_test__';
+    window.localStorage.setItem(testKey, testKey);
+    window.localStorage.removeItem(testKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const STORAGE_KEY_PREFIX = 'github-dashboard-ai-executions';
 const MAX_EXECUTIONS = 100;
 const RETENTION_DAYS = 30;
@@ -11,11 +25,14 @@ const RETENTION_DAYS = 30;
  * AI実行履歴を取得（30日以内のみ）
  */
 export function getAIExecutions(accountId: string): AIExecutionHistory[] {
+  if (!isStorageAvailable()) return [];
+
   const key = `${STORAGE_KEY_PREFIX}:${accountId}`;
-  const data = localStorage.getItem(key);
-  if (!data) return [];
 
   try {
+    const data = localStorage.getItem(key);
+    if (!data) return [];
+
     const executions: AIExecutionHistory[] = JSON.parse(data);
     // 30日以上古い履歴を削除
     const thirtyDaysAgo = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -54,6 +71,8 @@ export function saveAIExecution(
   accountId: string,
   execution: AIExecutionHistory
 ): void {
+  if (!isStorageAvailable()) return;
+
   const key = `${STORAGE_KEY_PREFIX}:${accountId}`;
   const executions = getAIExecutions(accountId);
 
@@ -81,6 +100,8 @@ export function updateAIExecutionStatus(
   executionId: string,
   workflowStatus: WorkflowStatus
 ): void {
+  if (!isStorageAvailable()) return;
+
   const key = `${STORAGE_KEY_PREFIX}:${accountId}`;
   const executions = getAIExecutions(accountId);
 
@@ -99,6 +120,8 @@ export function updateAIExecutionStatus(
  * 特定のAI実行履歴を取得
  */
 export function getAIExecutionById(accountId: string, executionId: string): AIExecutionHistory | null {
+  if (!isStorageAvailable()) return null;
+
   const executions = getAIExecutions(accountId);
   return executions.find(exec => exec.id === executionId) || null;
 }
@@ -107,6 +130,8 @@ export function getAIExecutionById(accountId: string, executionId: string): AIEx
  * 特定のAI実行履歴を削除
  */
 export function deleteAIExecution(accountId: string, executionId: string): boolean {
+  if (!isStorageAvailable()) return false;
+
   const key = `${STORAGE_KEY_PREFIX}:${accountId}`;
   const executions = getAIExecutions(accountId);
 
@@ -129,6 +154,8 @@ export function deleteAIExecution(accountId: string, executionId: string): boole
  * すべてのAI実行履歴をクリア
  */
 export function clearAIExecutions(accountId: string): boolean {
+  if (!isStorageAvailable()) return false;
+
   const key = `${STORAGE_KEY_PREFIX}:${accountId}`;
 
   try {
