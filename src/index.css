@@ -224,6 +224,16 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
 /* Line clamp utility for truncating text */
 .line-clamp-2 {
   display: -webkit-box;

@@ -339,7 +339,7 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({ repos }) => {
   );
 
   return (
-    <div className="flex-1 bg-surface-app px-inset-xl py-inset-lg space-y-6 overflow-auto">
+    <div className="bg-surface-app px-inset-xl py-inset-lg space-y-6">
       <ActivitySummaryStats stats={summaryStats} periodLabel="直近7日" />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
