@@ -102,11 +102,6 @@ function readInitialFilters(username?: string): {
     ...todoFromQuery.filter,
   };
 
-  // デフォルトは自分担当にする（Activityの要件）
-  if (username && !todoFilter.assignee) {
-    todoFilter.assignee = username;
-  }
-
   return {
     activity,
     todoFilter,
@@ -156,13 +151,6 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({ repos }) => {
     () => mergeTodos(optimisticTodos, todos),
     [optimisticTodos, todos]
   );
-
-  // ユーザーが判明したあとにデフォルト担当を補う
-  useEffect(() => {
-    if (user?.username && !todoFilter.assignee) {
-      setTodoFilter((prev) => (prev.assignee ? prev : { ...prev, assignee: user.username }));
-    }
-  }, [todoFilter.assignee, user?.username]);
 
   // Activity items split
   const issues = useMemo(

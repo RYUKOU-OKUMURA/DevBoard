@@ -59,7 +59,6 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
   const [activeTodo, setActiveTodo] = useState<Todo | null>(null);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [assigneeInitialized, setAssigneeInitialized] = useState(false);
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
   const [initialFilterApplied, setInitialFilterApplied] = useState(false);
 
@@ -115,16 +114,6 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
     return badges;
   }, [filter, repoMap]);
 
-  // デフォルトの担当フィルターを自分に合わせる（初回のみ）
-  useEffect(() => {
-    if (!assigneeInitialized && user?.username && !filter.assignee) {
-      setFilter({ ...filter, assignee: user.username });
-      setAssigneeInitialized(true);
-    } else if (!assigneeInitialized && !user?.username) {
-      setAssigneeInitialized(true);
-    }
-  }, [assigneeInitialized, user?.username, filter, setFilter]);
-
   const resetVisibleCount = useCallback(
     () => setVisibleCount(initialLimit),
     [initialLimit]
@@ -176,9 +165,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
   };
 
   const handleClearFilters = () => {
-    cleanAndSetFilter({
-      assignee: user?.username || undefined,
-    });
+    cleanAndSetFilter({});
   };
 
   // 親提供の初期フィルター/検索を一度だけ適用
