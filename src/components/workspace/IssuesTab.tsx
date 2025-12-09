@@ -3,9 +3,10 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetchIssues, type GitHubIssue } from '../../api/issues';
+import { createIssue, fetchIssues, type GitHubIssue } from '../../api/issues';
 import { focusRing } from '../../lib/focusRing';
 import { timeAgo } from '../../lib/timeAgo';
+import { GlassModal } from '../ui/GlassModal';
 
 interface IssuesTabProps {
   owner: string;
@@ -24,6 +25,11 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<IssueFilter>('open');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createTitle, setCreateTitle] = useState('');
+  const [createBody, setCreateBody] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const loadIssues = useCallback(async () => {
     setIsLoading(true);
@@ -50,6 +56,47 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
 
   const openCount = issues.filter(i => i.state === 'open').length;
   const closedCount = issues.filter(i => i.state === 'closed').length;
+
+  const handleOpenCreate = () => {
+    setCreateError(null);
+    setIsCreateOpen(true);
+  };
+
+  const handleCloseCreate = () => {
+    if (isCreating) return;
+    setIsCreateOpen(false);
+    setCreateTitle('');
+    setCreateBody('');
+    setCreateError(null);
+  };
+
+  const handleCreate = async () => {
+    const title = createTitle.trim();
+    const body = createBody.trim();
+
+    if (!title) {
+      setCreateError('タイトルを入力してください。');
+      return;
+    }
+
+    setIsCreating(true);
+    setCreateError(null);
+
+    try {
+      await createIssue(owner, repo, {
+        title,
+        ...(body ? { body } : {}),
+      });
+      await loadIssues();
+      setIsCreateOpen(false);
+      setCreateTitle('');
+      setCreateBody('');
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Issueの作成に失敗しました。');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -136,6 +183,7 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
               transition-colors
               ${focusRing.default}
             `}
+            onClick={handleOpenCreate}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -217,6 +265,103 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
           </div>
         )}
       </div>
+
+      <GlassModal
+        isOpen={isCreateOpen}
+        onClose={handleCloseCreate}
+        title="New Issueを作成"
+        className="max-w-2xl"
+        tone="light"
+      >
+        <div className="space-y-4">
+          {createError && (
+            <div className="rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] px-3 py-2 text-[var(--accent-red-emphasis)] text-body-sm">
+              {createError}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="text-body-sm font-medium text-[var(--text-secondary)]">
+              タイトル <span className="text-[var(--accent-red-emphasis)]">*</span>
+            </label>
+            <input
+              type="text"
+              value={createTitle}
+              onChange={(e) => setCreateTitle(e.target.value)}
+              className={`
+                w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)]
+                px-3 py-2 text-body-sm text-[var(--text-primary)]
+                focus:border-[var(--accent-green)] focus:ring-2 focus:ring-[var(--accent-green-muted)]
+              `}
+              placeholder="Issue title"
+              disabled={isCreating}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-body-sm font-medium text-[var(--text-secondary)]">
+              説明（任意）
+            </label>
+            <textarea
+              value={createBody}
+              onChange={(e) => setCreateBody(e.target.value)}
+              className={`
+                w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-primary)]
+                px-3 py-2 text-body-sm text-[var(--text-primary)]
+                focus:border-[var(--accent-green)] focus:ring-2 focus:ring-[var(--accent-green-muted)]
+                min-h-[140px]
+              `}
+              placeholder="Describe the issue..."
+              disabled={isCreating}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleCloseCreate}
+              disabled={isCreating}
+              className={`
+                px-4 py-2 rounded-lg text-body-sm font-medium
+                text-[var(--text-secondary)] hover:text-[var(--text-primary)]
+                bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)]
+                transition-colors
+                disabled:opacity-50
+                ${focusRing.default}
+              `}
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={isCreating}
+              className={`
+                inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body-sm font-semibold
+                bg-[var(--accent-green)] text-white
+                hover:bg-[var(--accent-green-emphasis)]
+                transition-colors
+                disabled:opacity-60
+                ${focusRing.default}
+              `}
+            >
+              {isCreating ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-transparent" />
+                  作成中...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  作成する
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </GlassModal>
     </div>
   );
 };
