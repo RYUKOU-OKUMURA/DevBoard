@@ -329,7 +329,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
             <span className="text-title-2 font-semibold text-[var(--text-primary)]">
               My TODOs
             </span>
-            <span className="px-2 py-0.5 rounded-full text-caption font-semibold bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-caption font-semibold whitespace-nowrap bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
               {filteredCountText}
             </span>
           </div>
@@ -337,12 +337,12 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
             アカウント横断のタスクを3列カンバンで整理。ドラッグ&ドロップでステータスを変更できます。
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             type="button"
             onClick={() => refresh()}
             className={`
-              inline-flex items-center gap-1 px-3 py-2
+              inline-flex items-center gap-1.5 px-3.5 py-2.5 shrink-0 whitespace-nowrap text-sm font-medium
               rounded-lg border border-[var(--border-subtle)]
               bg-[var(--bg-secondary)]
               text-[var(--text-primary)]
@@ -359,7 +359,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
             type="button"
             onClick={handleClearFilters}
             className={`
-              inline-flex items-center gap-1 px-3 py-2
+              inline-flex items-center gap-1.5 px-3.5 py-2.5 shrink-0 whitespace-nowrap text-sm font-medium
               rounded-lg border border-[var(--border-subtle)]
               bg-[var(--bg-secondary)]
               text-[var(--text-primary)]
