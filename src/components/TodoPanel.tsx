@@ -51,7 +51,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
 }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const { todos, isLoading, filter, setFilter, updateTodo, refresh } = useTodos({
+  const { todos, isLoading, filter, setFilter, updateTodo, deleteTodo, refresh } = useTodos({
     autoLoad: true,
   });
 
@@ -283,6 +283,28 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
       showToast({
         variant: 'error',
         title: '更新に失敗しました',
+        description: message,
+      });
+    } finally {
+      setTodoLoading(todoId, false);
+    }
+  };
+
+  const handleDetailDelete = async (todoId: string) => {
+    setTodoLoading(todoId, true);
+    try {
+      await deleteTodo(todoId);
+      showToast({
+        variant: 'success',
+        title: 'TODOを削除しました',
+      });
+      setIsDetailOpen(false);
+      setSelectedTodo(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '削除に失敗しました';
+      showToast({
+        variant: 'error',
+        title: '削除に失敗しました',
         description: message,
       });
     } finally {
@@ -599,6 +621,7 @@ export const TodoPanel: React.FC<TodoPanelProps> = ({
           }}
           todo={selectedTodo}
           onSave={(todoId, updates) => handleDetailSave(todoId, updates)}
+          onDelete={handleDetailDelete}
           repoName={repoMap.get(selectedTodo.repoId)}
         />
       )}

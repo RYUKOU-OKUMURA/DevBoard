@@ -12,6 +12,7 @@ interface TodoDetailProps {
   onClose: () => void;
   todo: Todo | null;
   onSave: (todoId: string, updates: Partial<Todo>) => void;
+  onDelete?: (todoId: string) => void | Promise<void>;
   onCreateIssue?: (todoId: string) => void;
   repoName?: string;
 }
@@ -21,6 +22,7 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
   onClose,
   todo,
   onSave,
+  onDelete,
   onCreateIssue,
   repoName,
 }) => {
@@ -33,6 +35,7 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
   const [assignee, setAssignee] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
   const [labelInput, setLabelInput] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Initialize form with todo data
   useEffect(() => {
@@ -62,6 +65,20 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
     });
 
     onClose();
+  };
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!todo || !onDelete || isDeleting) return;
+    const confirmed = window.confirm('このTODOを削除してもよろしいですか？');
+    if (!confirmed) return;
+    try {
+      setIsDeleting(true);
+      await onDelete(todo.id);
+      onClose();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Handle label add
@@ -391,6 +408,24 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
           >
             キャンセル
           </button>
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className={`
+                flex-1 px-inset-lg py-inset-md
+                rounded-lg
+                border border-[#EF4444]
+                text-[#EF4444]
+                hover:bg-[#EF4444]/10
+                transition-colors
+                disabled:opacity-50 disabled:cursor-not-allowed
+                ${focusRing.default}
+              `}
+            >
+              {isDeleting ? '削除中…' : '削除'}
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={!title.trim()}

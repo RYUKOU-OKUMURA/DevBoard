@@ -133,7 +133,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
           <motion.div
             ref={dialogRef}
-            className={`relative w-full ${className} rounded-3xl border ${
+            className={`relative w-full ${className} rounded-3xl border flex flex-col max-h-[90vh] overflow-hidden ${
               isLightTone ? 'border-[var(--border-subtle)] bg-[var(--surface-primary)]' : 'border-transparent'
             } shadow-2xl`}
             style={{
@@ -184,7 +184,7 @@ export const GlassModal: React.FC<GlassModalProps> = ({
               </button>
             </div>
 
-            <div className="px-6 py-6">{children}</div>
+            <div className="px-6 py-6 overflow-y-auto min-h-0 flex-1">{children}</div>
           </motion.div>
         </motion.div>
       )}

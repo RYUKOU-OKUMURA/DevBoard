@@ -293,9 +293,9 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
             setSelectedTodo(null);
           }}
           todo={selectedTodo}
-          onUpdate={(updates) => updateTodo(selectedTodo.id, updates)}
-          onDelete={() => {
-            deleteTodo(selectedTodo.id);
+          onSave={(todoId, updates) => updateTodo(todoId, updates)}
+          onDelete={(todoId) => {
+            deleteTodo(todoId);
             setIsDetailOpen(false);
             setSelectedTodo(null);
           }}
