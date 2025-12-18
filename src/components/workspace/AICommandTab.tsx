@@ -22,8 +22,8 @@ interface CommandTemplate {
 }
 
 const AI_AGENTS: { id: AIAgent; label: string; mention: string; color: string }[] = [
-  { id: 'codex', label: 'Codex', mention: '@codex-cli', color: 'var(--accent-green)' },
-  { id: 'claude-code', label: 'Claude Code', mention: '@claude-code-agent', color: 'var(--accent-purple)' },
+  { id: 'codex', label: 'Codex', mention: '@codex', color: 'var(--accent-green)' },
+  { id: 'claude-code', label: 'Claude Code', mention: '@claude', color: 'var(--accent-purple)' },
 ];
 
 const COMMAND_TEMPLATES: CommandTemplate[] = [
