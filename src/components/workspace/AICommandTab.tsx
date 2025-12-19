@@ -1,6 +1,6 @@
 /**
  * AICommandTab - AI Agent command interface for workspace
- * Allows sending commands to @Codex or @Claude Code via GitHub Issue comments
+ * Allows sending commands to @codex or @claude via GitHub Issue comments
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
