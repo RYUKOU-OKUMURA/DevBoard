@@ -4,7 +4,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Todo, TodoGroup } from '../types';
+import type { Todo } from '../types';
 import { TodoItem } from './TodoItem';
 import { focusRing } from '../lib/focusRing';
 

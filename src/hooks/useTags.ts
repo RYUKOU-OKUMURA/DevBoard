@@ -133,7 +133,7 @@ export function useTags() {
       if (!user) return 0;
       return tagStorage.getTagUsageCount(user.userId, tagId);
     },
-    [user, repoTags] // eslint-disable-line react-hooks/exhaustive-deps
+    [user]
   );
 
   // ==================== Repo Tag Assignment Operations ====================
@@ -185,8 +185,9 @@ export function useTags() {
           const updatedTags = currentTags.filter((id) => id !== tagId);
 
           if (updatedTags.length === 0) {
-            const { [repoId]: _, ...rest } = prev;
-            return rest;
+            const next = { ...prev };
+            delete next[repoId];
+            return next;
           }
 
           return {
@@ -239,8 +240,9 @@ export function useTags() {
         tagStorage.setTagsForRepo(user.userId, repoId, tagIds);
         setRepoTags((prev) => {
           if (tagIds.length === 0) {
-            const { [repoId]: _, ...rest } = prev;
-            return rest;
+            const next = { ...prev };
+            delete next[repoId];
+            return next;
           }
           return {
             ...prev,

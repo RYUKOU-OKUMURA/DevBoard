@@ -8,7 +8,6 @@ import type {
   TodoStats,
   IssueSyncConfig,
   TodoFilter,
-  TodoStatus,
 } from '../types';
 import { getStorageItem, setStorageItem } from './storage';
 

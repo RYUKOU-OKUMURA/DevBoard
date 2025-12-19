@@ -473,10 +473,11 @@ function applySortOrder(todos: Todo[], sort: TodoSort): Todo[] {
   const sorted = [...todos];
 
   switch (sort) {
-    case 'priority':
+    case 'priority': {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       sorted.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
       break;
+    }
 
     case 'dueDate':
       sorted.sort((a, b) => {

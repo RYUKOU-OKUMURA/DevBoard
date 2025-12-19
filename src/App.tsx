@@ -113,12 +113,6 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     Dormant: 0,
     Archived: 0,
   });
-  const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>({
-    Active: 'アクティブ',
-    Stale: '停滞',
-    Dormant: '休眠',
-    Archived: 'アーカイブ',
-  });
   const [activityRefreshToken, setActivityRefreshToken] = useState(0);
   const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
@@ -144,7 +138,6 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     addManualReposFromInput,
   } = useManualRepositories({ accountId: user.username, showToast, onErrorChange: setUiError });
 
-  const totalReposDisplayed = displayedRepoCount ?? repos.length;
   const error = uiError ?? repoError ?? null;
 
   const { recentItems } = useRecentActivities(user, {
@@ -190,14 +183,9 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   }, [refreshRepos]);
 
   const memoizedHandleStatsUpdate = useCallback(
-    (
-      totalVisible: number,
-      categoryCounts: Record<ColumnKey, number>,
-      updatedColumnTitles: Record<ColumnKey, string>
-    ) => {
+    (totalVisible: number, categoryCounts: Record<ColumnKey, number>) => {
       setDisplayedRepoCount(totalVisible);
       setDisplayedCategoryCounts(categoryCounts);
-      setColumnTitles(updatedColumnTitles);
     },
     []
   );
@@ -210,7 +198,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   // Summary stats for sidebar
   const summaryStats = useMemo(
     () => ({
-      totalRepos: repos.length,
+      totalRepos: displayedRepoCount ?? repos.length,
       activeRepos: displayedCategoryCounts.Active,
       todoStats: {
         total: todoStats?.total || 0,

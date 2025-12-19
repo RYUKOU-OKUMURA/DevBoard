@@ -19,8 +19,14 @@ build
 .env
 .env.local
 .env.*.local
+.env.*
 .dev.vars
+.dev.vars.*
+.envrc
+.direnv/
 .wrangler/
+!.env.example
+!.dev.vars.example
 
 # IDE
 .vscode
@@ -29,6 +35,21 @@ build
 *.swo
 *~
 .DS_Store
+
+# Security / private artifacts
+bug_report/
+Security Scan.md
+issues/
+docs/security/
+.npm-cache/
+.cache/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+*.der
 
 # Tauri
 src-tauri/target

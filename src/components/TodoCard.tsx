@@ -30,10 +30,11 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     isDragging: isSortableDragging,
   } = useSortable({ id: todo.id });
 
+  const isDraggingState = isSortableDragging || isDragging;
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isSortableDragging ? 0.5 : 1,
+    opacity: isDraggingState ? 0.5 : 1,
   };
 
   // Priority colors
@@ -91,7 +92,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
         hover:border-[var(--accent-green-border)]
         hover:shadow-md
         transition-all duration-200
-        ${isSortableDragging ? 'shadow-lg ring-2 ring-[var(--accent-green)] ring-opacity-50' : ''}
+        ${isDraggingState ? 'shadow-lg ring-2 ring-[var(--accent-green)] ring-opacity-50' : ''}
       `}
     >
       {/* Drag handle */}

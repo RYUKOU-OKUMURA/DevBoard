@@ -62,9 +62,6 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
     loadIssues();
   }, [loadIssues]);
 
-  const openCount = issues.filter(i => i.state === 'open').length;
-  const closedCount = issues.filter(i => i.state === 'closed').length;
-
   const handleOpenCreate = () => {
     setCreateError(null);
     setIsCreateOpen(true);
@@ -518,4 +515,3 @@ const IssueRow: React.FC<IssueRowProps> = ({ issue, onClick }) => {
 };
 
 export default IssuesTab;
-

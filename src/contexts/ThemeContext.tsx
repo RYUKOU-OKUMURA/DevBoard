@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getStorageString, setStorageString } from '../utils/storage';
-import { devError } from '../utils/logger';
 
 type Theme = 'light' | 'dark';
 

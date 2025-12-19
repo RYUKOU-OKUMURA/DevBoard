@@ -2,7 +2,6 @@
  * Background sync worker for GitHub Issues
  */
 
-import type { IssueSyncConfig } from '../types';
 import { getIssueSyncConfig, saveSyncState, getSyncState } from './todoStorage';
 import { syncTodosWithIssues } from './issueSync';
 
@@ -92,7 +91,7 @@ export class IssueSyncWorker {
       console.log(`[IssueSyncWorker] Starting sync for ${this.repos.size} repositories`);
 
       // Sync each repository
-      for (const [repoId, repo] of this.repos) {
+      for (const repo of this.repos.values()) {
         try {
           const result = await syncTodosWithIssues(
             this.accountId,

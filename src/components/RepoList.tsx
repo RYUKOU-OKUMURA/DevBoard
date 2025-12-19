@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Repo, SortOrder } from '../types';
+import { Repo } from '../types';
 import { timeAgo } from '../lib/timeAgo';
 import { focusRing } from '../lib/focusRing';
 import { useWorkspace } from '../contexts/WorkspaceContext';
@@ -312,4 +312,3 @@ const ListRow: React.FC<ListRowProps> = ({
 };
 
 export default RepoList;
-

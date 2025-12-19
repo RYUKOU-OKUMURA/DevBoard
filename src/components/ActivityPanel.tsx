@@ -56,7 +56,6 @@ const ActivityCard: React.FC<{ item: RecentItem }> = ({ item }) => {
   const isIssue = item.type === 'Issue';
   const state = (item.state ?? 'OPEN').toUpperCase();
   const isOpen = state === 'OPEN';
-  const isClosed = state === 'CLOSED';
   const isMerged = state === 'MERGED';
 
   const statusStyle = isOpen

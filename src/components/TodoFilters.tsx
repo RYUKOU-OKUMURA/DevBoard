@@ -114,7 +114,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
         start = new Date(now.setHours(0, 0, 0, 0)).toISOString();
         end = new Date(now.setHours(23, 59, 59, 999)).toISOString();
         break;
-      case 'thisWeek':
+      case 'thisWeek': {
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
@@ -124,6 +124,7 @@ export const TodoFilters: React.FC<TodoFiltersProps> = ({
         start = weekStart.toISOString();
         end = weekEnd.toISOString();
         break;
+      }
     }
 
     onFilterChange({

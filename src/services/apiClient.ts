@@ -110,7 +110,7 @@ export async function requestJson<T>(path: string, options: JsonRequestOptions =
 
   try {
     return (await response.json()) as T;
-  } catch (error) {
+  } catch {
     throw new Error('Failed to parse API response as JSON');
   }
 }

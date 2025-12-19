@@ -1,6 +1,6 @@
 import { ViewPreset, ColumnKey } from '../types';
 import { nanoid } from 'nanoid';
-import { getStorageItem, setStorageItem, removeStorageItem, getStorageString, setStorageString } from './storage';
+import { getStorageItem, setStorageItem, removeStorageItem, getStorageString } from './storage';
 import { devError, devLog } from './logger';
 
 const PRESET_STORAGE_KEY_PREFIX = 'github-dashboard-presets';

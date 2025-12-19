@@ -2,7 +2,7 @@
  * Unit tests for todoStorage utility
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getTodos,
   saveTodos,
@@ -13,7 +13,6 @@ import {
   getTodosByRepo,
   getTodoStats,
   getOverdueTodos,
-  getTodosDueToday,
   bulkUpdateTodos,
   clearCompletedTodos,
 } from '../todoStorage';

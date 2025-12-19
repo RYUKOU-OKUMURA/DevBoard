@@ -83,13 +83,14 @@ export const AICommandTab: React.FC<AICommandTabProps> = ({
     agent: AIAgent;
     issueNumber: number;
     command: string;
-    timestamp: Date;
+    timestamp: number;
   }>>([]);
 
   // Load open issues
   useEffect(() => {
     const loadIssues = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const data = await fetchIssues(owner, repo, {
           state: 'open',
@@ -108,13 +109,14 @@ export const AICommandTab: React.FC<AICommandTabProps> = ({
   // Update command when template changes
   useEffect(() => {
     const template = COMMAND_TEMPLATES.find(t => t.id === selectedTemplate);
-    if (template && template.template) {
-      setCommand(template.template);
-    }
+    if (!template) return;
+    setCommand(template.template);
   }, [selectedTemplate]);
 
   const handleSendCommand = useCallback(async () => {
-    if (!selectedIssue || !command.trim()) return;
+    if (!selectedIssue) return;
+    const trimmedCommand = command.trim();
+    if (!trimmedCommand) return;
 
     setIsSending(true);
     setError(null);
@@ -122,7 +124,7 @@ export const AICommandTab: React.FC<AICommandTabProps> = ({
 
     try {
       const agent = AI_AGENTS.find(a => a.id === selectedAgent);
-      const fullCommand = `${agent?.mention} ${command.trim()}`;
+      const fullCommand = `${agent?.mention ?? ''} ${trimmedCommand}`;
 
       await addIssueComment(owner, repo, selectedIssue.number, fullCommand);
 
@@ -131,8 +133,8 @@ export const AICommandTab: React.FC<AICommandTabProps> = ({
         id: `${Date.now()}`,
         agent: selectedAgent,
         issueNumber: selectedIssue.number,
-        command: command.trim(),
-        timestamp: new Date(),
+        command: trimmedCommand,
+        timestamp: Date.now(),
       }, ...prev.slice(0, 9)]); // Keep last 10
 
       setSuccessMessage(`Issue #${selectedIssue.number} にコマンドを送信しました`);
@@ -147,7 +149,7 @@ export const AICommandTab: React.FC<AICommandTabProps> = ({
     }
   }, [selectedIssue, selectedAgent, command, owner, repo]);
 
-  const selectedAgentInfo = AI_AGENTS.find(a => a.id === selectedAgent);
+  const selectedAgentInfo = AI_AGENTS.find(a => a.id === selectedAgent) ?? AI_AGENTS[0];
 
   return (
     <div className="h-full flex flex-col">
@@ -401,9 +403,8 @@ export const AICommandTab: React.FC<AICommandTabProps> = ({
   );
 };
 
-function formatTime(date: Date): string {
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
+function formatTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60000);
 
   if (minutes < 1) return 'たった今';
@@ -416,4 +417,3 @@ function formatTime(date: Date): string {
 }
 
 export default AICommandTab;
-

@@ -3,7 +3,7 @@
  * NexusHub-inspired design with collapsible functionality
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { focusRing } from '../lib/focusRing';
 
 interface SummaryStats {
@@ -154,8 +154,6 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
   onCardClick,
   className = '',
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
   const todoCompletionRate = stats.todoStats.total > 0
     ? Math.round((stats.todoStats.done / stats.todoStats.total) * 100)
     : 0;
@@ -170,8 +168,6 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
           transition-all duration-200
           ${className}
         `}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Expand button */}
         <button
@@ -350,4 +346,3 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
 };
 
 export default SidebarSummary;
-

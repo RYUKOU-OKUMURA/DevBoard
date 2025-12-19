@@ -163,7 +163,7 @@ export function TagsProvider({ children, scope }: TagsProviderProps) {
       if (!user) return 0;
       return tagStorage.getTagUsageCount(user.userId, scope, tagId);
     },
-    [user, scope, repoTags] // eslint-disable-line react-hooks/exhaustive-deps
+    [user, scope]
   );
 
   // ==================== Repo Tag Assignment Operations ====================
@@ -215,8 +215,9 @@ export function TagsProvider({ children, scope }: TagsProviderProps) {
           const updatedTags = currentTags.filter((id) => id !== tagId);
 
           if (updatedTags.length === 0) {
-            const { [repoId]: _, ...rest } = prev;
-            return rest;
+            const next = { ...prev };
+            delete next[repoId];
+            return next;
           }
 
           return {
@@ -269,8 +270,9 @@ export function TagsProvider({ children, scope }: TagsProviderProps) {
         tagStorage.setTagsForRepo(user.userId, scope, repoId, tagIds);
         setRepoTags((prev) => {
           if (tagIds.length === 0) {
-            const { [repoId]: _, ...rest } = prev;
-            return rest;
+            const next = { ...prev };
+            delete next[repoId];
+            return next;
           }
           return {
             ...prev,
@@ -317,4 +319,3 @@ export function useTagsContext(): TagsContextType {
   }
   return context;
 }
-

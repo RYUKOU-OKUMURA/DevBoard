@@ -29,7 +29,6 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
     createTodo,
     deleteTodo,
     createIssueFromTodo,
-    syncWithGitHub,
     importIssues,
   } = useTodos();
 
@@ -90,14 +89,6 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
     const result = await createIssueFromTodo(todoId, todo.repoId);
     if (result) {
       console.log('Issue created:', result);
-    }
-  };
-
-  const handleSyncClick = async () => {
-    // Sync with the first repository for now
-    // In a real implementation, you might want to let users choose which repo to sync
-    if (repos.length > 0) {
-      await syncWithGitHub(repos[0].nameWithOwner);
     }
   };
 

@@ -13,6 +13,11 @@ module.exports = {
   ignorePatterns: ["dist", "build", ".eslintrc.cjs"],
   parser: "@typescript-eslint/parser",
   plugins: ["react-refresh"],
+  settings: {
+    react: {
+      version: "detect",
+    },
+  },
   rules: {
     "react/react-in-jsx-scope": "off",
     "react-refresh/only-export-components": [
