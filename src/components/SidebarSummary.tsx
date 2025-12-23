@@ -3,8 +3,9 @@
  * NexusHub-inspired design with collapsible functionality
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { focusRing } from '../lib/focusRing';
+import { FeedbackDialog } from './FeedbackDialog';
 
 interface SummaryStats {
   /** Total number of repositories */
@@ -157,6 +158,7 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
   const todoCompletionRate = stats.todoStats.total > 0
     ? Math.round((stats.todoStats.done / stats.todoStats.total) * 100)
     : 0;
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   if (isCollapsed) {
     return (
@@ -303,44 +305,40 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
         />
       </div>
 
-      {/* Quick Actions */}
+      {/* Feedback */}
       <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
         <h3 className="text-caption font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-3">
-          クイックアクセス
+          フィードバック
         </h3>
-        <div className="flex flex-col gap-2">
-          <button
-            className={`
-              flex items-center gap-2 px-3 py-2
-              text-body-sm text-[var(--text-secondary)]
-              hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]
-              rounded-lg
-              transition-colors
-              ${focusRing.default}
-            `}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-            </svg>
-            <span>お気に入り</span>
-          </button>
-          <button
-            className={`
-              flex items-center gap-2 px-3 py-2
-              text-body-sm text-[var(--text-secondary)]
-              hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]
-              rounded-lg
-              transition-colors
-              ${focusRing.default}
-            `}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>最近のアクティビティ</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsFeedbackOpen(true)}
+          className={`
+            w-full flex items-center gap-2 px-3 py-2
+            text-body-sm text-[var(--text-secondary)]
+            hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]
+            rounded-lg
+            transition-colors motion-reduce:transition-none
+            ${focusRing.default}
+          `}
+          aria-haspopup="dialog"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
+          <span>フィードバックを送る</span>
+        </button>
       </div>
+
+      <FeedbackDialog
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+      />
     </div>
   );
 };
