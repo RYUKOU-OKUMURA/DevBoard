@@ -3,9 +3,8 @@
  * NexusHub-inspired design with collapsible functionality
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { focusRing } from '../lib/focusRing';
-import { FeedbackDialog } from './FeedbackDialog';
 
 interface SummaryStats {
   /** Total number of repositories */
@@ -158,7 +157,12 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
   const todoCompletionRate = stats.todoStats.total > 0
     ? Math.round((stats.todoStats.done / stats.todoStats.total) * 100)
     : 0;
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  const handleFeedbackClick = () => {
+    const formUrl = import.meta.env.VITE_FEEDBACK_FORM_URL || 
+      'https://docs.google.com/forms/d/e/1FAIpQLSeC_TH4d9D9CGcIVPBVCWZyOt_gMHFaQijv04yLf5YK0d8hcA/viewform?usp=header';
+    window.open(formUrl, '_blank', 'noopener,noreferrer');
+  };
 
   if (isCollapsed) {
     return (
@@ -312,7 +316,7 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
         </h3>
         <button
           type="button"
-          onClick={() => setIsFeedbackOpen(true)}
+          onClick={handleFeedbackClick}
           className={`
             w-full flex items-center gap-2 px-3 py-2
             text-body-sm text-[var(--text-secondary)]
@@ -321,7 +325,6 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
             transition-colors motion-reduce:transition-none
             ${focusRing.default}
           `}
-          aria-haspopup="dialog"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -334,11 +337,6 @@ export const SidebarSummary: React.FC<SidebarSummaryProps> = ({
           <span>フィードバックを送る</span>
         </button>
       </div>
-
-      <FeedbackDialog
-        isOpen={isFeedbackOpen}
-        onClose={() => setIsFeedbackOpen(false)}
-      />
     </div>
   );
 };
