@@ -58,10 +58,10 @@ function TabMigrationDialog({ open, legacyTab, onSelect }: TabMigrationDialogPro
       >
         <div className="space-y-2">
           <p className="text-caption text-[var(--text-muted)] font-semibold uppercase tracking-wide">タブ統合</p>
-          <h2 className="text-title-3 font-semibold text-[var(--text-primary)]">Activityに統合されました</h2>
+          <h2 className="text-title-3 font-semibold text-[var(--text-primary)]">表示タブを整理しました</h2>
           <p className="text-body-sm text-[var(--text-secondary)] leading-relaxed">
-            以前のタブ{legacyTab ? `（${legacyTab}）` : ''}は廃止され、Activityビューに統合されました。
-            お好みの初期ビューを選んで保存してください（おすすめ: Activity）。
+            以前のタブ{legacyTab ? `（${legacyTab}）` : ''}は、今後の「リポジトリ」と「練習」中心の画面に合わせて整理中です。
+            まずはリポジトリ画面から始めるのがおすすめです。
           </p>
         </div>
 
@@ -69,9 +69,9 @@ function TabMigrationDialog({ open, legacyTab, onSelect }: TabMigrationDialogPro
           <button
             type="button"
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--accent-green)] text-text-inverse font-semibold shadow-sm hover:bg-[var(--accent-green-strong)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2"
-            onClick={() => onSelect('activity')}
+            onClick={() => onSelect('board')}
           >
-            <span>Activityを使う</span>
+            <span>リポジトリから始める</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
@@ -79,14 +79,14 @@ function TabMigrationDialog({ open, legacyTab, onSelect }: TabMigrationDialogPro
           <button
             type="button"
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border-strong)] bg-surface-secondary text-[var(--text-primary)] font-semibold shadow-sm hover:bg-surface-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2"
-            onClick={() => onSelect('board')}
+            onClick={() => onSelect('activity')}
           >
-            <span>カンバンを使う</span>
+            <span>練習・記録を見る</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
+              <polyline points="3 12 8 7 13 12 21 4" />
+              <path d="M21 4v6" />
+              <rect x="3" y="14" width="6" height="6" rx="1" />
+              <rect x="12" y="14" width="9" height="6" rx="1" />
             </svg>
           </button>
         </div>

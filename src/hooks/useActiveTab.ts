@@ -5,7 +5,7 @@ import { getStorageString, setStorageString } from '../utils/storage';
 type LegacyTabType = 'updates' | 'todos';
 
 const TAB_STORAGE_KEY = 'activeTab';
-const DEFAULT_TAB: TabType = 'activity';
+export const DEFAULT_TAB: TabType = 'board';
 const VALID_TABS: TabType[] = ['board', 'activity', 'manual'];
 const LEGACY_TABS: LegacyTabType[] = ['updates', 'todos'];
 const LEGACY_TAB_MAP: Record<LegacyTabType, TabType> = {
@@ -27,11 +27,10 @@ function readUrlTab(): string | null {
   return params.get('tab');
 }
 
-function buildInitialState() {
-  const saved = getStorageString(TAB_STORAGE_KEY, DEFAULT_TAB);
-  const urlTab = readUrlTab();
-  const candidate = (urlTab ?? saved) as string;
-
+export function resolveTabCandidate(candidate: string): {
+  tab: TabType;
+  pendingLegacy: LegacyTabType | null;
+} {
   if (isValidTab(candidate)) {
     return { tab: candidate, pendingLegacy: null };
   }
@@ -41,6 +40,14 @@ function buildInitialState() {
   }
 
   return { tab: DEFAULT_TAB, pendingLegacy: null };
+}
+
+function buildInitialState() {
+  const saved = getStorageString(TAB_STORAGE_KEY, DEFAULT_TAB);
+  const urlTab = readUrlTab();
+  const candidate = (urlTab ?? saved) as string;
+
+  return resolveTabCandidate(candidate);
 }
 
 export function useActiveTab() {
