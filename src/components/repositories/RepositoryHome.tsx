@@ -5,6 +5,7 @@ import { formatLastUpdateTime } from '../../utils/timeFormatter';
 import { focusRing } from '../../lib/focusRing';
 import { useTagsContext } from '../../contexts/TagsContext';
 import { getStorageItem } from '../../utils/storage';
+import { RepositoryDetailPanel } from './RepositoryDetailPanel';
 import { RepositoryList } from './RepositoryList';
 import {
   HIDDEN_REPOS_STORAGE_KEY,
@@ -44,6 +45,7 @@ export function RepositoryHome({
   const { getTagObjectsForRepo } = useTagsContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
+  const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
   const [hiddenRepoIds] = useState<Set<string>>(() => {
     const restored = getStorageItem<string[]>(HIDDEN_REPOS_STORAGE_KEY, []);
     return new Set(restored);
@@ -170,10 +172,19 @@ export function RepositoryHome({
         <RepositoryList
           repos={visibleRepos}
           getAutoHealth={getAutoHealth}
+          onOpenDetail={setSelectedRepo}
           isLoading={isLoading}
           hasSearchQuery={searchQuery.trim().length > 0}
         />
       </div>
+
+      {selectedRepo && (
+        <RepositoryDetailPanel
+          repo={selectedRepo}
+          autoHealth={getAutoHealth(selectedRepo)}
+          onClose={() => setSelectedRepo(null)}
+        />
+      )}
     </div>
   );
 }

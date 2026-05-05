@@ -1,43 +1,13 @@
 import type { ColumnKey, Repo } from '../../types';
 import { focusRing } from '../../lib/focusRing';
+import { RepositoryHealthBadge } from './RepositoryHealthBadge';
+import { RepositoryStatusBadge } from './RepositoryStatusBadge';
 
 interface RepositoryCardProps {
   repo: Repo;
   autoHealth: ColumnKey;
+  onOpenDetail: (repo: Repo) => void;
 }
-
-type AutoHealthBadgeInfo = {
-  label: string;
-  className: string;
-};
-
-const FALLBACK_AUTO_HEALTH_BADGE: AutoHealthBadgeInfo = {
-  label: '長く未更新',
-  className:
-    'bg-[var(--accent-orange-muted)] text-[var(--accent-orange-emphasis)] border-[var(--accent-orange-border)]',
-};
-
-const AUTO_HEALTH_LABELS: Record<string, AutoHealthBadgeInfo> = {
-  Active: {
-    label: '最近動きあり',
-    className:
-      'bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)] border-[var(--accent-green-border)]',
-  },
-  Stale: {
-    label: '少し停滞',
-    className:
-      'bg-[var(--accent-yellow-muted)] text-[var(--accent-yellow-emphasis)] border-[var(--accent-yellow-border)]',
-  },
-  Dormant: {
-    label: '長く未更新',
-    className:
-      'bg-[var(--accent-orange-muted)] text-[var(--accent-orange-emphasis)] border-[var(--accent-orange-border)]',
-  },
-  Archived: {
-    label: 'アーカイブ',
-    className: 'bg-surface-tertiary text-[var(--text-muted)] border-[var(--border-subtle)]',
-  },
-};
 
 function splitNameWithOwner(nameWithOwner: string): { owner: string; name: string } {
   const [owner, ...nameParts] = nameWithOwner.split('/');
@@ -60,42 +30,21 @@ function formatUpdatedDate(value: string): string {
   }).format(date);
 }
 
-function AutoHealthBadge({ autoHealth }: { autoHealth: ColumnKey }) {
-  const badge = AUTO_HEALTH_LABELS[autoHealth] ?? FALLBACK_AUTO_HEALTH_BADGE;
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-lg border px-inset-sm py-inline-xs text-caption font-semibold ${badge.className}`}
-    >
-      {badge.label}
-    </span>
-  );
-}
-
-function VisibilityBadge({ repo }: { repo: Repo }) {
-  if (repo.isPrivate) {
-    return (
-      <span className="inline-flex items-center rounded-lg border border-[var(--accent-yellow-border)] bg-[var(--accent-yellow-muted)] px-inset-sm py-inline-xs text-caption font-semibold text-[var(--accent-yellow-emphasis)]">
-        非公開
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inline-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
-      公開
-    </span>
-  );
-}
-
-export function RepositoryCard({ repo, autoHealth }: RepositoryCardProps) {
+export function RepositoryCard({ repo, autoHealth, onOpenDetail }: RepositoryCardProps) {
   const { owner, name } = splitNameWithOwner(repo.nameWithOwner);
   const topics = repo.topics.slice(0, 4);
   const remainingTopicCount = repo.topics.length - topics.length;
 
   return (
-    <article className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-lg shadow-sm transition-colors motion-reduce:transition-none hover:border-[var(--accent-green-border)]">
-      <div className="flex flex-col gap-stack-md sm:flex-row sm:items-start sm:justify-between">
+    <article className="relative rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-lg shadow-sm transition-colors motion-reduce:transition-none hover:border-[var(--accent-green-border)]">
+      <button
+        type="button"
+        onClick={() => onOpenDetail(repo)}
+        className={`absolute inset-0 z-10 rounded-lg text-left ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+        aria-label={`${repo.nameWithOwner} の詳細を開く`}
+      />
+
+      <div className="relative flex flex-col gap-stack-md sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-inline-sm">
             <h2 className="min-w-0 text-title-3 font-semibold text-[var(--text-primary)]">
@@ -115,12 +64,12 @@ export function RepositoryCard({ repo, autoHealth }: RepositoryCardProps) {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-inline-sm">
-          <AutoHealthBadge autoHealth={autoHealth} />
-          <VisibilityBadge repo={repo} />
+          <RepositoryHealthBadge autoHealth={autoHealth} />
+          <RepositoryStatusBadge status={repo.isPrivate ? 'private' : 'public'} />
         </div>
       </div>
 
-      <div className="mt-stack-md flex flex-wrap items-center gap-inline-md text-caption text-[var(--text-muted)]">
+      <div className="relative mt-stack-md flex flex-wrap items-center gap-inline-md text-caption text-[var(--text-muted)]">
         {repo.primaryLanguage && (
           <span className="inline-flex items-center gap-inline-xs font-medium text-[var(--text-secondary)]">
             <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent-blue)]" aria-hidden />
@@ -134,7 +83,7 @@ export function RepositoryCard({ repo, autoHealth }: RepositoryCardProps) {
       </div>
 
       {(topics.length > 0 || repo.htmlUrl) && (
-        <div className="mt-stack-md flex flex-col gap-stack-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative mt-stack-md flex flex-col gap-stack-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-inline-sm">
             {topics.map((topic) => (
               <span
@@ -155,7 +104,7 @@ export function RepositoryCard({ repo, autoHealth }: RepositoryCardProps) {
             href={repo.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={`inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-xs text-body-sm font-semibold text-[var(--text-primary)] transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
+            className={`relative z-20 inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-xs text-body-sm font-semibold text-[var(--text-primary)] transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
             aria-label={`${repo.nameWithOwner} をGitHubで開く`}
           >
             GitHubで開く

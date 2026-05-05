@@ -91,27 +91,27 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] カードクリックでGitHubへ勝手に遷移しない。
 - [x] `npm run check:ci`
 
-### フェーズ 3: リポジトリ詳細パネル追加
+### フェーズ 3: リポジトリ詳細パネル追加 ✅ 完了
 
 目的: GitHubを開かなくても、リポジトリの概要と次の行動を理解できるようにする。
 
-- [ ] `src/components/repositories/RepositoryDetailPanel.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryHealthBadge.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryStatusBadge.tsx` を追加する。
-- [ ] カードクリックで詳細パネルを開く。
-- [ ] 詳細パネルにリポジトリ名、説明、URL、最終更新日、言語、Public / Private、Archivedを表示する。
-- [ ] GitHub外部遷移は「GitHubで開く」ボタンに限定する。
-- [ ] 詳細パネルを閉じる操作をマウスとキーボードの両方で用意する。
-- [ ] `aria-label`, `role="dialog"`, フォーカス管理など最低限のアクセシビリティを整える。
-- [ ] 詳細パネル内に、後続のメモ保存とIssue練習導線を置ける領域を確保する。
+- [x] `src/components/repositories/RepositoryDetailPanel.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryHealthBadge.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryStatusBadge.tsx` を追加する。
+- [x] カードクリックで詳細パネルを開く。
+- [x] 詳細パネルにリポジトリ名、説明、URL、最終更新日、言語、Public / Private、Archivedを表示する。
+- [x] GitHub外部遷移は「GitHubで開く」ボタンに限定する。
+- [x] 詳細パネルを閉じる操作をマウスとキーボードの両方で用意する。
+- [x] `aria-label`, `role="dialog"`, フォーカス管理など最低限のアクセシビリティを整える。
+- [x] 詳細パネル内に、後続のメモ保存とIssue練習導線を置ける領域を確保する。
 
 検証:
 
-- [ ] カードクリックで詳細パネルが開く。
-- [ ] Enter / Space操作でも詳細を開ける。
-- [ ] Escapeまたは閉じるボタンで詳細を閉じられる。
-- [ ] GitHubは明示ボタンからのみ開く。
-- [ ] `npm run check:ci`
+- [x] カードクリックで詳細パネルが開く。
+- [x] Enter / Space操作でも詳細を開ける。
+- [x] Escapeまたは閉じるボタンで詳細を閉じられる。
+- [x] GitHubは明示ボタンからのみ開く。
+- [x] `npm run check:ci`
 
 ### フェーズ 4: RepoUserMeta保存
 

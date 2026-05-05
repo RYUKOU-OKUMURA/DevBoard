@@ -4,6 +4,7 @@ import { RepositoryCard } from './RepositoryCard';
 interface RepositoryListProps {
   repos: Repo[];
   getAutoHealth: (repo: Repo) => ColumnKey;
+  onOpenDetail: (repo: Repo) => void;
   isLoading?: boolean;
   hasSearchQuery?: boolean;
 }
@@ -62,6 +63,7 @@ function EmptyState({ hasSearchQuery }: { hasSearchQuery: boolean }) {
 export function RepositoryList({
   repos,
   getAutoHealth,
+  onOpenDetail,
   isLoading = false,
   hasSearchQuery = false,
 }: RepositoryListProps) {
@@ -76,7 +78,7 @@ export function RepositoryList({
   return (
     <div className="space-y-3" aria-live="polite">
       {repos.map((repo) => (
-        <RepositoryCard key={repo.id} repo={repo} autoHealth={getAutoHealth(repo)} />
+        <RepositoryCard key={repo.id} repo={repo} autoHealth={getAutoHealth(repo)} onOpenDetail={onOpenDetail} />
       ))}
     </div>
   );
