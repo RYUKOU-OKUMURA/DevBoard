@@ -149,8 +149,9 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   // Touch event handlers
   useEffect(() => {
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        handleDragMove(e.touches[0].clientY);
+      const touch = e.touches[0];
+      if (touch && e.touches.length === 1) {
+        handleDragMove(touch.clientY);
       }
     };
 
@@ -203,8 +204,9 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
           handleDragStart(e.clientY);
         }}
         onTouchStart={(e) => {
-          if (e.touches.length === 1) {
-            handleDragStart(e.touches[0].clientY);
+          const touch = e.touches[0];
+          if (touch && e.touches.length === 1) {
+            handleDragStart(touch.clientY);
           }
         }}
       >
@@ -285,4 +287,3 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
 };
 
 export default SplitPanel;
-

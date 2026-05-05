@@ -138,25 +138,25 @@ describe('filterRepos', () => {
   it('should filter by name', () => {
     const filtered = filterRepos(repos, 'react');
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].nameWithOwner).toBe('user/react-app');
+    expect(filtered[0]!.nameWithOwner).toBe('user/react-app');
   });
 
   it('should filter by language', () => {
     const filtered = filterRepos(repos, 'python');
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].primaryLanguage).toBe('Python');
+    expect(filtered[0]!.primaryLanguage).toBe('Python');
   });
 
   it('should filter by description', () => {
     const filtered = filterRepos(repos, 'backend');
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].description).toContain('Backend');
+    expect(filtered[0]!.description).toContain('Backend');
   });
 
   it('should filter by topics', () => {
     const filtered = filterRepos(repos, 'api');
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].topics).toContain('api');
+    expect(filtered[0]!.topics).toContain('api');
   });
 
   it('should return multiple matches', () => {
@@ -198,16 +198,16 @@ describe('sortRepos', () => {
 
   it('should sort by lastUpdated descending', () => {
     const sorted = sortRepos(repos, 'lastUpdated');
-    expect(sorted[0].nameWithOwner).toBe('apple/app');   // March
-    expect(sorted[1].nameWithOwner).toBe('monkey/tool'); // February
-    expect(sorted[2].nameWithOwner).toBe('zebra/project'); // January
+    expect(sorted[0]!.nameWithOwner).toBe('apple/app');   // March
+    expect(sorted[1]!.nameWithOwner).toBe('monkey/tool'); // February
+    expect(sorted[2]!.nameWithOwner).toBe('zebra/project'); // January
   });
 
   it('should sort by name ascending', () => {
     const sorted = sortRepos(repos, 'name');
-    expect(sorted[0].nameWithOwner).toBe('apple/app');
-    expect(sorted[1].nameWithOwner).toBe('monkey/tool');
-    expect(sorted[2].nameWithOwner).toBe('zebra/project');
+    expect(sorted[0]!.nameWithOwner).toBe('apple/app');
+    expect(sorted[1]!.nameWithOwner).toBe('monkey/tool');
+    expect(sorted[2]!.nameWithOwner).toBe('zebra/project');
   });
 
   it('should not mutate original array', () => {
@@ -254,23 +254,23 @@ describe('searchAndSortRepos', () => {
   it('should search and sort by lastUpdated', () => {
     const result = searchAndSortRepos(repos, 'react', 'lastUpdated');
     expect(result).toHaveLength(3);
-    expect(result[0].nameWithOwner).toBe('company/react-native'); // March
-    expect(result[1].nameWithOwner).toBe('org/react-lib');        // February
-    expect(result[2].nameWithOwner).toBe('user/react-app');       // January
+    expect(result[0]!.nameWithOwner).toBe('company/react-native'); // March
+    expect(result[1]!.nameWithOwner).toBe('org/react-lib');        // February
+    expect(result[2]!.nameWithOwner).toBe('user/react-app');       // January
   });
 
   it('should search and sort by name', () => {
     const result = searchAndSortRepos(repos, 'react', 'name');
     expect(result).toHaveLength(3);
-    expect(result[0].nameWithOwner).toBe('company/react-native');
-    expect(result[1].nameWithOwner).toBe('org/react-lib');
-    expect(result[2].nameWithOwner).toBe('user/react-app');
+    expect(result[0]!.nameWithOwner).toBe('company/react-native');
+    expect(result[1]!.nameWithOwner).toBe('org/react-lib');
+    expect(result[2]!.nameWithOwner).toBe('user/react-app');
   });
 
   it('should filter then sort', () => {
     const result = searchAndSortRepos(repos, 'typescript', 'name');
     expect(result).toHaveLength(2);
-    expect(result[0].nameWithOwner).toBe('org/react-lib');
-    expect(result[1].nameWithOwner).toBe('user/react-app');
+    expect(result[0]!.nameWithOwner).toBe('org/react-lib');
+    expect(result[1]!.nameWithOwner).toBe('user/react-app');
   });
 });

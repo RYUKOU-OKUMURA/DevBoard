@@ -2,6 +2,7 @@ import type { GraphQLOperationId } from '@/api/githubQueryIds';
 import { parseGraphQLError } from '@/utils/errorHandling';
 import { devError } from '@/utils/logger';
 import { requestJson } from './apiClient';
+import type { JsonRequestOptions } from './apiClient';
 
 type GraphQLVariables = Record<string, unknown>;
 
@@ -22,7 +23,7 @@ const GRAPHQL_BASE_PATH = '/api';
  */
 export async function githubRestRequest<T>(
   path: string,
-  init: RequestInit & { json?: unknown } = {}
+  init: Omit<JsonRequestOptions, 'basePath'> = {}
 ): Promise<T> {
   return requestJson<T>(path, { ...init, basePath: REST_BASE_PATH });
 }

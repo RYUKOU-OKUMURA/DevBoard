@@ -175,22 +175,27 @@ export function updateTodo(
     return null;
   }
 
+  const existingTodo = todos[index];
+  if (!existingTodo) {
+    return null;
+  }
+
   const now = Date.now();
-  const previousUpdatedAt = Date.parse(todos[index].updatedAt ?? '');
+  const previousUpdatedAt = Date.parse(existingTodo.updatedAt);
   const updatedAt =
     Number.isFinite(previousUpdatedAt) && previousUpdatedAt >= now
       ? new Date(previousUpdatedAt + 1).toISOString()
       : new Date(now).toISOString();
 
   const updatedTodo: Todo = {
-    ...todos[index],
+    ...existingTodo,
     ...updates,
     updatedAt,
     // If status changed to 'done', set completedAt
     completedAt:
-      updates.status === 'done' && todos[index].status !== 'done'
+      updates.status === 'done' && existingTodo.status !== 'done'
         ? new Date().toISOString()
-        : todos[index].completedAt,
+        : existingTodo.completedAt,
   };
 
   todos[index] = updatedTodo;

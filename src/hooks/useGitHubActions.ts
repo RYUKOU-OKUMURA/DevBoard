@@ -56,7 +56,7 @@ export function useGitHubActions(options: UseGitHubActionsOptions): UseGitHubAct
   const [executionHistory, setExecutionHistory] = useState<AIExecutionHistory[]>([]);
 
   // Refs
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollingStartTimeRef = useRef<number | null>(null);
   const currentExecutionIdRef = useRef<string | null>(null);
 
@@ -76,7 +76,7 @@ export function useGitHubActions(options: UseGitHubActionsOptions): UseGitHubAct
    */
   const refreshHistory = useCallback(() => {
     if (!user) return;
-    const history = getAIExecutionsByTodo(user.id, todoId);
+    const history = getAIExecutionsByTodo(user.userId, todoId);
     setExecutionHistory(history);
   }, [user, todoId]);
 
@@ -134,7 +134,7 @@ export function useGitHubActions(options: UseGitHubActionsOptions): UseGitHubAct
           setWorkflowStatus(status);
 
           // ローカルストレージも更新
-          updateAIExecutionStatus(user.id, executionId, status);
+          updateAIExecutionStatus(user.userId, executionId, status);
 
           // 履歴を再読み込み
           refreshHistory();
@@ -216,7 +216,7 @@ export function useGitHubActions(options: UseGitHubActionsOptions): UseGitHubAct
           triggeredAt: new Date().toISOString(),
         };
 
-        saveAIExecution(user.id, execution);
+        saveAIExecution(user.userId, execution);
 
         // 履歴を再読み込み
         refreshHistory();

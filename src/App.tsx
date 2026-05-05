@@ -199,7 +199,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const summaryStats = useMemo(
     () => ({
       totalRepos: displayedRepoCount ?? repos.length,
-      activeRepos: displayedCategoryCounts.Active,
+      activeRepos: displayedCategoryCounts.Active ?? 0,
       todoStats: {
         total: todoStats?.total || 0,
         done: todoStats?.done || 0,

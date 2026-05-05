@@ -248,11 +248,11 @@ export const MainColumnSettingsModal: React.FC<MainColumnSettingsModalProps> = (
                       <button
                         onClick={() => {
                           setEditingColumn(colName);
-                          setEditingTitle(localTitles[colName]);
+                          setEditingTitle(localTitles[colName] ?? colName);
                         }}
                         className="text-left w-full font-medium text-[var(--text-primary)] hover:text-[var(--accent-blue)] transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
                       >
-                        {localTitles[colName]}
+                        {localTitles[colName] ?? colName}
                       </button>
                     )}
                     <p className="text-caption text-[var(--text-muted)]">
@@ -299,4 +299,3 @@ export const MainColumnSettingsModal: React.FC<MainColumnSettingsModalProps> = (
     </GlassModal>
   );
 };
-

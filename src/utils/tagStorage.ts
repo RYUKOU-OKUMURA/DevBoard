@@ -118,6 +118,10 @@ export function updateTag(
   if (tagIndex === -1) {
     throw new Error('Tag not found');
   }
+  const existingTag = tags[tagIndex];
+  if (!existingTag) {
+    throw new Error('Tag not found');
+  }
 
   // Check for duplicate names if name is being updated
   if (updates.name) {
@@ -138,9 +142,9 @@ export function updateTag(
 
   // Update tag
   const updatedTag = {
-    ...tags[tagIndex],
+    ...existingTag,
     ...updates,
-    name: updates.name ? updates.name.trim() : tags[tagIndex].name,
+    name: updates.name ? updates.name.trim() : existingTag.name,
   };
 
   const updatedTags = [...tags];

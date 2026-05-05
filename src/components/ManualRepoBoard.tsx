@@ -145,6 +145,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   // Classify repos by column
   const classifiedRepos = useMemo(() => {
     const result: Record<ManualColumnKey, Repo[]> = {};
+    const fallbackColumn = columnConfig.columns[0] ?? 'その他';
 
     columnConfig.columns.forEach((col) => {
       result[col] = [];
@@ -152,7 +153,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
 
     filteredRepos.forEach((repo) => {
       const assignedCol = columnAssignments[repo.id];
-      const column = assignedCol || columnConfig.columns[0];
+      const column = assignedCol || fallbackColumn;
 
       if (!result[column]) {
         result[column] = [];
@@ -166,7 +167,8 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
   // Get ordered repos for a column
   const getOrderedRepos = (col: ManualColumnKey): Repo[] => {
     const idOrder = orderMap[col] || [];
-    const map = new Map(classifiedRepos[col].map((r) => [r.id, r] as const));
+    const columnRepos = classifiedRepos[col] ?? [];
+    const map = new Map(columnRepos.map((r) => [r.id, r] as const));
     const ordered: Repo[] = [];
 
     idOrder.forEach((id) => {
@@ -174,7 +176,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
       if (r) ordered.push(r);
     });
 
-    classifiedRepos[col].forEach((r) => {
+    columnRepos.forEach((r) => {
       if (!idOrder.includes(r.id)) ordered.push(r);
     });
 
@@ -456,7 +458,7 @@ export const ManualRepoBoard: React.FC<ManualRepoBoardProps> = ({
         {columnConfig.columns.map((columnKey) => (
           <RepoColumn
             key={columnKey}
-            title={columnConfig.columnTitles[columnKey]}
+            title={columnConfig.columnTitles[columnKey] ?? columnKey}
             repos={getOrderedRepos(columnKey)}
             columnKey={columnKey}
             onReorder={handleReorderWithinColumn}

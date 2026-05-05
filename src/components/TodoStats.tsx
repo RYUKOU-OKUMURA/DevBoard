@@ -4,10 +4,10 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { TodoStats } from '../types';
+import type { TodoStats as TodoStatsData } from '../types';
 
 interface TodoStatsProps {
-  stats: TodoStats | null;
+  stats: TodoStatsData | null;
   compact?: boolean;
 }
 

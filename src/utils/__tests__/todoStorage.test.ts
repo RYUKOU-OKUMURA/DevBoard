@@ -36,12 +36,15 @@ const localStorageMock = (() => {
   };
 })();
 
-const globalAny = globalThis as typeof globalThis & {
-  window?: typeof globalThis;
+const globalAny = globalThis as unknown as {
+  window?: {
+    localStorage?: typeof localStorageMock;
+  };
+  localStorage?: typeof localStorageMock;
 };
 
 if (!globalAny.window) {
-  globalAny.window = {} as typeof globalThis;
+  globalAny.window = {};
 }
 
 Object.defineProperty(globalAny.window, 'localStorage', {
@@ -124,7 +127,7 @@ describe('todoStorage', () => {
       const todos = getTodos(testAccountId);
 
       expect(todos).toHaveLength(1);
-      expect(todos[0].title).toBe(todoData.title);
+      expect(todos[0]!.title).toBe(todoData.title);
     });
   });
 
@@ -241,7 +244,7 @@ describe('todoStorage', () => {
 
       const repo1Todos = getTodosByRepo(testAccountId, repo1);
       expect(repo1Todos).toHaveLength(1);
-      expect(repo1Todos[0].title).toBe('Repo 1 Todo');
+      expect(repo1Todos[0]!.title).toBe('Repo 1 Todo');
     });
   });
 
@@ -323,7 +326,7 @@ describe('todoStorage', () => {
 
       const overdue = getOverdueTodos(testAccountId);
       expect(overdue).toHaveLength(1);
-      expect(overdue[0].title).toBe('Overdue');
+      expect(overdue[0]!.title).toBe('Overdue');
     });
 
     it('should not include completed todos', () => {
@@ -370,8 +373,8 @@ describe('todoStorage', () => {
       });
 
       expect(updated).toHaveLength(2);
-      expect(updated[0].priority).toBe('high');
-      expect(updated[1].priority).toBe('high');
+      expect(updated[0]!.priority).toBe('high');
+      expect(updated[1]!.priority).toBe('high');
     });
   });
 
@@ -408,7 +411,7 @@ describe('todoStorage', () => {
       const todos = getTodos(testAccountId);
 
       expect(todos).toHaveLength(1);
-      expect(todos[0].title).toBe('Active');
+      expect(todos[0]!.title).toBe('Active');
     });
   });
 });

@@ -353,7 +353,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 setPresetError('');
               }}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.isComposing) {
+                if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
                   event.preventDefault();
                   return;
                 }

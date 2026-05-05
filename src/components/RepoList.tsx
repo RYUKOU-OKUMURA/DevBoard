@@ -10,6 +10,7 @@ import { focusRing } from '../lib/focusRing';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useTagsContext } from '../contexts/TagsContext';
 import { TagBadge } from './TagBadge';
+import type { Tag } from '../types/tag';
 
 interface RepoListProps {
   repos: Repo[];
@@ -171,7 +172,7 @@ export const RepoList: React.FC<RepoListProps> = ({
 
 interface ListRowProps {
   repo: Repo;
-  tags: Array<{ id: string; name: string; color: string }>;
+  tags: Tag[];
   onSelect: () => void;
 }
 

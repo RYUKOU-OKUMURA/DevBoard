@@ -194,7 +194,7 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={loadIssues}
+            onClick={() => loadIssues()}
             disabled={isLoading}
             className={`
               p-2 rounded-lg
@@ -266,7 +266,7 @@ export const IssuesTab: React.FC<IssuesTabProps> = ({
               </svg>
               <p className="text-body-sm text-[var(--accent-red-emphasis)] mb-4">{error}</p>
               <button
-                onClick={loadIssues}
+                onClick={() => loadIssues()}
                 className={`
                   px-4 py-2 rounded-lg
                   bg-[var(--accent-blue)] text-white

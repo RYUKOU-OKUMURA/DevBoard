@@ -2,7 +2,6 @@
  * TagBadge component - displays a tag as a colored badge
  */
 
-import React from 'react';
 import type { Tag } from '../types/tag';
 import { focusRing } from '../lib/focusRing';
 
@@ -23,10 +22,13 @@ function getLuminance(hexColor: string): number {
   const g = (rgb >> 8) & 0xff;
   const b = (rgb >> 0) & 0xff;
 
-  const [rs, gs, bs] = [r, g, b].map((c) => {
-    c = c / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
+  const normalize = (component: number) => {
+    const scaled = component / 255;
+    return scaled <= 0.03928 ? scaled / 12.92 : Math.pow((scaled + 0.055) / 1.055, 2.4);
+  };
+  const rs = normalize(r);
+  const gs = normalize(g);
+  const bs = normalize(b);
 
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }

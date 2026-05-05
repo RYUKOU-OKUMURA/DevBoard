@@ -1,5 +1,5 @@
 import React from 'react';
-import type { RecentItem } from '../api/repos';
+import type { RecentItem } from '../types';
 
 type ActivityType = 'issues' | 'pulls';
 

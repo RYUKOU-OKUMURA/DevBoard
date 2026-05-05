@@ -137,3 +137,12 @@
 - ✅ リポジトリカードからのクリックフィルタリング
 - ✅ ブラウザ通知（期限切れ/今日期限/まもなく期限）
 - ✅ 設定可能な通知間隔
+
+## 9. 大改修準備: Safe Refactor PR 0 ✅ 完了
+
+### フェーズ 0: 検証基盤修復 ✅ 完了
+- [x] (単純) `typecheck` script を追加し、`check:ci` に `lint / typecheck / test -- --run / build` を含めた。
+- [x] (単純) Vite 環境型を追加し、`import.meta.env` を型チェック対象にした。
+- [x] (複雑) `npx tsc --noEmit` で失敗していた既存の型エラーを、挙動維持の範囲で修正した。
+- [x] (複雑) API境界、保存データ更新、UI props、テストの `noUncheckedIndexedAccess` 対応を行った。
+- [x] (単純) `npm run check:ci` が通ることを確認した。

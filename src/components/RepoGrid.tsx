@@ -11,6 +11,7 @@ import { focusRing } from '../lib/focusRing';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useTagsContext } from '../contexts/TagsContext';
 import { TagBadge } from './TagBadge';
+import type { Tag } from '../types/tag';
 
 interface RepoGridProps {
   repos: Repo[];
@@ -77,7 +78,7 @@ export const RepoGrid: React.FC<RepoGridProps> = ({
 
 interface GridCardProps {
   repo: Repo;
-  tags: Array<{ id: string; name: string; color: string }>;
+  tags: Tag[];
   onSelect: () => void;
   delay?: number;
 }
@@ -214,4 +215,3 @@ function getActivityGradient(pushedAt: string): string {
 }
 
 export default RepoGrid;
-

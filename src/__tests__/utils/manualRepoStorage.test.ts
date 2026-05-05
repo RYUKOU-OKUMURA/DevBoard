@@ -25,10 +25,10 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(global, 'localStorage', {
+Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
 });
-Object.defineProperty(global, 'window', {
+Object.defineProperty(globalThis, 'window', {
   value: { localStorage: localStorageMock },
 });
 
@@ -58,8 +58,8 @@ describe('manualRepoStorage', () => {
     const loadedB = getManualRepos(ACCOUNT_B);
 
     expect(loadedA).toHaveLength(1);
-    expect(loadedA[0].nameWithOwner).toBe('octocat/Hello-World');
-    expect(loadedB[0].nameWithOwner).toBe('foo/bar');
+    expect(loadedA[0]!.nameWithOwner).toBe('octocat/Hello-World');
+    expect(loadedB[0]!.nameWithOwner).toBe('foo/bar');
   });
 
   it('migrates legacy manual repos into account-scoped key', () => {
