@@ -52,27 +52,30 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   };
 
   const tabs: Array<{ id: TabType; label: string; badge?: number }> = [
-    { id: 'board', label: 'カンバン' },
-    { id: 'activity', label: 'Activity', badge: activityCount },
-    { id: 'manual', label: '追加したリポジトリ', badge: manualRepoCount },
+    { id: 'board', label: 'リポジトリ' },
+    { id: 'activity', label: '練習・記録', badge: activityCount },
+    { id: 'manual', label: '手動追加', badge: manualRepoCount },
   ];
 
   return (
     <nav
-      className="flex gap-inline-md px-inset-xl bg-surface-primary border-b border-[var(--border-subtle)] transition-colors"
+      className="flex gap-inline-sm px-inset-xl bg-surface-primary border-b border-[var(--border-subtle)] transition-colors"
       role="tablist"
       aria-label="ビュー切り替え"
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const isActive = activeTab === tab.id;
+        const isSecondary = index > 0;
         return (
           <motion.button
             key={tab.id}
             type="button"
             onClick={() => handleTabChange(tab.id)}
             className={`
-              relative flex items-center gap-inline-md px-inset-lg py-inset-md border-b-2 rounded-sm text-body-sm
+              relative flex items-center gap-inline-md border-b-2 rounded-sm text-body-sm
+              ${isSecondary ? 'px-inset-md py-inset-md' : 'px-inset-lg py-inset-md'}
               ${isActive ? 'text-[var(--accent-green)] font-semibold border-[var(--accent-green)]' : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text-primary)] hover:bg-surface-hover'}
+              ${isSecondary && !isActive ? 'opacity-80' : ''}
               ${focusRing.default} focus-visible:ring-[var(--accent-green)] focus-visible:ring-opacity-75
             `}
             whileHover={{ y: -1 }}

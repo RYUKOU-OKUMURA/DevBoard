@@ -50,23 +50,23 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 
 - [x] `npm run check:ci`
 
-### フェーズ 1: ナビゲーション整理
+### フェーズ 1: ナビゲーション整理 ✅ 完了
 
 目的: 現行の `board` をUI表示上「リポジトリ」として扱い、初心者向けの主導線を作る。
 
-- [ ] 現行の `TabType` と `useActiveTab` の挙動を確認する。
-- [ ] 旧値 `updates` / `todos` と現行値 `board` / `activity` / `manual` の互換を維持する。
-- [ ] ログイン後の初期表示を「リポジトリ」画面に寄せる。
-- [ ] UI上のタブ名を「リポジトリ」「練習」中心に整理する。
-- [ ] ActivityやManualは削除せず、初期導線で目立ちすぎない表示にする。
-- [ ] `repositories` / `practice` への内部TabType移行を、このフェーズでは見送るか、必要最小限に留める。
-- [ ] ナビゲーション変更後も既存のリポジトリ取得、検索、並び替えが壊れていないことを確認する。
+- [x] 現行の `TabType` と `useActiveTab` の挙動を確認する。
+- [x] 旧値 `updates` / `todos` と現行値 `board` / `activity` / `manual` の互換を維持する。
+- [x] ログイン後の初期表示を「リポジトリ」画面に寄せる。
+- [x] UI上のタブ名を「リポジトリ」「練習」中心に整理する。
+- [x] ActivityやManualは削除せず、初期導線で目立ちすぎない表示にする。
+- [x] `repositories` / `practice` への内部TabType移行を、このフェーズでは見送るか、必要最小限に留める。
+- [x] ナビゲーション変更後も既存のリポジトリ取得、検索、並び替えが壊れていないことを確認する。
 
 検証:
 
-- [ ] 旧 `activeTab` 値をlocalStorageに入れても画面が壊れない。
-- [ ] ログイン後にリポジトリ画面が表示される。
-- [ ] `npm run check:ci`
+- [x] 旧 `activeTab` 値をlocalStorageに入れても画面が壊れない。
+- [x] ログイン後にリポジトリ画面が表示される。
+- [x] `npm run check:ci`
 
 ### フェーズ 2: RepositoryHomeの1カラム一覧追加
 
