@@ -1,11 +1,13 @@
-import type { ColumnKey, Repo } from '../../types';
+import type { ColumnKey, Repo, RepoUserMeta } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { RepositoryHealthBadge } from './RepositoryHealthBadge';
 import { RepositoryStatusBadge } from './RepositoryStatusBadge';
+import { getRepositoryUserStatusLabel } from './repositoryMetaLabels';
 
 interface RepositoryCardProps {
   repo: Repo;
   autoHealth: ColumnKey;
+  userMeta?: RepoUserMeta | null;
   onOpenDetail: (repo: Repo) => void;
 }
 
@@ -30,10 +32,12 @@ function formatUpdatedDate(value: string): string {
   }).format(date);
 }
 
-export function RepositoryCard({ repo, autoHealth, onOpenDetail }: RepositoryCardProps) {
+export function RepositoryCard({ repo, autoHealth, userMeta, onOpenDetail }: RepositoryCardProps) {
   const { owner, name } = splitNameWithOwner(repo.nameWithOwner);
   const topics = repo.topics.slice(0, 4);
   const remainingTopicCount = repo.topics.length - topics.length;
+  const hasUserMeta = userMeta !== null && userMeta !== undefined;
+  const nextAction = userMeta?.nextAction.trim();
 
   return (
     <article className="relative rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-lg shadow-sm transition-colors motion-reduce:transition-none hover:border-[var(--accent-green-border)]">
@@ -81,6 +85,21 @@ export function RepositoryCard({ repo, autoHealth, onOpenDetail }: RepositoryCar
           <span>Stars: {repo.stargazers_count.toLocaleString()}</span>
         )}
       </div>
+
+      {hasUserMeta && (
+        <div className="relative mt-stack-md rounded-lg border border-[var(--border-subtle)] bg-surface-secondary px-inset-md py-inset-sm">
+          <div className="flex flex-col gap-stack-xs sm:flex-row sm:items-center sm:justify-between">
+            <span className="inline-flex w-fit items-center rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inline-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
+              自分の状態: {getRepositoryUserStatusLabel(userMeta.status)}
+            </span>
+            {nextAction && (
+              <p className="min-w-0 truncate text-body-sm text-[var(--text-secondary)]">
+                次にやること: {nextAction}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {(topics.length > 0 || repo.htmlUrl) && (
         <div className="relative mt-stack-md flex flex-col gap-stack-sm sm:flex-row sm:items-center sm:justify-between">

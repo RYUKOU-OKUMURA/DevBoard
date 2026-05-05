@@ -1,9 +1,10 @@
-import type { ColumnKey, Repo } from '../../types';
+import type { ColumnKey, Repo, RepoUserMeta } from '../../types';
 import { RepositoryCard } from './RepositoryCard';
 
 interface RepositoryListProps {
   repos: Repo[];
   getAutoHealth: (repo: Repo) => ColumnKey;
+  getUserMeta?: (repoId: string) => RepoUserMeta | null;
   onOpenDetail: (repo: Repo) => void;
   isLoading?: boolean;
   hasSearchQuery?: boolean;
@@ -63,6 +64,7 @@ function EmptyState({ hasSearchQuery }: { hasSearchQuery: boolean }) {
 export function RepositoryList({
   repos,
   getAutoHealth,
+  getUserMeta,
   onOpenDetail,
   isLoading = false,
   hasSearchQuery = false,
@@ -78,7 +80,13 @@ export function RepositoryList({
   return (
     <div className="space-y-3" aria-live="polite">
       {repos.map((repo) => (
-        <RepositoryCard key={repo.id} repo={repo} autoHealth={getAutoHealth(repo)} onOpenDetail={onOpenDetail} />
+        <RepositoryCard
+          key={repo.id}
+          repo={repo}
+          autoHealth={getAutoHealth(repo)}
+          userMeta={getUserMeta?.(repo.id)}
+          onOpenDetail={onOpenDetail}
+        />
       ))}
     </div>
   );

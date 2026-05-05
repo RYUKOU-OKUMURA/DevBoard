@@ -258,6 +258,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     </div>
   ) : (
     <RepositoryHome
+      accountId={user.userId || user.username}
       repos={repos}
       onRefresh={handleRefresh}
       onStatsUpdate={memoizedHandleStatsUpdate}

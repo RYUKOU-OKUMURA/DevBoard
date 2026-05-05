@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AppConfig, ColumnKey, Repo, SortOrder } from '../../types';
 import { DEFAULT_CLASSIFY_CONFIG, classifyRepo, configToOptions } from '../../lib/classifyRepo';
 import { formatLastUpdateTime } from '../../utils/timeFormatter';
 import { focusRing } from '../../lib/focusRing';
 import { useTagsContext } from '../../contexts/TagsContext';
 import { getStorageItem } from '../../utils/storage';
+import { useRepositoryMeta } from '../../hooks/useRepositoryMeta';
 import { RepositoryDetailPanel } from './RepositoryDetailPanel';
 import { RepositoryList } from './RepositoryList';
 import {
@@ -15,6 +16,7 @@ import {
 } from './repositoryHomeModel';
 
 interface RepositoryHomeProps {
+  accountId: string;
   repos: Repo[];
   config?: AppConfig;
   isLoading?: boolean;
@@ -34,6 +36,7 @@ const SORT_OPTIONS: Array<{ value: SortOrder; label: string }> = [
 ];
 
 export function RepositoryHome({
+  accountId,
   repos,
   config = DEFAULT_CLASSIFY_CONFIG,
   isLoading = false,
@@ -43,6 +46,7 @@ export function RepositoryHome({
   onOpenLegacyBoard,
 }: RepositoryHomeProps) {
   const { getTagObjectsForRepo } = useTagsContext();
+  const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
@@ -64,6 +68,9 @@ export function RepositoryHome({
   );
 
   const getAutoHealth = (repo: Repo) => classifyRepo(repo, classifyOptions);
+  const handleCloseDetail = useCallback(() => {
+    setSelectedRepo(null);
+  }, []);
 
   useEffect(() => {
     onStatsUpdate?.(visibleRepos.length, categoryCounts, REPOSITORY_HOME_COLUMN_TITLES);
@@ -172,6 +179,7 @@ export function RepositoryHome({
         <RepositoryList
           repos={visibleRepos}
           getAutoHealth={getAutoHealth}
+          getUserMeta={getMeta}
           onOpenDetail={setSelectedRepo}
           isLoading={isLoading}
           hasSearchQuery={searchQuery.trim().length > 0}
@@ -182,7 +190,10 @@ export function RepositoryHome({
         <RepositoryDetailPanel
           repo={selectedRepo}
           autoHealth={getAutoHealth(selectedRepo)}
-          onClose={() => setSelectedRepo(null)}
+          userMeta={getMeta(selectedRepo.id)}
+          saveError={repositoryMetaSaveError}
+          onUserMetaChange={updateMeta}
+          onClose={handleCloseDetail}
         />
       )}
     </div>

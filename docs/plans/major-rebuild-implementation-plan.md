@@ -113,26 +113,26 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] GitHubは明示ボタンからのみ開く。
 - [x] `npm run check:ci`
 
-### フェーズ 4: RepoUserMeta保存
+### フェーズ 4: RepoUserMeta保存 ✅ 完了
 
 目的: リポジトリごとに「目的」「次にやること」「メモ」「自分の状態」を保存できるようにする。
 
-- [ ] `src/types/repo.ts` に `RepoUserStatus`, `RepoAutoHealth`, `RepoUserMeta` を定義する。
-- [ ] `src/storage/repositoryMetaStorage.ts` を追加する。
-- [ ] `src/hooks/useRepositoryMeta.ts` を追加する。
-- [ ] 保存対象を `repoId`, `status`, `purpose`, `nextAction`, `note`, `createdAt`, `updatedAt` に絞る。
-- [ ] 保存keyをアカウント単位にスコープする方針を実装する。
-- [ ] localStorageの不正データを安全に無視・復旧できるようにする。
-- [ ] 詳細パネルで `purpose`, `nextAction`, `note`, `status` を編集できるようにする。
-- [ ] 一覧カードにも `nextAction` と `status` を控えめに表示する。
-- [ ] `difficulty`, `confidence`, `lastReviewedAt` は後続拡張として実装しない。
+- [x] `src/types/repo.ts` に `RepoUserStatus`, `RepoAutoHealth`, `RepoUserMeta` を定義する。
+- [x] `src/storage/repositoryMetaStorage.ts` を追加する。
+- [x] `src/hooks/useRepositoryMeta.ts` を追加する。
+- [x] 保存対象を `repoId`, `status`, `purpose`, `nextAction`, `note`, `createdAt`, `updatedAt` に絞る。
+- [x] 保存keyをアカウント単位にスコープする方針を実装する。
+- [x] localStorageの不正データを安全に無視・復旧できるようにする。
+- [x] 詳細パネルで `purpose`, `nextAction`, `note`, `status` を編集できるようにする。
+- [x] 一覧カードにも `nextAction` と `status` を控えめに表示する。
+- [x] `difficulty`, `confidence`, `lastReviewedAt` は後続拡張として実装しない。
 
 検証:
 
-- [ ] リロード後もリポジトリごとのメモが残る。
-- [ ] 別アカウント利用時の保存衝突方針が明確になっている。
-- [ ] localStorageに不正JSONが入っても画面がクラッシュしない。
-- [ ] `npm run check:ci`
+- [x] リロード後もリポジトリごとのメモが残る。
+- [x] 別アカウント利用時の保存衝突方針が明確になっている。
+- [x] localStorageに不正JSONが入っても画面がクラッシュしない。
+- [x] `npm run check:ci`
 
 ### フェーズ 5: Issue練習ドラフト最小実装
 

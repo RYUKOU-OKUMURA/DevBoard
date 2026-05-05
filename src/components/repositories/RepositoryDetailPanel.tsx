@@ -1,13 +1,20 @@
 import { type ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { ColumnKey, Repo } from '../../types';
+import type { ColumnKey, Repo, RepoUserMeta, RepoUserStatus } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { RepositoryHealthBadge } from './RepositoryHealthBadge';
 import { RepositoryStatusBadge } from './RepositoryStatusBadge';
+import { REPOSITORY_USER_STATUS_OPTIONS } from './repositoryMetaLabels';
 
 interface RepositoryDetailPanelProps {
   repo: Repo;
   autoHealth: ColumnKey;
+  userMeta: RepoUserMeta | null;
+  saveError?: string | null;
+  onUserMetaChange: (
+    repoId: string,
+    patch: Partial<Pick<RepoUserMeta, 'status' | 'purpose' | 'nextAction' | 'note'>>
+  ) => void;
   onClose: () => void;
 }
 
@@ -43,13 +50,29 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
   );
 }
 
-export function RepositoryDetailPanel({ repo, autoHealth, onClose }: RepositoryDetailPanelProps) {
+export function RepositoryDetailPanel({
+  repo,
+  autoHealth,
+  userMeta,
+  saveError,
+  onUserMetaChange,
+  onClose,
+}: RepositoryDetailPanelProps) {
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
   const titleId = useId();
   const descriptionId = useId();
   const { owner, name } = splitNameWithOwner(repo.nameWithOwner);
   const topics = repo.topics.slice(0, 8);
+  const status = userMeta?.status ?? 'unreviewed';
+  const purpose = userMeta?.purpose ?? '';
+  const nextAction = userMeta?.nextAction ?? '';
+  const note = userMeta?.note ?? '';
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -73,7 +96,7 @@ export function RepositoryDetailPanel({ repo, autoHealth, onClose }: RepositoryD
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -110,7 +133,7 @@ export function RepositoryDetailPanel({ repo, autoHealth, onClose }: RepositoryD
       document.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   if (typeof document === 'undefined') {
     return null;
@@ -194,14 +217,76 @@ export function RepositoryDetailPanel({ repo, autoHealth, onClose }: RepositoryD
             </section>
           )}
 
-          <section className="mt-stack-lg rounded-lg border border-dashed border-[var(--border-subtle)] bg-surface-secondary p-inset-lg">
-            <p className="text-caption font-semibold text-[var(--text-muted)]">次のフェーズで使う場所</p>
-            <h3 className="mt-stack-xs text-title-3 font-semibold text-[var(--text-primary)]">
-              目的・メモ・次にやること
-            </h3>
-            <p className="mt-stack-sm text-body-sm leading-relaxed text-[var(--text-secondary)]">
-              ここに自分用の目的、メモ、次にやることを保存できるようにします。今は表示だけの場所です。
-            </p>
+          <section className="mt-stack-lg rounded-lg border border-[var(--border-subtle)] bg-surface-secondary p-inset-lg">
+            <div className="flex flex-col gap-stack-xs sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-caption font-semibold text-[var(--text-muted)]">自分用メモ</p>
+                <h3 className="mt-stack-xs text-title-3 font-semibold text-[var(--text-primary)]">
+                  目的・メモ・次にやること
+                </h3>
+              </div>
+              <p className="text-caption text-[var(--text-muted)]">
+                {saveError ? '保存できていません' : '入力すると自動保存されます'}
+              </p>
+            </div>
+
+            {saveError && (
+              <p className="mt-stack-sm rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] px-inset-md py-inset-sm text-body-sm font-medium text-[var(--accent-red-emphasis)]">
+                {saveError}
+              </p>
+            )}
+
+            <div className="mt-stack-md grid gap-stack-md">
+              <label className="grid gap-stack-xs">
+                <span className="text-caption font-semibold text-[var(--text-muted)]">自分の状態</span>
+                <select
+                  value={status}
+                  onChange={(event) =>
+                    onUserMetaChange(repo.id, { status: event.target.value as RepoUserStatus })
+                  }
+                  className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
+                >
+                  {REPOSITORY_USER_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-stack-xs">
+                <span className="text-caption font-semibold text-[var(--text-muted)]">このリポジトリの目的</span>
+                <input
+                  type="text"
+                  value={purpose}
+                  onChange={(event) => onUserMetaChange(repo.id, { purpose: event.target.value })}
+                  placeholder="例: ポートフォリオ用に公開できる状態へ整える"
+                  className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
+                />
+              </label>
+
+              <label className="grid gap-stack-xs">
+                <span className="text-caption font-semibold text-[var(--text-muted)]">次にやること</span>
+                <input
+                  type="text"
+                  value={nextAction}
+                  onChange={(event) => onUserMetaChange(repo.id, { nextAction: event.target.value })}
+                  placeholder="例: READMEに使い方を3行足す"
+                  className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
+                />
+              </label>
+
+              <label className="grid gap-stack-xs">
+                <span className="text-caption font-semibold text-[var(--text-muted)]">メモ</span>
+                <textarea
+                  value={note}
+                  onChange={(event) => onUserMetaChange(repo.id, { note: event.target.value })}
+                  rows={4}
+                  placeholder="気づいたこと、迷っていること、あとで確認したいこと"
+                  className={`min-h-28 w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm leading-relaxed text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
+                />
+              </label>
+            </div>
           </section>
 
           <section className="mt-stack-md rounded-lg border border-dashed border-[var(--border-subtle)] bg-surface-secondary p-inset-lg">
