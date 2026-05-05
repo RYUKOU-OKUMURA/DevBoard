@@ -1,131 +1,73 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+Codex向けの、このリポジトリで作業するときの最小ガイドです。詳細な実装計画は `docs/plans/major-rebuild-implementation-plan.md` を優先してください。
 
 ## Project Overview
 
-DevBoard MVP - A Kanban-style dashboard for visualizing and organizing repositories. Displays repositories in 4 columns (Active/Stale/Dormant/Archived) based on last push date, with search, sorting, and saved view functionality.
+DevBoardは、GitHubに慣れていない個人開発者・非エンジニア向けの「リポジトリ整理とGitHub練習ツール」です。
 
-**Target Platform**: Web (React + TypeScript + Cloudflare Pages)
+現在の大改修では、旧4カラムKanban中心のMVPから、以下を主導線にした初心者向けUIへ育て直します。
 
-## Core Data Model
+- リポジトリを1カラムで読みやすく整理する
+- カードクリックでGitHubへ飛ばさず、DevBoard内の詳細パネルを開く
+- リポジトリごとに目的、メモ、次にやること、自分の状態を保存する
+- Issueを「やることカード」として練習し、DevBoard内だけにドラフト保存する
+- 旧カンバン、Activity、Manual、TODO、AI、Workspace系は削除せず、初心者向け主導線から奥に置く
 
-```typescript
-export type Repo = {
-  id: string;
-  nameWithOwner: string;
-  htmlUrl: string;
-  pushedAt: string;
-  isArchived: boolean;
-  isPrivate: boolean;
-  description?: string;
-  primaryLanguage?: string;
-  topics: string[];
-};
+## Tech Stack
 
-export type ColumnKey = "Active" | "Stale" | "Dormant" | "Archived";
-```
+- Frontend: React 18, TypeScript, Vite, Tailwind CSS
+- Backend/hosting: Cloudflare Pages Functions, Cloudflare KV, GitHub OAuth/API proxy
+- Tests/tools: Vitest, Testing Library, ESLint, lockfile-lint
 
-## Repository Classification Logic
+## Key Files
 
-Repositories are classified into columns using the following rules:
+- Main app: `src/App.tsx`
+- Current board: `src/components/RepoBoard.tsx`
+- Planned repository UI: `src/components/repositories/*`
+- Planned practice UI: `src/components/practice/*`
+- Shared types: `src/types/*`
+- Storage helpers: `src/storage/*`, `src/utils/*Storage.ts`
+- Cloudflare Functions: `functions/api/*`, `functions/lib/*`
+- Main rebuild plan: `docs/plans/major-rebuild-implementation-plan.md`
+- Original proposal: `docs/大改修案.md`
+- MVP-out backlog: `docs/大改修MVP外バックログ.md`
 
-```text
-if isArchived → Archived
-else if daysSince(pushedAt) ≤ 60 → Active
-else if daysSince(pushedAt) ≤ 180 → Stale
-else → Dormant
-```
+## Commands
 
-Thresholds (60/180 days) should be configurable with these as defaults.
+- Install: `npm ci`
+- Dev server: `npm run dev`
+- Lint: `npm run lint`
+- Typecheck: `npm run typecheck`
+- Test: `npm run test -- --run`
+- Build: `npm run build`
+- Full check: `npm run check:ci`
 
-## Architecture Guidelines
+## Implementation Rules
 
-### Data Fetching
-- Use Octokit (GraphQL preferred) to fetch repositories
-- Required fields: `id`, `nameWithOwner`, `htmlUrl`, `pushedAt`, `isArchived`, `isPrivate`, `description`, `primaryLanguage`, `topics`
-- Initial implementation can use mock data; prepare for Octokit integration
-- Cache data locally (memory or SQLite)
+- 実装前に必ず `docs/plans/major-rebuild-implementation-plan.md` の該当フェーズを確認する。
+- 実装が完了したタスクは同計画書で `- [x]` に更新する。フェーズ完了時は見出しに `✅ 完了` を付ける。
+- 旧 `execution_plan.md` に関係する既存MVP作業を触る場合のみ、そちらも整合を取る。
+- 大きめの調査や並行できる確認では、サブエージェントを適宜使用する。
+- 各フェーズ末、または影響範囲が広い変更後は `npm run check:ci` を実行する。
+- React / Vite / Tailwind / ESLint のメジャー更新は、UI大改修と同じPRに混ぜない。
 
-### Authentication
-- Use OAuth Device Flow or GitHub App
-- For development, Personal Access Token with mocks is acceptable
-- Plan for API rate limiting with caching layer
+## Product Rules
 
-### UI Implementation
-- Main component: `RepoBoard`
-- Use `useMemo` for search/sort/classification operations
-- Top bar includes:
-  - Text search box (searches name/topics/description/primaryLanguage)
-  - Saved view selector (max 5 saved views)
-  - Sort selector (Last Updated / Name)
-- 4 columns displaying classified repositories
-- Cards show: title (owner/name), last update (relative time), primary language, topics (max 3), public/private badge
-- Cards link to GitHub repository (new tab for web, default browser for desktop)
+- GitHub用語は初心者向け日本語とセットで表示する。
+- カード全体クリックでGitHubへ外部遷移させない。外部遷移は明示的な「GitHubで開く」ボタンに限定する。
+- 練習モードではGitHubに勝手に書き込まない。GitHub Issue作成を入れる場合は確認ダイアログを必須にする。
+- `RepoUserMeta` と `PracticeIssueDraft` はlocalStorage中心で始め、保存keyはGitHubアカウント単位にスコープする。
+- localStorageの不正JSONや古いデータで画面を壊さないよう、storage層で安全にフォールバックする。
 
-### Saved Views
-- Store search query and sort order
-- Schema: `{ id, name, searchQuery, sortOrder, createdAt }`
-- Max 5 saved views
-- Storage: `localStorage` (web) or `tauri-plugin-store` (desktop)
+## UI Rules
 
-### Search and Filtering
-- Case-insensitive partial match on:
-  - `nameWithOwner`
-  - `primaryLanguage`
-  - `description`
-  - `topics` (joined array)
-- Sort options:
-  - Last Updated: `pushedAt` descending
-  - Name: `nameWithOwner` ascending (locale compare)
+- セマンティック文字クラス（`text-title-2`, `text-body`, `text-body-sm`, `text-caption` など）を使い、`text-sm` などの直接指定を増やさない。
+- spacingは `inset-*`, `stack-*`, `inline-*` を優先する。
+- すべてのインタラクティブ要素に `src/lib/focusRing.ts` の方針を適用する。
+- motionは控えめにし、`motion-reduce:animate-none` または `motion-reduce:transition-none` を併記する。
+- メタリック表現や強いグラデーションは、hero、CTA、カードhover、モーダル程度に限定する。
 
-## Key Utilities to Implement
+## Sync Note
 
-1. `classifyRepo(repo: Repo): ColumnKey` - Classify repository based on push date
-2. `timeAgo(date: string): string` - Convert date to relative time display (e.g., "3d ago")
-3. Search/filter helpers with case-insensitive comparison
-
-## MVP Completion Criteria
-
-- Display repositories in 4 columns according to classification rules
-- Search and sort functionality works correctly from top bar
-- Clicking cards opens GitHub repository page
-- At least 1 saved view can be persisted and restored with search/sort state
-
-## Out of Scope for MVP
-
-- Drag and drop between columns
-- Bulk operations
-- CI status or Issue/PR information
-- Advanced management features
-
-## Brand & Token Guidelines
-
-- **CSS Variables**  
-  - Brand primaries live in `src/index.css` (`--brand-red`, `--brand-purple`, gradients, metallic surfaces). Always reference them through Tailwind colors (`bg-brand-purple`, `text-brand-red`) or via `useDesignSystem`.
-  - Metallic layers (`--metallic-noise`, `--metallic-edge-*`) must be confined to hero, CTA、カード hover、モーダルのみに使用する。
-- **Typography**  
-  - Use semantic classes (`text-display-lg`, `text-title-2`, `text-body`, `text-body-sm`, `text-caption`) defined in `tailwind.config.js`. 既存の `text-sm` などのユーティリティは禁止。
-- **Spacing**  
-  - Padding / margin / gap は `inset-*`, `stack-*`, `inline-*` のいずれかを使う。例: `p-inset-lg`, `gap-inline-md`, `space-y-stack-sm`。
-- **Focus & Accessibility**  
-  - `focusRing` プリセット（`src/lib/focusRing.ts`）をすべてのインタラクティブ要素に適用。  
-  - `aria-live`, `aria-label`, `role="tablist"` 等の ARIA 属性を既存実装と同じ基準で付与する。
-- **Motion**  
-  - `tokens.transitions`（`designSystem.ts`）もしくは CSS 変数を参照し、`motion-reduce:animate-none` / `motion-reduce:transition-none` を併記する。  
-  - CTA やカードの drag には spring、リスト表示には `stagger.card` / `stagger.listItem` を使用。
-
-## Task Management
-
-When completing tasks during implementation:
-
-1. **Update execution_plan.md**: Mark completed tasks with `[x]` in the appropriate phase section
-2. **Add phase completion marker**: When all tasks in a phase are done, add "✅ 完了" to the phase header
-3. **Example format**:
-   ```markdown
-   ### フェーズ 0: 環境準備 (0.5h) ✅ 完了
-   - [x] (単純) Node.js / npm のバージョン確認とログ取得。
-   - [x] (単純) プロジェクト雛形の初期化（Tauri or Next.js）とリポジトリ設定。
-   ```
-
-This helps track progress and provides visibility into what has been completed.
+`AGENTS.md` と `CLAUDE.md` は同じ方針を保つ。片方を更新したら、もう片方も同期する。
