@@ -68,28 +68,28 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] ログイン後にリポジトリ画面が表示される。
 - [x] `npm run check:ci`
 
-### フェーズ 2: RepositoryHomeの1カラム一覧追加
+### フェーズ 2: RepositoryHomeの1カラム一覧追加 ✅ 完了
 
 目的: カンバン操作中心の画面から、リポジトリを読む・探す画面へ寄せる。
 
-- [ ] `src/components/repositories/RepositoryHome.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryList.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryCard.tsx` を追加する。
-- [ ] 既存のRepo型とリポジトリ取得フックを再利用して一覧表示する。
-- [ ] 既存の検索ヘルパーを再利用する。
-- [ ] 既存の並び替えロジックを再利用する。
-- [ ] 自動状態を日本語表示に変換する。
-- [ ] 一覧カードにリポジトリ名、説明、言語、最終更新、自動状態、公開/非公開を表示する。
-- [ ] カード全体のクリックでGitHubへ遷移しないようにする。
-- [ ] 既存の `RepoBoard` は削除せず、後続で奥に置ける状態に保つ。
+- [x] `src/components/repositories/RepositoryHome.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryList.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryCard.tsx` を追加する。
+- [x] 既存のRepo型とリポジトリ取得フックを再利用して一覧表示する。
+- [x] 既存の検索ヘルパーを再利用する。
+- [x] 既存の並び替えロジックを再利用する。
+- [x] 自動状態を日本語表示に変換する。
+- [x] 一覧カードにリポジトリ名、説明、言語、最終更新、自動状態、公開/非公開を表示する。
+- [x] カード全体のクリックでGitHubへ遷移しないようにする。
+- [x] 既存の `RepoBoard` は削除せず、後続で奥に置ける状態に保つ。
 
 検証:
 
-- [ ] リポジトリが1カラムで読める。
-- [ ] 検索が `nameWithOwner`, `description`, `primaryLanguage`, `topics` に効く。
-- [ ] 並び替えが最終更新日降順、名前昇順で動く。
-- [ ] カードクリックでGitHubへ勝手に遷移しない。
-- [ ] `npm run check:ci`
+- [x] リポジトリが1カラムで読める。
+- [x] 検索が `nameWithOwner`, `description`, `primaryLanguage`, `topics` に効く。
+- [x] 並び替えが最終更新日降順、名前昇順で動く。
+- [x] カードクリックでGitHubへ勝手に遷移しない。
+- [x] `npm run check:ci`
 
 ### フェーズ 3: リポジトリ詳細パネル追加
 
