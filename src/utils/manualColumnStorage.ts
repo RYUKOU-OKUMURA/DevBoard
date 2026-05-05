@@ -153,14 +153,13 @@ export function renameManualColumn(oldName: ManualColumnKey, newName: ManualColu
     }
 
     // カラムリストを更新
-    const columnIndex = config.columns.indexOf(oldName);
-    config.columns[columnIndex] = newName;
+    config.columns = config.columns.map((column) => (column === oldName ? newName : column));
 
     // 関連するプロパティを更新
-    config.columnTitles[newName] = config.columnTitles[oldName];
+    config.columnTitles[newName] = config.columnTitles[oldName] ?? newName;
     delete config.columnTitles[oldName];
 
-    config.columnOrder[newName] = config.columnOrder[oldName];
+    config.columnOrder[newName] = config.columnOrder[oldName] ?? [];
     delete config.columnOrder[oldName];
 
     // 割り当てを更新
@@ -220,15 +219,17 @@ export function assignRepoToColumn(repoId: string, columnName: ManualColumnKey):
     const previousColumn = assignments[repoId];
 
     // 前のカラムから削除
-    if (previousColumn && config.columnOrder[previousColumn]) {
-      config.columnOrder[previousColumn] = config.columnOrder[previousColumn].filter(
-        (id) => id !== repoId
-      );
+    if (previousColumn) {
+      const previousOrder = config.columnOrder[previousColumn];
+      if (previousOrder) {
+        config.columnOrder[previousColumn] = previousOrder.filter((id) => id !== repoId);
+      }
     }
 
     // 新しいカラムに追加
-    if (!config.columnOrder[columnName].includes(repoId)) {
-      config.columnOrder[columnName].push(repoId);
+    const nextColumnOrder = config.columnOrder[columnName] ?? [];
+    if (!nextColumnOrder.includes(repoId)) {
+      config.columnOrder[columnName] = [...nextColumnOrder, repoId];
     }
 
     // 割り当てを更新
@@ -256,10 +257,9 @@ export function unassignRepoFromColumn(repoId: string): boolean {
     }
 
     const config = getManualColumnConfig();
-    if (config.columnOrder[columnName]) {
-      config.columnOrder[columnName] = config.columnOrder[columnName].filter(
-        (id) => id !== repoId
-      );
+    const currentOrder = config.columnOrder[columnName];
+    if (currentOrder) {
+      config.columnOrder[columnName] = currentOrder.filter((id) => id !== repoId);
     }
 
     delete assignments[repoId];
@@ -288,4 +288,3 @@ export function getReposInColumn(columnName: ManualColumnKey): string[] {
   const config = getManualColumnConfig();
   return config.columnOrder[columnName] || [];
 }
-

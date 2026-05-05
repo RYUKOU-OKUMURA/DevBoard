@@ -9,7 +9,7 @@ import { syncTodosWithIssues } from './issueSync';
  * Sync worker class
  */
 export class IssueSyncWorker {
-  private intervalId: NodeJS.Timeout | null = null;
+  private intervalId: ReturnType<typeof setInterval> | null = null;
   private accountId: string;
   private repos: Map<string, { repoId: string; nameWithOwner: string }> = new Map();
 

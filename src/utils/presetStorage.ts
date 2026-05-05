@@ -205,6 +205,11 @@ export function updatePreset(
       devError('Preset not found');
       return null;
     }
+    const existingPreset = presets[presetIndex];
+    if (!existingPreset) {
+      devError('Preset not found');
+      return null;
+    }
 
     // Check for duplicate name if name is being updated
     if (updates.name && presets.some((preset, idx) => preset.name === updates.name && idx !== presetIndex)) {
@@ -213,8 +218,8 @@ export function updatePreset(
     }
 
     // Update preset
-    const updatedPreset = {
-      ...presets[presetIndex],
+    const updatedPreset: ViewPreset = {
+      ...existingPreset,
       ...updates,
     };
 

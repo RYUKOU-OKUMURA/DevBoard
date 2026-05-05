@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { type ButtonHTMLAttributes, type ReactNode } from 'react';
+import type { HTMLMotionProps } from 'framer-motion';
+import { type ReactNode } from 'react';
 import { focusRing } from '../../lib/focusRing';
 
-export interface PremiumButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface PremiumButtonProps extends HTMLMotionProps<'button'> {
   children: ReactNode;
 }
 

@@ -2,7 +2,7 @@ import { NetworkError, RateLimitError } from '@/utils/errorHandling';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export interface JsonRequestOptions extends Omit<RequestInit, 'body'> {
+export interface JsonRequestOptions extends RequestInit {
   /**
    * API のベースパス。`/api` を前提にしているが、用途に応じて上書き可能。
    */

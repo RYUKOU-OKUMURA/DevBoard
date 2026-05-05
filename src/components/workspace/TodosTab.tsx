@@ -56,6 +56,7 @@ export const TodosTab: React.FC<TodosTabProps> = ({
         priority: newTodoPriority,
         repoId,
         labels: [],
+        syncEnabled: false,
       });
       setNewTodoTitle('');
       setIsAddingTodo(false);
@@ -277,7 +278,9 @@ export const TodosTab: React.FC<TodosTabProps> = ({
               onDelete={handleDeleteTodo}
               onCreateIssue={handleCreateIssue}
               isSyncing={isSyncing}
-              onUpdate={updateTodo}
+              onUpdate={async (todoId, updates) => {
+                await updateTodo(todoId, updates);
+              }}
             />
             {/* In Progress Column */}
             <TodoColumn
@@ -287,7 +290,9 @@ export const TodosTab: React.FC<TodosTabProps> = ({
               onDelete={handleDeleteTodo}
               onCreateIssue={handleCreateIssue}
               isSyncing={isSyncing}
-              onUpdate={updateTodo}
+              onUpdate={async (todoId, updates) => {
+                await updateTodo(todoId, updates);
+              }}
             />
             {/* Done Column */}
             <TodoColumn
@@ -297,7 +302,9 @@ export const TodosTab: React.FC<TodosTabProps> = ({
               onDelete={handleDeleteTodo}
               onCreateIssue={handleCreateIssue}
               isSyncing={isSyncing}
-              onUpdate={updateTodo}
+              onUpdate={async (todoId, updates) => {
+                await updateTodo(todoId, updates);
+              }}
             />
           </div>
         )}
@@ -681,4 +688,3 @@ function formatDate(dateString: string): string {
 }
 
 export default TodosTab;
-

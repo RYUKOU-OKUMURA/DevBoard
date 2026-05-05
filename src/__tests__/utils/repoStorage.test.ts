@@ -28,10 +28,10 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(global, 'localStorage', {
+Object.defineProperty(globalThis, 'localStorage', {
   value: localStorageMock,
 });
-Object.defineProperty(global, 'window', {
+Object.defineProperty(globalThis, 'window', {
   value: { localStorage: localStorageMock },
 });
 
@@ -70,12 +70,12 @@ describe('repoStorage', () => {
     const parsed = JSON.parse(stored!);
     expect(parsed.timestamp).toBeTypeOf('number');
     expect(parsed.repos).toHaveLength(1);
-    expect(parsed.repos[0].source).toEqual({ type: 'viewer' });
+    expect(parsed.repos[0]!.source).toEqual({ type: 'viewer' });
 
     const loaded = loadViewerRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
     expect(loaded).toHaveLength(1);
-    expect(loaded![0].source?.type).toBe('viewer');
+    expect(loaded![0]!.source?.type).toBe('viewer');
   });
 
   it('returns null and clears cache when viewer data is expired', () => {
@@ -121,7 +121,7 @@ describe('repoStorage', () => {
 
     const loaded = loadCustomRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
-    expect(loaded![0].source?.type).toBe('manual');
+    expect(loaded![0]!.source?.type).toBe('manual');
   });
 
   it('keeps custom repos even after TTL passes', () => {
@@ -140,7 +140,7 @@ describe('repoStorage', () => {
     const loaded = loadCustomRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
     expect(loaded).toHaveLength(1);
-    expect(loaded![0].id).toBe('manual-ttl');
+    expect(loaded![0]!.id).toBe('manual-ttl');
   });
 
   it('migrates legacy custom repos stored without metadata', () => {
@@ -151,12 +151,12 @@ describe('repoStorage', () => {
     const loaded = loadCustomRepos(ACCOUNT_A);
     expect(loaded).not.toBeNull();
     expect(loaded).toHaveLength(1);
-    expect(loaded![0].source?.type).toBe('manual');
+    expect(loaded![0]!.source?.type).toBe('manual');
 
     const persisted = JSON.parse(localStorage.getItem(`devboard_custom_repos:${ACCOUNT_A}`)!);
     expect(persisted).toHaveProperty('timestamp');
     expect(typeof persisted.timestamp).toBe('number');
-    expect(persisted.repos[0].source).toEqual({ type: 'manual' });
+    expect(persisted.repos[0]!.source).toEqual({ type: 'manual' });
     expect(localStorage.getItem('devboard_custom_repos')).toBeNull();
   });
 
@@ -183,8 +183,8 @@ describe('repoStorage', () => {
     const loadedA = loadViewerRepos(ACCOUNT_A);
     const loadedB = loadViewerRepos(ACCOUNT_B);
 
-    expect(loadedA?.[0].nameWithOwner).toBe('octocat/Hello-World');
-    expect(loadedB?.[0].nameWithOwner).toBe('other/repo');
+    expect(loadedA?.[0]!.nameWithOwner).toBe('octocat/Hello-World');
+    expect(loadedB?.[0]!.nameWithOwner).toBe('other/repo');
   });
 
   it('separates custom caches by accountId', () => {
@@ -194,8 +194,8 @@ describe('repoStorage', () => {
     saveCustomRepos(ACCOUNT_A, [repoA]);
     saveCustomRepos(ACCOUNT_B, [repoB]);
 
-    expect(loadCustomRepos(ACCOUNT_A)?.[0].nameWithOwner).toBe('alice/repo');
-    expect(loadCustomRepos(ACCOUNT_B)?.[0].nameWithOwner).toBe('bob/repo');
+    expect(loadCustomRepos(ACCOUNT_A)?.[0]!.nameWithOwner).toBe('alice/repo');
+    expect(loadCustomRepos(ACCOUNT_B)?.[0]!.nameWithOwner).toBe('bob/repo');
   });
 
   it('migrates viewer cache from legacy key to account-scoped key', () => {

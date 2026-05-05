@@ -44,7 +44,7 @@ export const TodoDetail: React.FC<TodoDetailProps> = ({
       setDescription(todo.description || '');
       setStatus(todo.status);
       setPriority(todo.priority);
-      setDueDate(todo.dueDate ? todo.dueDate.split('T')[0] : '');
+      setDueDate(todo.dueDate ? todo.dueDate.slice(0, 10) : '');
       setAssignee(todo.assignee || '');
       setLabels(todo.labels);
     }

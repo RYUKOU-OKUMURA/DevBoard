@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Tag, RepoTagsMap } from '../types/tag';
 import * as tagStorage from '../utils/tagStorage';
 
-export function useTags() {
+export function useTags(scope: tagStorage.TagScope = 'kanban') {
   const { user } = useAuth();
   const [tags, setTags] = useState<Tag[]>([]);
   const [repoTags, setRepoTags] = useState<RepoTagsMap>({});
@@ -23,13 +23,13 @@ export function useTags() {
     }
 
     const accountId = user.userId;
-    const loadedTags = tagStorage.getTags(accountId);
-    const loadedRepoTags = tagStorage.getRepoTags(accountId);
+    const loadedTags = tagStorage.getTags(accountId, scope);
+    const loadedRepoTags = tagStorage.getRepoTags(accountId, scope);
 
     setTags(loadedTags);
     setRepoTags(loadedRepoTags);
     setLoading(false);
-  }, [user]);
+  }, [user, scope]);
 
   // ==================== Tag CRUD Operations ====================
 
@@ -44,7 +44,7 @@ export function useTags() {
       }
 
       try {
-        const newTag = tagStorage.createTag(user.userId, name, color);
+        const newTag = tagStorage.createTag(user.userId, scope, name, color);
         setTags((prev) => [...prev, newTag]);
         return newTag;
       } catch (error) {
@@ -52,7 +52,7 @@ export function useTags() {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -69,7 +69,7 @@ export function useTags() {
       }
 
       try {
-        const updatedTag = tagStorage.updateTag(user.userId, tagId, updates);
+        const updatedTag = tagStorage.updateTag(user.userId, scope, tagId, updates);
         setTags((prev) =>
           prev.map((tag) => (tag.id === tagId ? updatedTag : tag))
         );
@@ -79,7 +79,7 @@ export function useTags() {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -93,7 +93,7 @@ export function useTags() {
       }
 
       try {
-        tagStorage.deleteTag(user.userId, tagId);
+        tagStorage.deleteTag(user.userId, scope, tagId);
         setTags((prev) => prev.filter((tag) => tag.id !== tagId));
 
         // Also update repoTags state to remove deleted tag
@@ -112,7 +112,7 @@ export function useTags() {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -131,9 +131,9 @@ export function useTags() {
   const getTagUsageCount = useCallback(
     (tagId: string): number => {
       if (!user) return 0;
-      return tagStorage.getTagUsageCount(user.userId, tagId);
+      return tagStorage.getTagUsageCount(user.userId, scope, tagId);
     },
-    [user]
+    [user, scope]
   );
 
   // ==================== Repo Tag Assignment Operations ====================
@@ -149,7 +149,7 @@ export function useTags() {
       }
 
       try {
-        tagStorage.assignTagToRepo(user.userId, repoId, tagId);
+        tagStorage.assignTagToRepo(user.userId, scope, repoId, tagId);
         setRepoTags((prev) => {
           const currentTags = prev[repoId] || [];
           if (currentTags.includes(tagId)) {
@@ -165,7 +165,7 @@ export function useTags() {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -179,7 +179,7 @@ export function useTags() {
       }
 
       try {
-        tagStorage.removeTagFromRepo(user.userId, repoId, tagId);
+        tagStorage.removeTagFromRepo(user.userId, scope, repoId, tagId);
         setRepoTags((prev) => {
           const currentTags = prev[repoId] || [];
           const updatedTags = currentTags.filter((id) => id !== tagId);
@@ -200,7 +200,7 @@ export function useTags() {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   /**
@@ -237,7 +237,7 @@ export function useTags() {
       }
 
       try {
-        tagStorage.setTagsForRepo(user.userId, repoId, tagIds);
+        tagStorage.setTagsForRepo(user.userId, scope, repoId, tagIds);
         setRepoTags((prev) => {
           if (tagIds.length === 0) {
             const next = { ...prev };
@@ -254,7 +254,7 @@ export function useTags() {
         throw error;
       }
     },
-    [user]
+    [user, scope]
   );
 
   return {

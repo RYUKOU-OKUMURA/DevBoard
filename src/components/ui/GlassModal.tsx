@@ -54,8 +54,9 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
     const focusFirstElement = () => {
       const focusable = getFocusableElements();
-      if (focusable.length > 0) {
-        focusable[0].focus();
+      const first = focusable[0];
+      if (first) {
+        first.focus();
       } else {
         dialogRef.current?.focus();
       }
@@ -81,6 +82,9 @@ export const GlassModal: React.FC<GlassModalProps> = ({
 
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
+      if (!first || !last) {
+        return;
+      }
 
       if (event.shiftKey) {
         if (document.activeElement === first) {

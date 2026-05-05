@@ -23,11 +23,26 @@ import {
  */
 function parseRepoName(nameWithOwner: string): { owner: string; name: string } {
   const [owner, name] = nameWithOwner.split('/');
+  if (!owner || !name) {
+    throw new Error(`Invalid repository name: ${nameWithOwner}`);
+  }
   return { owner, name };
 }
 
 const MAX_ISSUE_PAGES = 3;
 const MAX_ISSUE_COUNT = 300;
+
+type RepositoryIssuesResponse = {
+  repository: {
+    issues: {
+      nodes: GitHubIssue[];
+      pageInfo: {
+        hasNextPage: boolean;
+        endCursor: string;
+      };
+    };
+  };
+};
 
 /**
  * Fetch issues from GitHub for a repository
@@ -50,17 +65,10 @@ export async function fetchIssuesFromGitHub(
       break;
     }
 
-    const result = await graphql<{
-      repository: {
-        issues: {
-          nodes: GitHubIssue[];
-          pageInfo: {
-            hasNextPage: boolean;
-            endCursor: string;
-          };
-        };
-      };
-    }>(GraphQLOperations.repositoryIssues, { owner, name, cursor });
+    const result: RepositoryIssuesResponse = await graphql<RepositoryIssuesResponse>(
+      GraphQLOperations.repositoryIssues,
+      { owner, name, cursor }
+    );
 
     allIssues.push(...result.repository.issues.nodes);
 

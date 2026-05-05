@@ -2,7 +2,7 @@
  * TagManager modal - manage tags (create, edit, delete)
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassModal } from './ui/GlassModal';
 import { useTagsContext } from '../contexts/TagsContext';
@@ -22,7 +22,7 @@ export function TagManager({ isOpen, onClose }: TagManagerProps) {
 
   // Form state
   const [name, setName] = useState('');
-  const [color, setColor] = useState(TAG_COLOR_PRESETS[4].value); // Default to blue
+  const [color, setColor] = useState<string>(TAG_COLOR_PRESETS[4].value); // Default to blue
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

@@ -47,6 +47,7 @@ export function classifyRepos(
 
   for (const repo of repos) {
     const column = classifyRepo(repo, config);
+    columns[column] ??= [];
     columns[column].push(repo);
   }
 

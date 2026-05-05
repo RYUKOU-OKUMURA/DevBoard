@@ -12,6 +12,7 @@ import { IssueSyncSettings } from './IssueSyncSettings';
 import { IssueImportDialog } from './IssueImportDialog';
 import type { Repo, Todo } from '../types';
 import { focusRing } from '../lib/focusRing';
+import { fetchIssuesFromGitHub } from '../utils/issueSync';
 
 interface TodosTabProps {
   repos: Repo[];
@@ -21,8 +22,10 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
   const {
     todos,
     stats,
+    syncConfig,
     filter,
     sort,
+    isSyncing,
     setFilter,
     setSort,
     updateTodo,
@@ -30,6 +33,7 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
     deleteTodo,
     createIssueFromTodo,
     importIssues,
+    updateSyncConfig,
   } = useTodos();
 
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
@@ -37,6 +41,16 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const defaultRepo = repos[0];
+  const existingIssueNumbers = useMemo(
+    () =>
+      new Set(
+        todos
+          .map((todo) => todo.issueNumber)
+          .filter((issueNumber): issueNumber is number => typeof issueNumber === 'number')
+      ),
+    [todos]
+  );
 
   // Create repository map for TodoBoard
   const repoMap = useMemo(() => {
@@ -109,7 +123,7 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
               onClick={() => setViewMode('board')}
               className={`
                 px-inset-md py-inset-xs rounded-md text-body-sm transition-all duration-200
-                ${focusRing}
+                ${focusRing.default}
                 ${
                   viewMode === 'board'
                     ? 'bg-[var(--brand-purple)] text-white'
@@ -130,7 +144,7 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
               onClick={() => setViewMode('list')}
               className={`
                 px-inset-md py-inset-xs rounded-md text-body-sm transition-all duration-200
-                ${focusRing}
+                ${focusRing.default}
                 ${
                   viewMode === 'list'
                     ? 'bg-[var(--brand-purple)] text-white'
@@ -163,7 +177,7 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
               transition-all duration-200
               hover:border-[var(--accent-green-border)]
               hover:bg-[var(--bg-tertiary)]
-              ${focusRing}
+              ${focusRing.default}
             `}
           >
             Import Issues
@@ -179,7 +193,7 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
               transition-all duration-200
               hover:border-[var(--accent-green-border)]
               hover:bg-[var(--bg-tertiary)]
-              ${focusRing}
+              ${focusRing.default}
             `}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-2">
@@ -198,7 +212,7 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
               transition-all duration-200
               hover:bg-[var(--brand-purple-emphasis)]
               shadow-sm
-              ${focusRing}
+              ${focusRing.default}
             `}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline mr-2">
@@ -241,37 +255,37 @@ export const TodosTab: React.FC<TodosTabProps> = ({ repos }) => {
 
       {/* Sync Settings Modal */}
       {showSyncSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-inset-md">
-          <div className="bg-[var(--bg-primary)] border border-[var(--border-subtle)] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-inset-lg border-b border-[var(--border-subtle)] flex items-center justify-between">
-              <h3 className="text-title-3 font-semibold text-[var(--text-primary)]">Sync Settings</h3>
-              <button
-                onClick={() => setShowSyncSettings(false)}
-                className={`text-[var(--text-muted)] hover:text-[var(--text-primary)] ${focusRing}`}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-inset-lg">
-              <IssueSyncSettings />
-            </div>
-          </div>
-        </div>
+        <IssueSyncSettings
+          isOpen={showSyncSettings}
+          onClose={() => setShowSyncSettings(false)}
+          config={
+            syncConfig ?? {
+              enabled: false,
+              autoImport: false,
+              autoClose: false,
+              syncInterval: 15,
+            }
+          }
+          onUpdate={updateSyncConfig}
+          isSyncing={isSyncing}
+          lastSyncAt={syncConfig?.lastSyncAt}
+        />
       )}
 
       {/* Import Dialog */}
-      {showImportDialog && repos.length > 0 && (
+      {showImportDialog && defaultRepo && (
         <IssueImportDialog
           isOpen={showImportDialog}
           onClose={() => setShowImportDialog(false)}
-          repoNameWithOwner={repos[0].nameWithOwner}
+          repoNameWithOwner={defaultRepo.nameWithOwner}
           onImport={async (issueNumbers) => {
-            await importIssues(repos[0].nameWithOwner, issueNumbers);
+            await importIssues(defaultRepo.nameWithOwner, issueNumbers);
             setShowImportDialog(false);
           }}
+          fetchIssues={async (repoNameWithOwner) =>
+            (await fetchIssuesFromGitHub(repoNameWithOwner)).issues
+          }
+          existingIssueNumbers={existingIssueNumbers}
         />
       )}
 

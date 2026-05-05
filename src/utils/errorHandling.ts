@@ -266,7 +266,7 @@ export function logError(context: string, error: unknown): void {
   console.error(`[${context}]`, normalized);
 
   // In production, you might want to send this to an error tracking service
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.PROD) {
     // Example: Sentry, LogRocket, etc.
     // Sentry.captureException(error);
   }

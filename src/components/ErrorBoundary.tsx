@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
+  override componentDidCatch(error: Error, info: React.ErrorInfo) {
     logError('ErrorBoundary', error);
     console.error('[ErrorBoundary] component stack', info.componentStack);
     this.props.onError?.(error, info);
@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.props.onReset?.();
   };
 
-  render() {
+  override render() {
     if (!this.state.hasError) {
       return this.props.children;
     }

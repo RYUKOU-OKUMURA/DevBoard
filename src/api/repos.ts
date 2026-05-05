@@ -301,11 +301,12 @@ export async function fetchRepositoriesByUrls(
 
       const repo = transformRepository(data.repository);
       const validated = validateRepos([repo]);
-      if (validated.length === 0) {
+      const validatedRepo = validated[0];
+      if (!validatedRepo) {
         failed.push(identifier.raw);
         continue;
       }
-      repos.push(validated[0]);
+      repos.push(validatedRepo);
     } catch (error) {
       const parsed = parseGraphQLError(error);
       devError(
@@ -367,14 +368,27 @@ export async function fetchRecentActivities(options: { signal?: AbortSignal } = 
       };
     }>(GraphQLOperations.recentEvents, { from: FROM }, { signal: options.signal });
 
-    const contributionRepos = ensureArray(
+    const contributionRepos = ensureArray<{
+      repository: {
+        nameWithOwner: string;
+        url: string;
+      };
+      contributions: {
+        nodes: Array<{
+          occurredAt: string;
+        }>;
+      };
+    }>(
       response.viewer?.contributionsCollection?.commitContributionsByRepository,
       "recent activities contributions"
     );
 
     const activities: RecentActivity[] = contributionRepos
       .map((item) => {
-        const nodes = ensureArray(item.contributions?.nodes ?? [], "recent activity nodes");
+        const nodes = ensureArray<{ occurredAt: string }>(
+          item.contributions?.nodes ?? [],
+          "recent activity nodes"
+        );
         const latestContribution = nodes[0];
         if (!latestContribution?.occurredAt) return null;
 
@@ -416,20 +430,42 @@ export async function fetchLatestIssues(options: { signal?: AbortSignal } = {}):
       };
     }>(GraphQLOperations.recentIssues, { from: FROM }, { signal: options.signal });
 
-    const repoBlocks = ensureArray(
+    const repoBlocks = ensureArray<{
+      repository: { nameWithOwner: string; url: string };
+      contributions: {
+        nodes: Array<{
+          occurredAt: string;
+          issue: {
+            title: string;
+            number: number;
+            url: string;
+            state: IssueState;
+            repository: { nameWithOwner: string; url: string };
+          };
+        }>;
+      };
+    }>(
       data.viewer?.contributionsCollection?.issueContributionsByRepository,
       "recent issues contributions"
     );
 
     const items: RecentItem[] = repoBlocks
       .flatMap((repoBlock) => {
-        const contributionNodes = ensureArray(repoBlock.contributions?.nodes ?? [], "recent issues nodes");
-        return contributionNodes
-          .map((node) => {
-            if (!node?.issue) return null;
+        const contributionNodes = ensureArray<{
+          occurredAt: string;
+          issue?: {
+            title: string;
+            number: number;
+            url: string;
+            state: IssueState;
+            repository: { nameWithOwner: string; url: string };
+          };
+        }>(repoBlock.contributions?.nodes ?? [], "recent issues nodes");
+        return contributionNodes.flatMap((node): RecentItem[] => {
+            if (!node?.issue) return [];
             const repo = node.issue.repository;
             const occurredAt = node.occurredAt;
-            return {
+            return [{
               type: 'Issue' as const,
               repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
               title: node.issue.title,
@@ -438,9 +474,8 @@ export async function fetchLatestIssues(options: { signal?: AbortSignal } = {}):
               occurredAt,
               relativeTime: timeAgo(occurredAt),
               state: node.issue.state,
-            };
-          })
-          .filter((item): item is RecentItem => Boolean(item));
+            }];
+          });
       })
       .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1))
       .slice(0, 10);
@@ -473,20 +508,42 @@ export async function fetchLatestPullRequests(options: { signal?: AbortSignal } 
       };
     }>(GraphQLOperations.recentPullRequests, { from: FROM }, { signal: options.signal });
 
-    const repoBlocks = ensureArray(
+    const repoBlocks = ensureArray<{
+      repository: { nameWithOwner: string; url: string };
+      contributions: {
+        nodes: Array<{
+          occurredAt: string;
+          pullRequest: {
+            title: string;
+            number: number;
+            url: string;
+            state: PullRequestState;
+            repository: { nameWithOwner: string; url: string };
+          };
+        }>;
+      };
+    }>(
       data.viewer?.contributionsCollection?.pullRequestContributionsByRepository,
       "recent pull requests contributions"
     );
 
     const items: RecentItem[] = repoBlocks
       .flatMap((repoBlock) => {
-        const contributionNodes = ensureArray(repoBlock.contributions?.nodes ?? [], "recent pull request nodes");
-        return contributionNodes
-          .map((node) => {
-            if (!node?.pullRequest) return null;
+        const contributionNodes = ensureArray<{
+          occurredAt: string;
+          pullRequest?: {
+            title: string;
+            number: number;
+            url: string;
+            state: PullRequestState;
+            repository: { nameWithOwner: string; url: string };
+          };
+        }>(repoBlock.contributions?.nodes ?? [], "recent pull request nodes");
+        return contributionNodes.flatMap((node): RecentItem[] => {
+            if (!node?.pullRequest) return [];
             const repo = node.pullRequest.repository;
             const occurredAt = node.occurredAt;
-            return {
+            return [{
               type: 'PullRequest' as const,
               repo: { nameWithOwner: repo.nameWithOwner, htmlUrl: repo.url },
               title: node.pullRequest.title,
@@ -495,9 +552,8 @@ export async function fetchLatestPullRequests(options: { signal?: AbortSignal } 
               occurredAt,
               relativeTime: timeAgo(occurredAt),
               state: node.pullRequest.state,
-            };
-          })
-          .filter((item): item is RecentItem => Boolean(item));
+            }];
+          });
       })
       .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1))
       .slice(0, 10);

@@ -32,31 +32,31 @@ describe("filterRepositories", () => {
   it("matches on name", () => {
     const result = filterRepositories(repos, "frontend");
     expect(result).toHaveLength(1);
-    expect(result[0].nameWithOwner).toBe("user/frontend-app");
+    expect(result[0]!.nameWithOwner).toBe("user/frontend-app");
   });
 
   it("matches on description", () => {
     const result = filterRepositories(repos, "dashboard");
     expect(result).toHaveLength(1);
-    expect(result[0].nameWithOwner).toBe("user/frontend-app");
+    expect(result[0]!.nameWithOwner).toBe("user/frontend-app");
   });
 
   it("matches on primary language", () => {
     const result = filterRepositories(repos, "python");
     expect(result).toHaveLength(1);
-    expect(result[0].nameWithOwner).toBe("user/data-tool");
+    expect(result[0]!.nameWithOwner).toBe("user/data-tool");
   });
 
   it("matches on topics", () => {
     const result = filterRepositories(repos, "api");
     expect(result).toHaveLength(1);
-    expect(result[0].nameWithOwner).toBe("user/backend-service");
+    expect(result[0]!.nameWithOwner).toBe("user/backend-service");
   });
 
   it("performs case-insensitive matching", () => {
     const result = filterRepositories(repos, "DaShBoArD");
     expect(result).toHaveLength(1);
-    expect(result[0].nameWithOwner).toBe("user/frontend-app");
+    expect(result[0]!.nameWithOwner).toBe("user/frontend-app");
   });
 
   it("returns empty array when no matches", () => {

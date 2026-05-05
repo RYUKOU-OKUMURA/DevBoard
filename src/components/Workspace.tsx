@@ -99,7 +99,7 @@ export const Workspace: React.FC = () => {
   }
 
   // Extract owner and repo name
-  const [owner, repoName] = selectedRepo.nameWithOwner.split('/');
+  const [owner = '', repoName = selectedRepo.nameWithOwner] = selectedRepo.nameWithOwner.split('/');
 
   return (
     <div className="h-full flex flex-col bg-[var(--bg-secondary)] overflow-hidden">
@@ -224,4 +224,3 @@ export const Workspace: React.FC = () => {
 };
 
 export default Workspace;
-

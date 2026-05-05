@@ -2,7 +2,7 @@
  * TagSelector modal - select tags for a repository
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassModal } from './ui/GlassModal';
 import { useTagsContext } from '../contexts/TagsContext';
@@ -30,7 +30,7 @@ export function TagSelector({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState(TAG_COLOR_PRESETS[4].value);
+  const [newTagColor, setNewTagColor] = useState<string>(TAG_COLOR_PRESETS[4].value);
   const [createError, setCreateError] = useState<string | null>(null);
 
   // Load current tags when modal opens

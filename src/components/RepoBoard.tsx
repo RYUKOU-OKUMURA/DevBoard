@@ -70,9 +70,12 @@ export const RepoBoard: React.FC<RepoBoardProps> = ({
 
   const [columnTitles, setColumnTitles] = useState<Record<ColumnKey, string>>(() => {
     try {
-      const parsed = getStorageItem<Partial<Record<ColumnKey, string>>>(COLUMN_TITLES_STORAGE_KEY, {});
-      if (Object.keys(parsed).length > 0) {
-        return { ...COLUMN_TITLES, ...parsed };
+      const parsed = getStorageItem<Record<string, unknown>>(COLUMN_TITLES_STORAGE_KEY, {});
+      const restored = Object.fromEntries(
+        Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+      );
+      if (Object.keys(restored).length > 0) {
+        return { ...COLUMN_TITLES, ...restored };
       }
     } catch (error) {
       devWarn('Failed to restore column titles', error);
