@@ -18,12 +18,15 @@ interface RepositoryDetailPanelProps {
   practiceIssueDrafts?: PracticeIssueDraft[];
   practicePullRequestDrafts?: PracticePullRequestDraft[];
   practiceIssueSaveError?: string | null;
+  practiceIssuePublishError?: string | null;
+  publishingPracticeIssueDraftId?: string | null;
   practicePullRequestSaveError?: string | null;
   onUserMetaChange: (
     repoId: string,
     patch: Partial<Pick<RepoUserMeta, 'status' | 'purpose' | 'nextAction' | 'note'>>
   ) => void;
   onCreatePracticeIssueDraft?: (input: PracticeIssueDraftInput) => PracticeIssueDraft | null;
+  onCreateGitHubIssueFromDraft?: (draftId: string) => Promise<PracticeIssueDraft | null>;
   onCreatePracticePullRequestDraft?: (input: PracticePullRequestDraftInput) => PracticePullRequestDraft | null;
   onOpenPracticeHome?: () => void;
   onClose: () => void;
@@ -69,9 +72,12 @@ export function RepositoryDetailPanel({
   practiceIssueDrafts = [],
   practicePullRequestDrafts = [],
   practiceIssueSaveError,
+  practiceIssuePublishError,
+  publishingPracticeIssueDraftId,
   practicePullRequestSaveError,
   onUserMetaChange,
   onCreatePracticeIssueDraft,
+  onCreateGitHubIssueFromDraft,
   onCreatePracticePullRequestDraft,
   onOpenPracticeHome,
   onClose,
@@ -106,6 +112,29 @@ export function RepositoryDetailPanel({
     }
 
     return onCreatePracticePullRequestDraft(input) !== null;
+  };
+
+  const handleCreateGitHubIssue = async (draft: PracticeIssueDraft) => {
+    if (!onCreateGitHubIssueFromDraft || draft.syncStatus === 'synced') {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      [
+        'この下書きをGitHub Issueとして作成します。',
+        '',
+        `リポジトリ: ${repo.nameWithOwner}`,
+        `タイトル: ${draft.title || '無題の下書き'}`,
+        '',
+        'GitHub上に実データが作られます。続けますか？',
+      ].join('\n')
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await onCreateGitHubIssueFromDraft(draft.id);
   };
 
   const getRelatedIssueTitle = (draft: PracticePullRequestDraft): string => {
@@ -394,6 +423,14 @@ export function RepositoryDetailPanel({
                 </p>
               ) : (
                 <div className="mt-stack-sm grid gap-stack-sm">
+                  {practiceIssuePublishError && (
+                    <p
+                      role="alert"
+                      className="rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] px-inset-md py-inset-sm text-body-sm font-medium text-[var(--accent-red-emphasis)]"
+                    >
+                      {practiceIssuePublishError}
+                    </p>
+                  )}
                   {practiceIssueDrafts.map((draft) => (
                     <article
                       key={draft.id}
@@ -403,16 +440,54 @@ export function RepositoryDetailPanel({
                         <h5 className="break-words text-body-sm font-semibold text-[var(--text-primary)]">
                           {draft.title || '無題の下書き'}
                         </h5>
-                        <span className="shrink-0 rounded-lg border border-[var(--accent-blue-border)] bg-[var(--accent-blue-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-blue-emphasis)]">
-                          DevBoard内だけ
-                        </span>
+                        <div className="flex shrink-0 flex-wrap items-center gap-inline-sm">
+                          {draft.syncStatus === 'synced' && draft.githubIssueUrl ? (
+                            <span className="rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
+                              GitHub作成済み{draft.githubIssueNumber ? ` #${draft.githubIssueNumber}` : ''}
+                            </span>
+                          ) : draft.syncStatus === 'failed' ? (
+                            <span className="rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-red-emphasis)]">
+                              前回作成失敗
+                            </span>
+                          ) : (
+                            <span className="rounded-lg border border-[var(--accent-blue-border)] bg-[var(--accent-blue-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-blue-emphasis)]">
+                              DevBoard内だけ
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="mt-stack-xs text-caption text-[var(--text-muted)]">
                         保存: {formatDetailDate(draft.createdAt)}
                       </p>
+                      {draft.githubIssueUrl && (
+                        <p className="mt-stack-xs break-all text-caption text-[var(--text-muted)]">
+                          GitHub Issue: {draft.githubIssueUrl}
+                        </p>
+                      )}
                       <pre className="mt-stack-sm max-h-52 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-secondary p-inset-md text-body-sm leading-relaxed text-[var(--text-primary)]">
                         {draft.generatedMarkdown}
                       </pre>
+                      <div className="mt-stack-sm flex flex-col gap-stack-sm sm:flex-row sm:justify-end">
+                        {draft.githubIssueUrl ? (
+                          <a
+                            href={draft.githubIssueUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+                          >
+                            作成済みIssueを開く
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleCreateGitHubIssue(draft)}
+                            disabled={!onCreateGitHubIssueFromDraft || publishingPracticeIssueDraftId === draft.id}
+                            className={`inline-flex items-center justify-center rounded-lg bg-[var(--accent-green)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse shadow-sm transition-colors motion-reduce:transition-none hover:bg-[var(--accent-green-strong)] disabled:cursor-not-allowed disabled:opacity-60 ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+                          >
+                            {publishingPracticeIssueDraftId === draft.id ? '作成中...' : 'GitHub Issueを作成'}
+                          </button>
+                        )}
+                      </div>
                     </article>
                   ))}
                 </div>

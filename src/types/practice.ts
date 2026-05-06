@@ -8,6 +8,8 @@ export interface PracticeIssueDraft {
   doneCriteria: string[];
   generatedMarkdown: string;
   syncStatus: PracticeSyncStatus;
+  githubIssueNumber?: number;
+  githubIssueUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

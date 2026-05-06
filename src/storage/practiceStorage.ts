@@ -65,6 +65,14 @@ function readOptionalString(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function readOptionalPositiveInteger(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    return undefined;
+  }
+
+  return value;
+}
+
 function normalizePracticeIssueDraft(value: unknown): PracticeIssueDraft | null {
   if (!value || typeof value !== 'object') {
     return null;
@@ -88,6 +96,8 @@ function normalizePracticeIssueDraft(value: unknown): PracticeIssueDraft | null 
     doneCriteria: readCriteria(record.doneCriteria),
     generatedMarkdown: readString(record.generatedMarkdown),
     syncStatus: isPracticeSyncStatus(record.syncStatus) ? record.syncStatus : 'local_only',
+    githubIssueNumber: readOptionalPositiveInteger(record.githubIssueNumber),
+    githubIssueUrl: readOptionalString(record.githubIssueUrl) ?? undefined,
     createdAt,
     updatedAt: readIsoString(record.updatedAt, createdAt),
   };

@@ -78,6 +78,23 @@ describe('PracticeHome', () => {
     expect(screen.getByText('Merge')).toBeTruthy();
   });
 
+  it('shows GitHub Issue creation status and URL for synced drafts', () => {
+    savePracticeIssueDrafts(ACCOUNT_ID, [
+      createDraft({
+        syncStatus: 'synced',
+        githubIssueNumber: 42,
+        githubIssueUrl: 'https://github.com/alice/frontend-app/issues/42',
+      }),
+    ]);
+
+    render(<PracticeHome accountId={ACCOUNT_ID} repos={[createRepo()]} />);
+
+    expect(screen.getByText('GitHub作成済み #42')).toBeTruthy();
+    expect(screen.getByRole('link', { name: '作成済みIssueを開く' }).getAttribute('href')).toBe(
+      'https://github.com/alice/frontend-app/issues/42'
+    );
+  });
+
   it('shows saved pull request drafts with related issue context', () => {
     savePracticeIssueDrafts(ACCOUNT_ID, [createDraft()]);
     savePracticePullRequestDrafts(ACCOUNT_ID, [createPullRequestDraft()]);

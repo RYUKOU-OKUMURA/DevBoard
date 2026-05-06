@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -34,7 +34,7 @@ function createMeta(): RepoUserMeta {
   };
 }
 
-function createPracticeDraft(): PracticeIssueDraft {
+function createPracticeDraft(overrides: Partial<PracticeIssueDraft> = {}): PracticeIssueDraft {
   return {
     id: 'draft-1',
     repoId: 'repo-1',
@@ -45,6 +45,7 @@ function createPracticeDraft(): PracticeIssueDraft {
     syncStatus: 'local_only',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
   };
 }
 
@@ -212,6 +213,46 @@ describe('RepositoryDetailPanel', () => {
     expect(screen.getByText('トップページのボタンを見やすくする')).toBeTruthy();
     expect(screen.getByText(/## やりたいこと/)).toBeTruthy();
     expect(screen.getAllByText('DevBoard内だけ').length).toBeGreaterThan(0);
+  });
+
+  it('requires confirmation before creating a GitHub Issue from a practice draft', async () => {
+    const onCreateGitHubIssueFromDraft = vi.fn().mockResolvedValue(
+      createPracticeDraft({
+        syncStatus: 'synced',
+        githubIssueNumber: 42,
+        githubIssueUrl: 'https://github.com/alice/frontend-app/issues/42',
+      })
+    );
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderDetailPanel({
+      practiceIssueDrafts: [createPracticeDraft()],
+      onCreateGitHubIssueFromDraft,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'GitHub Issueを作成' }));
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('GitHub上に実データが作られます'));
+    await waitFor(() => expect(onCreateGitHubIssueFromDraft).toHaveBeenCalledWith('draft-1'));
+  });
+
+  it('shows a synced GitHub Issue URL instead of the create action', () => {
+    renderDetailPanel({
+      practiceIssueDrafts: [
+        createPracticeDraft({
+          syncStatus: 'synced',
+          githubIssueNumber: 42,
+          githubIssueUrl: 'https://github.com/alice/frontend-app/issues/42',
+        }),
+      ],
+    });
+
+    expect(screen.getByText('GitHub作成済み #42')).toBeTruthy();
+    expect(screen.getByText('GitHub Issue: https://github.com/alice/frontend-app/issues/42')).toBeTruthy();
+    expect(screen.getByRole('link', { name: '作成済みIssueを開く' }).getAttribute('href')).toBe(
+      'https://github.com/alice/frontend-app/issues/42'
+    );
+    expect(screen.queryByRole('button', { name: 'GitHub Issueを作成' })).toBeNull();
   });
 
   it('shows saved practice pull request drafts inside the repository detail', () => {

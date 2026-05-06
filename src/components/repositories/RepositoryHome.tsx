@@ -53,7 +53,10 @@ export function RepositoryHome({
   const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
   const {
     createIssueDraft,
+    createGitHubIssueFromDraft,
     getDraftsForRepo,
+    publishError: practiceIssuePublishError,
+    publishingDraftId: publishingPracticeIssueDraftId,
     saveError: practiceIssueSaveError,
   } = usePracticeIssues(accountId);
   const {
@@ -209,8 +212,11 @@ export function RepositoryHome({
           practiceIssueDrafts={getDraftsForRepo(selectedRepo.id)}
           practicePullRequestDrafts={getPullRequestDraftsForRepo(selectedRepo.id)}
           practiceIssueSaveError={practiceIssueSaveError}
+          practiceIssuePublishError={practiceIssuePublishError}
+          publishingPracticeIssueDraftId={publishingPracticeIssueDraftId}
           practicePullRequestSaveError={practicePullRequestSaveError}
           onCreatePracticeIssueDraft={(input) => createIssueDraft(selectedRepo.id, input)}
+          onCreateGitHubIssueFromDraft={(draftId) => createGitHubIssueFromDraft(selectedRepo.nameWithOwner, draftId)}
           onCreatePracticePullRequestDraft={(input) =>
             createPullRequestDraft(selectedRepo.id, input, getDraftsForRepo(selectedRepo.id))
           }

@@ -200,34 +200,34 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] GitHubには何も作られない。
 - [x] `npm run check:ci`
 
-### フェーズ 8: GitHub Issue作成の明示アクション追加
+### フェーズ 8: GitHub Issue作成の明示アクション追加 ✅ 完了
 
 目的: 練習したIssueを、確認後にGitHub Issueとして作成できるようにする。
 
 事前条件:
 
-- [ ] 既存 `/api/github/*` proxyのpath / method allowlistを棚卸しする。
-- [ ] POST系のOrigin / CSRFガードを確認する。
-- [ ] OAuth scopeがIssue作成に足りることを確認する。
-- [ ] 認証系/API系レスポンスの `Cache-Control: no-store` を確認する。
-- [ ] GitHub書き込み前の確認UI方針を確定する。
+- [x] 既存 `/api/github/*` proxyのpath / method allowlistを棚卸しする。
+- [x] POST系のOrigin / CSRFガードを確認する。
+- [x] OAuth scopeがIssue作成に足りることを確認する。
+- [x] 認証系/API系レスポンスの `Cache-Control: no-store` を確認する。
+- [x] GitHub書き込み前の確認UI方針を確定する。
 
 実装タスク:
 
-- [ ] 既存Issue作成クライアントまたはproxy経由の専用クライアントを確認する。
-- [ ] `PracticeIssueDraft` からGitHub Issueを作成する処理を追加する。
-- [ ] 作成前に確認ダイアログを必ず表示する。
-- [ ] 作成成功後、`githubIssueNumber`, `githubIssueUrl`, `syncStatus` を保存する。
-- [ ] 失敗時に日本語エラーを表示する。
-- [ ] 再実行時に重複作成しにくいガードを入れる。
+- [x] 既存Issue作成クライアントまたはproxy経由の専用クライアントを確認する。
+- [x] `PracticeIssueDraft` からGitHub Issueを作成する処理を追加する。
+- [x] 作成前に確認ダイアログを必ず表示する。
+- [x] 作成成功後、`githubIssueNumber`, `githubIssueUrl`, `syncStatus` を保存する。
+- [x] 失敗時に日本語エラーを表示する。
+- [x] 再実行時に重複作成しにくいガードを入れる。
 
 検証:
 
-- [ ] DevBoard内の練習ドラフトからGitHub Issueを作れる。
-- [ ] 作成前に必ず確認が出る。
-- [ ] 作成後にGitHub URLが表示される。
-- [ ] 失敗時に分かりやすい日本語エラーが出る。
-- [ ] `npm run check:ci`
+- [x] DevBoard内の練習ドラフトからGitHub Issueを作れる。
+- [x] 作成前に必ず確認が出る。
+- [x] 作成後にGitHub URLが表示される。
+- [x] 失敗時に分かりやすい日本語エラーが出る。
+- [x] `npm run check:ci`
 
 ### フェーズ 9: 既存高度機能の置き場整理
 

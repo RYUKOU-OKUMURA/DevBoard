@@ -68,13 +68,16 @@ describe('practiceStorage', () => {
     expect(getPracticePullRequestDrafts(ACCOUNT_B).map((draft) => draft.repoId)).toEqual(['repo-b']);
   });
 
-  it('stores a versioned envelope and strips fields that would imply GitHub creation', () => {
+  it('stores a versioned envelope and preserves GitHub Issue creation fields', () => {
+    const syncedDraft = {
+      ...createDraft(),
+      syncStatus: 'synced' as const,
+      githubIssueNumber: 12,
+      githubIssueUrl: 'https://github.com/alice/repo/issues/12',
+    };
+
     savePracticeIssueDrafts(ACCOUNT_A, [
-      {
-        ...createDraft(),
-        githubIssueNumber: 12,
-        githubIssueUrl: 'https://github.com/alice/repo/issues/12',
-      } as PracticeIssueDraft & Record<string, unknown>,
+      syncedDraft,
     ]);
 
     const raw = localStorage.getItem(getPracticeIssueDraftsKey(ACCOUNT_A));
@@ -82,9 +85,12 @@ describe('practiceStorage', () => {
 
     expect(parsed?.version).toBe(1);
     expect(parsed?.records).toHaveLength(1);
-    expect(parsed?.records[0]).toEqual(createDraft());
-    expect(parsed?.records[0].githubIssueNumber).toBeUndefined();
-    expect(parsed?.records[0].githubIssueUrl).toBeUndefined();
+    expect(parsed?.records[0]).toEqual(syncedDraft);
+    expect(getPracticeIssueDrafts(ACCOUNT_A)[0]).toMatchObject({
+      syncStatus: 'synced',
+      githubIssueNumber: 12,
+      githubIssueUrl: 'https://github.com/alice/repo/issues/12',
+    });
   });
 
   it('stores pull request drafts in a versioned envelope and strips GitHub creation fields', () => {

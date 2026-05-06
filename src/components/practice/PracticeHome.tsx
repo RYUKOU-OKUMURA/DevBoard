@@ -78,8 +78,11 @@ function PracticeEmptyState() {
 export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
   const {
     createIssueDraft,
+    createGitHubIssueFromDraft,
     drafts,
     getDraftsForRepo,
+    publishError: practiceIssuePublishError,
+    publishingDraftId: publishingPracticeIssueDraftId,
     saveError: practiceIssueSaveError,
   } = usePracticeIssues(accountId);
   const {
@@ -171,9 +174,19 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
                           <span className="rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
                             Issue / やることカード
                           </span>
-                          <span className="rounded-lg border border-[var(--accent-blue-border)] bg-[var(--accent-blue-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-blue-emphasis)]">
-                            DevBoard内だけ
-                          </span>
+                          {draft.syncStatus === 'synced' && draft.githubIssueUrl ? (
+                            <span className="rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
+                              GitHub作成済み{draft.githubIssueNumber ? ` #${draft.githubIssueNumber}` : ''}
+                            </span>
+                          ) : draft.syncStatus === 'failed' ? (
+                            <span className="rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-red-emphasis)]">
+                              前回作成失敗
+                            </span>
+                          ) : (
+                            <span className="rounded-lg border border-[var(--accent-blue-border)] bg-[var(--accent-blue-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-blue-emphasis)]">
+                              DevBoard内だけ
+                            </span>
+                          )}
                         </div>
 
                         <h3 className="mt-stack-sm break-words text-title-3 font-semibold text-[var(--text-primary)]">
@@ -185,6 +198,16 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
                         <p className="mt-stack-xs text-caption text-[var(--text-muted)]">
                           更新: {formatPracticeDate(draft.updatedAt)}
                         </p>
+                        {draft.githubIssueUrl && (
+                          <a
+                            href={draft.githubIssueUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`mt-stack-xs inline-flex break-all text-caption font-semibold text-[var(--accent-green-emphasis)] underline-offset-4 hover:underline ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+                          >
+                            作成済みIssueを開く
+                          </a>
+                        )}
                       </div>
 
                       {repo && (
@@ -305,8 +328,11 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
           practiceIssueDrafts={getDraftsForRepo(selectedRepo.id)}
           practicePullRequestDrafts={getPullRequestDraftsForRepo(selectedRepo.id)}
           practiceIssueSaveError={practiceIssueSaveError}
+          practiceIssuePublishError={practiceIssuePublishError}
+          publishingPracticeIssueDraftId={publishingPracticeIssueDraftId}
           practicePullRequestSaveError={practicePullRequestSaveError}
           onCreatePracticeIssueDraft={(input) => createIssueDraft(selectedRepo.id, input)}
+          onCreateGitHubIssueFromDraft={(draftId) => createGitHubIssueFromDraft(selectedRepo.nameWithOwner, draftId)}
           onCreatePracticePullRequestDraft={(input) =>
             createPullRequestDraft(selectedRepo.id, input, getDraftsForRepo(selectedRepo.id))
           }
