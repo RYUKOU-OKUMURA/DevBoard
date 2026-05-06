@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PracticeIssueDraft, Repo, RepoUserMeta } from '../../../types';
+import type { PracticeIssueDraft, PracticePullRequestDraft, Repo, RepoUserMeta } from '../../../types';
 import { RepositoryCard } from '../RepositoryCard';
 import { RepositoryDetailPanel } from '../RepositoryDetailPanel';
 
@@ -48,6 +48,21 @@ function createPracticeDraft(): PracticeIssueDraft {
   };
 }
 
+function createPracticePullRequestDraft(): PracticePullRequestDraft {
+  return {
+    id: 'pr-draft-1',
+    repoId: 'repo-1',
+    title: 'READMEに起動手順を追加する',
+    changedItems: ['READMEを更新した'],
+    reviewPoints: ['手順が初めての人にも分かるか'],
+    relatedIssueDraftId: 'draft-1',
+    generatedMarkdown: '## 変更の確認リクエスト\nREADMEに起動手順を追加する\n\n## 変更したこと\n- READMEを更新した',
+    syncStatus: 'local_only',
+    createdAt: '2026-01-02T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  };
+}
+
 function renderDetailPanel(props: Partial<ComponentProps<typeof RepositoryDetailPanel>> = {}) {
   return render(
     <RepositoryDetailPanel
@@ -65,6 +80,7 @@ function renderDetailPanel(props: Partial<ComponentProps<typeof RepositoryDetail
 describe('RepositoryCard', () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   it('limits GitHub navigation to the explicit link', () => {
@@ -122,6 +138,7 @@ describe('RepositoryCard', () => {
 describe('RepositoryDetailPanel', () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   it('shows repository details and the explicit GitHub actions', () => {
@@ -197,6 +214,18 @@ describe('RepositoryDetailPanel', () => {
     expect(screen.getAllByText('DevBoard内だけ').length).toBeGreaterThan(0);
   });
 
+  it('shows saved practice pull request drafts inside the repository detail', () => {
+    renderDetailPanel({
+      practiceIssueDrafts: [createPracticeDraft()],
+      practicePullRequestDrafts: [createPracticePullRequestDraft()],
+    });
+
+    expect(screen.getByText('保存済みのPR下書き')).toBeTruthy();
+    expect(screen.getByText('READMEに起動手順を追加する')).toBeTruthy();
+    expect(screen.getByText(/## 変更の確認リクエスト/)).toBeTruthy();
+    expect(screen.getByText('関連: トップページのボタンを見やすくする')).toBeTruthy();
+  });
+
   it('can move from repository detail to the practice draft list', () => {
     const onOpenPracticeHome = vi.fn();
     const onClose = vi.fn();
@@ -231,6 +260,35 @@ describe('RepositoryDetailPanel', () => {
       title: 'READMEを書く',
       reason: '使い方を伝える',
       doneCriteria: ['起動手順がある'],
+    });
+    expect(screen.getAllByRole('link', { name: 'alice/frontend-app をGitHubで開く' })).toHaveLength(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('starts practice pull request drafting from the repository detail without GitHub navigation', () => {
+    const onCreatePracticePullRequestDraft = vi.fn(() => createPracticePullRequestDraft());
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    renderDetailPanel({
+      practiceIssueDrafts: [createPracticeDraft()],
+      onCreatePracticePullRequestDraft,
+    });
+
+    const toggleButton = screen.getByRole('button', { name: 'PR下書きを作る' });
+    expect(toggleButton.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(toggleButton);
+    expect(screen.getByRole('button', { name: 'PR作成欄を閉じる' }).getAttribute('aria-expanded')).toBe('true');
+    fireEvent.change(screen.getByLabelText('PRタイトル'), { target: { value: 'READMEに起動手順を追加する' } });
+    fireEvent.change(screen.getByLabelText('関連するやることカード'), { target: { value: 'draft-1' } });
+    fireEvent.change(screen.getByLabelText('変更したこと'), { target: { value: 'READMEを更新した' } });
+    fireEvent.change(screen.getByLabelText('見てほしいこと'), { target: { value: '手順が初めての人にも分かるか' } });
+    fireEvent.click(screen.getByRole('button', { name: 'PR下書きを保存' }));
+
+    expect(onCreatePracticePullRequestDraft).toHaveBeenCalledWith({
+      title: 'READMEに起動手順を追加する',
+      changedItems: ['READMEを更新した'],
+      reviewPoints: ['手順が初めての人にも分かるか'],
+      relatedIssueDraftId: 'draft-1',
     });
     expect(screen.getAllByRole('link', { name: 'alice/frontend-app をGitHubで開く' })).toHaveLength(1);
     expect(fetchSpy).not.toHaveBeenCalled();

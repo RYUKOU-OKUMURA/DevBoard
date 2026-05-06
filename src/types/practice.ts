@@ -11,3 +11,16 @@ export interface PracticeIssueDraft {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PracticePullRequestDraft {
+  id: string;
+  repoId: string;
+  title: string;
+  changedItems: string[];
+  reviewPoints: string[];
+  relatedIssueDraftId?: string | null;
+  generatedMarkdown: string;
+  syncStatus: PracticeSyncStatus;
+  createdAt: string;
+  updatedAt: string;
+}

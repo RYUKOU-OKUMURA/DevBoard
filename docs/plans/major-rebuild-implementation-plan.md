@@ -180,25 +180,25 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] Issue / Pull Request / Branch / Merge の用語説明が初心者向けになっている。
 - [x] `npm run check:ci`
 
-### フェーズ 7: PR練習の最小実装
+### フェーズ 7: PR練習の最小実装 ✅ 完了
 
 目的: Pull Requestを「変更の確認リクエスト」として説明文に落とし込む練習をできるようにする。
 
-- [ ] `PracticePullRequestDraft` 型を追加する。
-- [ ] `practiceStorage` にPR練習ドラフト保存を追加する。
-- [ ] `src/components/practice/PullRequestPracticeWizard.tsx` を追加する。
-- [ ] 入力項目は `title`, `changedItems`, `reviewPoints` に絞る。
-- [ ] 関連する `PracticeIssueDraft` を任意で選べるようにする。
-- [ ] PR説明文Markdownを生成する。
-- [ ] Branch / Merge の説明を短い補足として表示する。
-- [ ] 実際のGitHub PR作成、ブランチ作成、コミット作成、ファイル編集自動化は実装しない。
+- [x] `PracticePullRequestDraft` 型を追加する。
+- [x] `practiceStorage` にPR練習ドラフト保存を追加する。
+- [x] `src/components/practice/PullRequestPracticeWizard.tsx` を追加する。
+- [x] 入力項目は `title`, `changedItems`, `reviewPoints` に絞る。
+- [x] 関連する `PracticeIssueDraft` を任意で選べるようにする。
+- [x] PR説明文Markdownを生成する。
+- [x] Branch / Merge の説明を短い補足として表示する。
+- [x] 実際のGitHub PR作成、ブランチ作成、コミット作成、ファイル編集自動化は実装しない。
 
 検証:
 
-- [ ] PRの役割を日本語で理解できる。
-- [ ] PR説明文を作る練習ができる。
-- [ ] GitHubには何も作られない。
-- [ ] `npm run check:ci`
+- [x] PRの役割を日本語で理解できる。
+- [x] PR説明文を作る練習ができる。
+- [x] GitHubには何も作られない。
+- [x] `npm run check:ci`
 
 ### フェーズ 8: GitHub Issue作成の明示アクション追加
 

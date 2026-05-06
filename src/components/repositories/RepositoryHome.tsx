@@ -7,6 +7,7 @@ import { useTagsContext } from '../../contexts/TagsContext';
 import { getStorageItem } from '../../utils/storage';
 import { useRepositoryMeta } from '../../hooks/useRepositoryMeta';
 import { usePracticeIssues } from '../../hooks/usePracticeIssues';
+import { usePracticePullRequests } from '../../hooks/usePracticePullRequests';
 import { RepositoryDetailPanel } from './RepositoryDetailPanel';
 import { RepositoryList } from './RepositoryList';
 import {
@@ -55,6 +56,11 @@ export function RepositoryHome({
     getDraftsForRepo,
     saveError: practiceIssueSaveError,
   } = usePracticeIssues(accountId);
+  const {
+    createPullRequestDraft,
+    getDraftsForRepo: getPullRequestDraftsForRepo,
+    saveError: practicePullRequestSaveError,
+  } = usePracticePullRequests(accountId);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
@@ -201,8 +207,13 @@ export function RepositoryHome({
           userMeta={getMeta(selectedRepo.id)}
           saveError={repositoryMetaSaveError}
           practiceIssueDrafts={getDraftsForRepo(selectedRepo.id)}
+          practicePullRequestDrafts={getPullRequestDraftsForRepo(selectedRepo.id)}
           practiceIssueSaveError={practiceIssueSaveError}
+          practicePullRequestSaveError={practicePullRequestSaveError}
           onCreatePracticeIssueDraft={(input) => createIssueDraft(selectedRepo.id, input)}
+          onCreatePracticePullRequestDraft={(input) =>
+            createPullRequestDraft(selectedRepo.id, input, getDraftsForRepo(selectedRepo.id))
+          }
           onUserMetaChange={updateMeta}
           onOpenPracticeHome={onOpenPracticeHome}
           onClose={handleCloseDetail}

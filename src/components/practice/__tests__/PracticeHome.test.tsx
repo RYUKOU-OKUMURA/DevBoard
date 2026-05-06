@@ -2,8 +2,8 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { PracticeIssueDraft, Repo } from '../../../types';
-import { savePracticeIssueDrafts } from '../../../storage/practiceStorage';
+import type { PracticeIssueDraft, PracticePullRequestDraft, Repo } from '../../../types';
+import { savePracticeIssueDrafts, savePracticePullRequestDrafts } from '../../../storage/practiceStorage';
 import { PracticeHome } from '../PracticeHome';
 
 const ACCOUNT_ID = 'alice-id';
@@ -37,6 +37,22 @@ function createDraft(overrides: Partial<PracticeIssueDraft> = {}): PracticeIssue
   };
 }
 
+function createPullRequestDraft(overrides: Partial<PracticePullRequestDraft> = {}): PracticePullRequestDraft {
+  return {
+    id: 'pr-draft-1',
+    repoId: 'repo-1',
+    title: 'READMEに起動手順を追加する',
+    changedItems: ['READMEを更新した'],
+    reviewPoints: ['手順が初めての人にも分かるか'],
+    relatedIssueDraftId: 'draft-1',
+    generatedMarkdown: '## 変更の確認リクエスト\nREADMEに起動手順を追加する',
+    syncStatus: 'local_only',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-03T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 describe('PracticeHome', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -51,7 +67,7 @@ describe('PracticeHome', () => {
 
     render(<PracticeHome accountId={ACCOUNT_ID} repos={[createRepo()]} />);
 
-    expect(screen.getByRole('heading', { name: '保存したやることカード' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '保存した練習下書き' })).toBeTruthy();
     expect(screen.getByText('トップページのボタンを見やすくする')).toBeTruthy();
     expect(screen.getByText('alice/frontend-app')).toBeTruthy();
     expect(screen.getByText('ボタンの色が目立つ')).toBeTruthy();
@@ -60,6 +76,28 @@ describe('PracticeHome', () => {
     expect(screen.getByText('Pull Request')).toBeTruthy();
     expect(screen.getByText('Branch')).toBeTruthy();
     expect(screen.getByText('Merge')).toBeTruthy();
+  });
+
+  it('shows saved pull request drafts with related issue context', () => {
+    savePracticeIssueDrafts(ACCOUNT_ID, [createDraft()]);
+    savePracticePullRequestDrafts(ACCOUNT_ID, [createPullRequestDraft()]);
+
+    render(<PracticeHome accountId={ACCOUNT_ID} repos={[createRepo()]} />);
+
+    expect(screen.getByRole('heading', { name: 'Pull Request / 変更の確認リクエスト' })).toBeTruthy();
+    expect(screen.getByText('READMEに起動手順を追加する')).toBeTruthy();
+    expect(screen.getByText('手順が初めての人にも分かるか')).toBeTruthy();
+    expect(screen.getAllByText('トップページのボタンを見やすくする').length).toBeGreaterThan(0);
+    expect(screen.getByText('2件')).toBeTruthy();
+  });
+
+  it('keeps orphaned pull request drafts visible without a repository detail action', () => {
+    savePracticePullRequestDrafts(ACCOUNT_ID, [createPullRequestDraft({ repoId: 'missing-repo' })]);
+
+    render(<PracticeHome accountId={ACCOUNT_ID} repos={[createRepo()]} />);
+
+    expect(screen.getByText('未取得のリポジトリ (missing-repo)')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'リポジトリ詳細へ戻る' })).toBeNull();
   });
 
   it('opens the target repository detail from a saved draft', () => {
