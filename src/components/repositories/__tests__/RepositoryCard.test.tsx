@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Repo, RepoUserMeta } from '../../../types';
+import type { PracticeIssueDraft, Repo, RepoUserMeta } from '../../../types';
 import { RepositoryCard } from '../RepositoryCard';
 import { RepositoryDetailPanel } from '../RepositoryDetailPanel';
 
@@ -29,6 +29,20 @@ function createMeta(): RepoUserMeta {
     purpose: '公開前の整理',
     nextAction: 'READMEに使い方を足す',
     note: 'Issue練習で分解する',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function createPracticeDraft(): PracticeIssueDraft {
+  return {
+    id: 'draft-1',
+    repoId: 'repo-1',
+    title: 'トップページのボタンを見やすくする',
+    reason: '初めて見る人に分かりやすくしたいから',
+    doneCriteria: ['ボタンの色が目立つ'],
+    generatedMarkdown: '## やりたいこと\nトップページのボタンを見やすくする\n\n## 理由\n初めて見る人に分かりやすくしたいから\n\n## 完了条件\n- ボタンの色が目立つ',
+    syncStatus: 'local_only',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   };
@@ -172,5 +186,38 @@ describe('RepositoryDetailPanel', () => {
     expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { purpose: '練習用に整理する' });
     expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { nextAction: '小さなTODOに分ける' });
     expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { note: '焦らず進める' });
+  });
+
+  it('shows saved practice issue drafts inside the repository detail', () => {
+    renderDetailPanel({ practiceIssueDrafts: [createPracticeDraft()] });
+
+    expect(screen.getByText('保存済みの下書き')).toBeTruthy();
+    expect(screen.getByText('トップページのボタンを見やすくする')).toBeTruthy();
+    expect(screen.getByText(/## やりたいこと/)).toBeTruthy();
+    expect(screen.getAllByText('DevBoard内だけ').length).toBeGreaterThan(0);
+  });
+
+  it('starts practice issue drafting from the repository detail without GitHub navigation', () => {
+    const onCreatePracticeIssueDraft = vi.fn(() => createPracticeDraft());
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    renderDetailPanel({ onCreatePracticeIssueDraft });
+
+    const toggleButton = screen.getByRole('button', { name: '下書きを作る' });
+    expect(toggleButton.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(toggleButton);
+    expect(screen.getByRole('button', { name: '作成欄を閉じる' }).getAttribute('aria-expanded')).toBe('true');
+    fireEvent.change(screen.getByLabelText('やりたいこと'), { target: { value: 'READMEを書く' } });
+    fireEvent.change(screen.getByLabelText('なぜやる？'), { target: { value: '使い方を伝える' } });
+    fireEvent.change(screen.getByLabelText('終わりの条件'), { target: { value: '起動手順がある' } });
+    fireEvent.click(screen.getByRole('button', { name: '下書きを保存' }));
+
+    expect(onCreatePracticeIssueDraft).toHaveBeenCalledWith({
+      title: 'READMEを書く',
+      reason: '使い方を伝える',
+      doneCriteria: ['起動手順がある'],
+    });
+    expect(screen.getAllByRole('link', { name: 'alice/frontend-app をGitHubで開く' })).toHaveLength(1);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

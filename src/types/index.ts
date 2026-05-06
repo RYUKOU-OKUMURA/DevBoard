@@ -82,6 +82,7 @@ export interface ToastMessage {
 }
 
 export * from './repo';
+export * from './practice';
 
 // Export ToDo types
 export * from './todo';

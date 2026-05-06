@@ -1,7 +1,9 @@
-import { type ReactNode, useEffect, useId, useRef } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { ColumnKey, Repo, RepoUserMeta, RepoUserStatus } from '../../types';
+import type { ColumnKey, PracticeIssueDraft, Repo, RepoUserMeta, RepoUserStatus } from '../../types';
 import { focusRing } from '../../lib/focusRing';
+import { type PracticeIssueDraftInput } from '../../hooks/usePracticeIssues';
+import { IssuePracticeWizard } from '../practice/IssuePracticeWizard';
 import { RepositoryHealthBadge } from './RepositoryHealthBadge';
 import { RepositoryStatusBadge } from './RepositoryStatusBadge';
 import { REPOSITORY_USER_STATUS_OPTIONS } from './repositoryMetaLabels';
@@ -11,10 +13,13 @@ interface RepositoryDetailPanelProps {
   autoHealth: ColumnKey;
   userMeta: RepoUserMeta | null;
   saveError?: string | null;
+  practiceIssueDrafts?: PracticeIssueDraft[];
+  practiceIssueSaveError?: string | null;
   onUserMetaChange: (
     repoId: string,
     patch: Partial<Pick<RepoUserMeta, 'status' | 'purpose' | 'nextAction' | 'note'>>
   ) => void;
+  onCreatePracticeIssueDraft?: (input: PracticeIssueDraftInput) => PracticeIssueDraft | null;
   onClose: () => void;
 }
 
@@ -55,7 +60,10 @@ export function RepositoryDetailPanel({
   autoHealth,
   userMeta,
   saveError,
+  practiceIssueDrafts = [],
+  practiceIssueSaveError,
   onUserMetaChange,
+  onCreatePracticeIssueDraft,
   onClose,
 }: RepositoryDetailPanelProps) {
   const panelRef = useRef<HTMLElement>(null);
@@ -63,12 +71,22 @@ export function RepositoryDetailPanel({
   const onCloseRef = useRef(onClose);
   const titleId = useId();
   const descriptionId = useId();
+  const practiceWizardId = useId();
   const { owner, name } = splitNameWithOwner(repo.nameWithOwner);
   const topics = repo.topics.slice(0, 8);
   const status = userMeta?.status ?? 'unreviewed';
   const purpose = userMeta?.purpose ?? '';
   const nextAction = userMeta?.nextAction ?? '';
   const note = userMeta?.note ?? '';
+  const [isPracticeWizardOpen, setIsPracticeWizardOpen] = useState(false);
+
+  const handleSavePracticeIssueDraft = (input: PracticeIssueDraftInput): boolean => {
+    if (!onCreatePracticeIssueDraft) {
+      return false;
+    }
+
+    return onCreatePracticeIssueDraft(input) !== null;
+  };
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -290,13 +308,74 @@ export function RepositoryDetailPanel({
           </section>
 
           <section className="mt-stack-md rounded-lg border border-dashed border-[var(--border-subtle)] bg-surface-secondary p-inset-lg">
-            <p className="text-caption font-semibold text-[var(--text-muted)]">練習モード</p>
-            <h3 className="mt-stack-xs text-title-3 font-semibold text-[var(--text-primary)]">
-              やることカードを作る
-            </h3>
-            <p className="mt-stack-sm text-body-sm leading-relaxed text-[var(--text-secondary)]">
-              後続フェーズで、GitHubに書き込まずにIssue風の下書きを作る導線をここに置きます。
-            </p>
+            <div className="flex flex-col gap-stack-sm sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-caption font-semibold text-[var(--text-muted)]">練習モード</p>
+                <h3 className="mt-stack-xs text-title-3 font-semibold text-[var(--text-primary)]">
+                  やることカードを作る
+                </h3>
+                <p className="mt-stack-sm text-body-sm leading-relaxed text-[var(--text-secondary)]">
+                  GitHub Issue / 課題管理カードの形に整えます。保存先はDevBoard内だけです。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPracticeWizardOpen((current) => !current)}
+                aria-expanded={isPracticeWizardOpen}
+                aria-controls={practiceWizardId}
+                className={`inline-flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent-green)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse shadow-sm transition-colors motion-reduce:transition-none hover:bg-[var(--accent-green-strong)] ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+              >
+                {isPracticeWizardOpen ? '作成欄を閉じる' : '下書きを作る'}
+              </button>
+            </div>
+
+            <div id={practiceWizardId}>
+              {isPracticeWizardOpen && (
+                <IssuePracticeWizard
+                  repoNameWithOwner={repo.nameWithOwner}
+                  saveError={practiceIssueSaveError}
+                  onCancel={() => setIsPracticeWizardOpen(false)}
+                  onSave={handleSavePracticeIssueDraft}
+                />
+              )}
+            </div>
+
+            <section className="mt-stack-md" aria-label="保存済みのやることカード">
+              <div className="flex items-center justify-between gap-inline-md">
+                <h4 className="text-caption font-semibold text-[var(--text-muted)]">保存済みの下書き</h4>
+                <span className="text-caption text-[var(--text-muted)]">{practiceIssueDrafts.length}件</span>
+              </div>
+
+              {practiceIssueDrafts.length === 0 ? (
+                <p className="mt-stack-sm rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-secondary)]">
+                  まだ下書きはありません。
+                </p>
+              ) : (
+                <div className="mt-stack-sm grid gap-stack-sm">
+                  {practiceIssueDrafts.map((draft) => (
+                    <article
+                      key={draft.id}
+                      className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-md"
+                    >
+                      <div className="flex flex-col gap-stack-xs sm:flex-row sm:items-start sm:justify-between">
+                        <h5 className="break-words text-body-sm font-semibold text-[var(--text-primary)]">
+                          {draft.title || '無題の下書き'}
+                        </h5>
+                        <span className="shrink-0 rounded-lg border border-[var(--accent-blue-border)] bg-[var(--accent-blue-muted)] px-inset-sm py-inset-xs text-caption font-semibold text-[var(--accent-blue-emphasis)]">
+                          DevBoard内だけ
+                        </span>
+                      </div>
+                      <p className="mt-stack-xs text-caption text-[var(--text-muted)]">
+                        保存: {formatDetailDate(draft.createdAt)}
+                      </p>
+                      <pre className="mt-stack-sm max-h-52 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-secondary p-inset-md text-body-sm leading-relaxed text-[var(--text-primary)]">
+                        {draft.generatedMarkdown}
+                      </pre>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
           </section>
         </div>
 

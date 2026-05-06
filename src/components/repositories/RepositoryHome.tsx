@@ -6,6 +6,7 @@ import { focusRing } from '../../lib/focusRing';
 import { useTagsContext } from '../../contexts/TagsContext';
 import { getStorageItem } from '../../utils/storage';
 import { useRepositoryMeta } from '../../hooks/useRepositoryMeta';
+import { usePracticeIssues } from '../../hooks/usePracticeIssues';
 import { RepositoryDetailPanel } from './RepositoryDetailPanel';
 import { RepositoryList } from './RepositoryList';
 import {
@@ -47,6 +48,11 @@ export function RepositoryHome({
 }: RepositoryHomeProps) {
   const { getTagObjectsForRepo } = useTagsContext();
   const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
+  const {
+    createIssueDraft,
+    getDraftsForRepo,
+    saveError: practiceIssueSaveError,
+  } = usePracticeIssues(accountId);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
@@ -192,6 +198,9 @@ export function RepositoryHome({
           autoHealth={getAutoHealth(selectedRepo)}
           userMeta={getMeta(selectedRepo.id)}
           saveError={repositoryMetaSaveError}
+          practiceIssueDrafts={getDraftsForRepo(selectedRepo.id)}
+          practiceIssueSaveError={practiceIssueSaveError}
+          onCreatePracticeIssueDraft={(input) => createIssueDraft(selectedRepo.id, input)}
           onUserMetaChange={updateMeta}
           onClose={handleCloseDetail}
         />
