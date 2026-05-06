@@ -24,15 +24,15 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 
 ## 3. MVP完了ライン
 
-- [ ] ログイン後、最初にリポジトリを理解しやすい画面が表示される。
-- [ ] リポジトリが1カラム一覧で読める。
-- [ ] カードクリックでDevBoard内の詳細パネルが開く。
-- [ ] GitHubへの外部遷移は明示的な「GitHubで開く」ボタンからのみ起きる。
-- [ ] リポジトリごとの目的、メモ、次にやること、自分の状態が保存・復元できる。
-- [ ] Issue練習ドラフトを作成し、Issue風Markdownを生成できる。
-- [ ] 練習モードではGitHubに勝手にデータを作成しない。
-- [ ] 旧カンバン、Activity、Manual、TODO、AI、Workspace系の既存機能が初心者向け主導線を邪魔しない。
-- [ ] `npm run check:ci` が通る。
+- [x] ログイン後、最初にリポジトリを理解しやすい画面が表示される。
+- [x] リポジトリが1カラム一覧で読める。
+- [x] カードクリックでDevBoard内の詳細パネルが開く。
+- [x] GitHubへの外部遷移は明示的な「GitHubで開く」ボタンからのみ起きる。
+- [x] リポジトリごとの目的、メモ、次にやること、自分の状態が保存・復元できる。
+- [x] Issue練習ドラフトを作成し、Issue風Markdownを生成できる。
+- [x] 練習モードではGitHubに勝手にデータを作成しない。
+- [x] 旧カンバン、Activity、Manual、TODO、AI、Workspace系の既存機能が初心者向け主導線を邪魔しない。
+- [x] `npm run check:ci` が通る。
 
 ## 4. フェーズ別タスク
 
@@ -159,26 +159,26 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] GitHubにデータが作成されない。
 - [x] `npm run check:ci`
 
-### フェーズ 6: PracticeHome追加
+### フェーズ 6: PracticeHome追加 ✅ 完了
 
 目的: リポジトリ詳細内だけでなく、保存済み練習ドラフトを一覧で確認できるようにする。
 
-- [ ] `src/components/practice/PracticeHome.tsx` を追加する。
-- [ ] `src/components/practice/GithubTermHint.tsx` を追加する。
-- [ ] `src/lib/githubTerms.ts` を追加する。
-- [ ] 保存済み `PracticeIssueDraft` を一覧表示する。
-- [ ] 各ドラフトがどのリポジトリに紐づくか分かる表示にする。
-- [ ] PracticeHomeから対象リポジトリ詳細へ戻れる導線を用意する。
-- [ ] GitHub用語を日本語説明とセットで表示する。
-- [ ] 説明テキストが多すぎて主操作を邪魔しないように調整する。
-- [ ] 初期MVP完了条件を満たしているか確認する。
+- [x] `src/components/practice/PracticeHome.tsx` を追加する。
+- [x] `src/components/practice/GithubTermHint.tsx` を追加する。
+- [x] `src/lib/githubTerms.ts` を追加する。
+- [x] 保存済み `PracticeIssueDraft` を一覧表示する。
+- [x] 各ドラフトがどのリポジトリに紐づくか分かる表示にする。
+- [x] PracticeHomeから対象リポジトリ詳細へ戻れる導線を用意する。
+- [x] GitHub用語を日本語説明とセットで表示する。
+- [x] 説明テキストが多すぎて主操作を邪魔しないように調整する。
+- [x] 初期MVP完了条件を満たしているか確認する。
 
 検証:
 
-- [ ] 保存済み練習ドラフトを一覧で見られる。
-- [ ] リポジトリ詳細とPracticeHomeを相互に行き来できる。
-- [ ] Issue / Pull Request / Branch / Merge の用語説明が初心者向けになっている。
-- [ ] `npm run check:ci`
+- [x] 保存済み練習ドラフトを一覧で見られる。
+- [x] リポジトリ詳細とPracticeHomeを相互に行き来できる。
+- [x] Issue / Pull Request / Branch / Merge の用語説明が初心者向けになっている。
+- [x] `npm run check:ci`
 
 ### フェーズ 7: PR練習の最小実装
 

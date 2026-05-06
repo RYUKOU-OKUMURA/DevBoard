@@ -29,6 +29,7 @@ interface RepositoryHomeProps {
   ) => void;
   lastUpdateTime?: number | null;
   onOpenLegacyBoard?: () => void;
+  onOpenPracticeHome?: () => void;
 }
 
 const SORT_OPTIONS: Array<{ value: SortOrder; label: string }> = [
@@ -45,6 +46,7 @@ export function RepositoryHome({
   onStatsUpdate,
   lastUpdateTime,
   onOpenLegacyBoard,
+  onOpenPracticeHome,
 }: RepositoryHomeProps) {
   const { getTagObjectsForRepo } = useTagsContext();
   const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
@@ -202,6 +204,7 @@ export function RepositoryHome({
           practiceIssueSaveError={practiceIssueSaveError}
           onCreatePracticeIssueDraft={(input) => createIssueDraft(selectedRepo.id, input)}
           onUserMetaChange={updateMeta}
+          onOpenPracticeHome={onOpenPracticeHome}
           onClose={handleCloseDetail}
         />
       )}

@@ -18,6 +18,7 @@ import { buildErrorToast } from './utils/errorHandling';
 
 const TabNavigation = lazy(() => import('./components/TabNavigation').then((m) => ({ default: m.TabNavigation })));
 const RepositoryHome = lazy(() => import('./components/repositories/RepositoryHome').then((m) => ({ default: m.RepositoryHome })));
+const PracticeHome = lazy(() => import('./components/practice/PracticeHome').then((m) => ({ default: m.PracticeHome })));
 const RepoBoard = lazy(() => import('./components/RepoBoard').then((m) => ({ default: m.RepoBoard })));
 const ManualRepoBoard = lazy(() => import('./components/ManualRepoBoard').then((m) => ({ default: m.ManualRepoBoard })));
 const ActivityTab = lazy(() => import('./components/ActivityTab').then((m) => ({ default: m.ActivityTab })));
@@ -265,6 +266,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
       lastUpdateTime={lastUpdateTime}
       isLoading={isRepoLoading}
       onOpenLegacyBoard={() => setRepositoryView('legacy')}
+      onOpenPracticeHome={() => setActiveTab('practice')}
     />
   );
 
@@ -450,6 +452,15 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                   />
                 </Suspense>
               </TagsProvider>
+            )}
+          </div>
+
+          {/* Practice Tab */}
+          <div className={activeTab === 'practice' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'practice' && (
+              <Suspense fallback={<LoadingScreen />}>
+                <PracticeHome accountId={user.userId || user.username} repos={repos} />
+              </Suspense>
             )}
           </div>
 

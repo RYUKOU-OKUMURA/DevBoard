@@ -20,6 +20,7 @@ interface RepositoryDetailPanelProps {
     patch: Partial<Pick<RepoUserMeta, 'status' | 'purpose' | 'nextAction' | 'note'>>
   ) => void;
   onCreatePracticeIssueDraft?: (input: PracticeIssueDraftInput) => PracticeIssueDraft | null;
+  onOpenPracticeHome?: () => void;
   onClose: () => void;
 }
 
@@ -64,6 +65,7 @@ export function RepositoryDetailPanel({
   practiceIssueSaveError,
   onUserMetaChange,
   onCreatePracticeIssueDraft,
+  onOpenPracticeHome,
   onClose,
 }: RepositoryDetailPanelProps) {
   const panelRef = useRef<HTMLElement>(null);
@@ -343,7 +345,21 @@ export function RepositoryDetailPanel({
             <section className="mt-stack-md" aria-label="保存済みのやることカード">
               <div className="flex items-center justify-between gap-inline-md">
                 <h4 className="text-caption font-semibold text-[var(--text-muted)]">保存済みの下書き</h4>
-                <span className="text-caption text-[var(--text-muted)]">{practiceIssueDrafts.length}件</span>
+                <div className="flex items-center gap-inline-sm">
+                  <span className="text-caption text-[var(--text-muted)]">{practiceIssueDrafts.length}件</span>
+                  {onOpenPracticeHome && practiceIssueDrafts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenPracticeHome();
+                        onClose();
+                      }}
+                      className={`inline-flex items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-sm py-inset-xs text-caption font-semibold text-[var(--text-primary)] transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+                    >
+                      練習一覧で見る
+                    </button>
+                  )}
+                </div>
               </div>
 
               {practiceIssueDrafts.length === 0 ? (

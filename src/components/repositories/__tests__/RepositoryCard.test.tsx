@@ -197,6 +197,21 @@ describe('RepositoryDetailPanel', () => {
     expect(screen.getAllByText('DevBoard内だけ').length).toBeGreaterThan(0);
   });
 
+  it('can move from repository detail to the practice draft list', () => {
+    const onOpenPracticeHome = vi.fn();
+    const onClose = vi.fn();
+    renderDetailPanel({
+      practiceIssueDrafts: [createPracticeDraft()],
+      onOpenPracticeHome,
+      onClose,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '練習一覧で見る' }));
+
+    expect(onOpenPracticeHome).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('starts practice issue drafting from the repository detail without GitHub navigation', () => {
     const onCreatePracticeIssueDraft = vi.fn(() => createPracticeDraft());
     const fetchSpy = vi.spyOn(globalThis, 'fetch');

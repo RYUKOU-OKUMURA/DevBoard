@@ -10,7 +10,7 @@ describe('resolveTabCandidate', () => {
     });
   });
 
-  it.each(['board', 'activity', 'manual'] as const)('keeps current tab value %s', (tab) => {
+  it.each(['board', 'practice', 'activity', 'manual'] as const)('keeps current tab value %s', (tab) => {
     expect(resolveTabCandidate(tab)).toEqual({
       tab,
       pendingLegacy: null,

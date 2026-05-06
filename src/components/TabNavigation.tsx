@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import React from 'react';
 import { focusRing } from '../lib/focusRing';
 
-export type TabType = 'board' | 'activity' | 'manual';
+export type TabType = 'board' | 'practice' | 'activity' | 'manual';
 
 interface TabNavigationProps {
   activeTab: TabType;
@@ -18,6 +18,12 @@ const ICONS: Record<TabType, JSX.Element> = {
       <rect x="14" y="3" width="7" height="7" />
       <rect x="14" y="14" width="7" height="7" />
       <rect x="3" y="14" width="7" height="7" />
+    </svg>
+  ),
+  practice: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
     </svg>
   ),
   activity: (
@@ -53,7 +59,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
 
   const tabs: Array<{ id: TabType; label: string; badge?: number }> = [
     { id: 'board', label: 'リポジトリ' },
-    { id: 'activity', label: '練習・記録', badge: activityCount },
+    { id: 'practice', label: '練習' },
+    { id: 'activity', label: '記録', badge: activityCount },
     { id: 'manual', label: '手動追加', badge: manualRepoCount },
   ];
 
