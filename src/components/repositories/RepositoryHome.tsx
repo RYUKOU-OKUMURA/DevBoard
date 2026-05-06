@@ -29,7 +29,7 @@ interface RepositoryHomeProps {
     columnTitles: Record<ColumnKey, string>
   ) => void;
   lastUpdateTime?: number | null;
-  onOpenLegacyBoard?: () => void;
+  onOpenAdvancedFeatures?: () => void;
   onOpenPracticeHome?: () => void;
 }
 
@@ -46,7 +46,7 @@ export function RepositoryHome({
   onRefresh,
   onStatsUpdate,
   lastUpdateTime,
-  onOpenLegacyBoard,
+  onOpenAdvancedFeatures,
   onOpenPracticeHome,
 }: RepositoryHomeProps) {
   const { getTagObjectsForRepo } = useTagsContext();
@@ -124,13 +124,13 @@ export function RepositoryHome({
                   {isLoading ? '読み込み中...' : '更新'}
                 </button>
               )}
-              {onOpenLegacyBoard && (
+              {onOpenAdvancedFeatures && (
                 <button
                   type="button"
-                  onClick={onOpenLegacyBoard}
+                  onClick={onOpenAdvancedFeatures}
                   className={`inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] shadow-sm transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
                 >
-                  詳しいカンバンを開く
+                  高度な機能を見る
                 </button>
               )}
             </div>

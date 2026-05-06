@@ -229,23 +229,23 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] 失敗時に分かりやすい日本語エラーが出る。
 - [x] `npm run check:ci`
 
-### フェーズ 9: 既存高度機能の置き場整理
+### フェーズ 9: 既存高度機能の置き場整理 ✅ 完了
 
 目的: 保存ビュー、プリセット、カンバン詳細操作、Activity、TODO、AI、Workspaceなどを初心者向け主導線から整理する。
 
-- [ ] 保存ビュー / プリセット / 列管理の表示位置を棚卸しする。
-- [ ] 既存カンバン表示を削除せず、必要に応じて奥に置く導線を検討する。
-- [ ] Activityを「詳しく見る」扱いにできるか検討する。
-- [ ] TODO実装を独立「やること」画面に再利用するか判断する。
-- [ ] AI実装連携、AI実行履歴、GitHub Actions連携をAdvanced候補として退避・整理する。
-- [ ] Workspace / SplitPanel / TagManager / TagSelectorの主導線化を見送るか判断する。
-- [ ] 設定画面またはAdvanced入口が必要か判断する。
+- [x] 保存ビュー / プリセット / 列管理の表示位置を棚卸しする。
+- [x] 既存カンバン表示を削除せず、必要に応じて奥に置く導線を検討する。
+- [x] Activityを「詳しく見る」扱いにできるか検討する。
+- [x] TODO実装を独立「やること」画面に再利用するか判断する。
+- [x] AI実装連携、AI実行履歴、GitHub Actions連携をAdvanced候補として退避・整理する。
+- [x] Workspace / SplitPanel / TagManager / TagSelectorの主導線化を見送るか判断する。
+- [x] 設定画面またはAdvanced入口が必要か判断する。
 
 検証:
 
-- [ ] 初心者向けの主画面が複雑になりすぎていない。
-- [ ] 既存機能を誤って削除していない。
-- [ ] `npm run check:ci`
+- [x] 初心者向けの主画面が複雑になりすぎていない。
+- [x] 既存機能を誤って削除していない。
+- [x] `npm run check:ci`
 
 ### フェーズ 10: デザインとコピーの仕上げ
 
@@ -324,6 +324,6 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [ ] PR 6: Add practice home for saved drafts
 - [ ] PR 7: Add Pull Request practice drafts
 - [ ] PR 8: Add optional GitHub Issue creation
-- [ ] PR 9: Organize advanced and legacy feature entry points
+- [x] PR 9: Organize advanced and legacy feature entry points
 - [ ] PR 10: Polish beginner-friendly UI copy and visual design
 - [ ] PR 11+: Update dependencies in isolated PRs

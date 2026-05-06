@@ -6,11 +6,11 @@ type LegacyTabType = 'updates' | 'todos';
 
 const TAB_STORAGE_KEY = 'activeTab';
 export const DEFAULT_TAB: TabType = 'board';
-const VALID_TABS: TabType[] = ['board', 'practice', 'activity', 'manual'];
+const VALID_TABS: TabType[] = ['board', 'practice', 'advanced', 'activity', 'manual'];
 const LEGACY_TABS: LegacyTabType[] = ['updates', 'todos'];
 const LEGACY_TAB_MAP: Record<LegacyTabType, TabType> = {
-  updates: 'activity',
-  todos: 'activity',
+  updates: 'advanced',
+  todos: 'advanced',
 };
 
 function isValidTab(value: string): value is TabType {
