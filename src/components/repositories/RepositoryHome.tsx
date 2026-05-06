@@ -8,6 +8,7 @@ import { getStorageItem } from '../../utils/storage';
 import { useRepositoryMeta } from '../../hooks/useRepositoryMeta';
 import { usePracticeIssues } from '../../hooks/usePracticeIssues';
 import { usePracticePullRequests } from '../../hooks/usePracticePullRequests';
+import { GithubTermHint } from '../practice/GithubTermHint';
 import { RepositoryDetailPanel } from './RepositoryDetailPanel';
 import { RepositoryList } from './RepositoryList';
 import {
@@ -121,7 +122,7 @@ export function RepositoryHome({
                   disabled={isLoading}
                   className={`inline-flex items-center justify-center rounded-lg bg-[var(--accent-green)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse shadow-sm transition-colors motion-reduce:transition-none hover:bg-[var(--accent-green-strong)] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
                 >
-                  {isLoading ? '読み込み中...' : '更新'}
+                  {isLoading ? '読み込み中…' : '更新'}
                 </button>
               )}
               {onOpenAdvancedFeatures && (
@@ -156,6 +157,8 @@ export function RepositoryHome({
                 </svg>
                 <input
                   type="search"
+                  name="repository-search"
+                  autoComplete="off"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="名前、説明、言語、トピックで検索"
@@ -168,6 +171,7 @@ export function RepositoryHome({
               <span className="sr-only">並び替え</span>
               <select
                 value={sortOrder}
+                name="repository-sort"
                 onChange={(event) => setSortOrder(event.target.value as SortOrder)}
                 className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-secondary px-inset-md py-inset-sm text-body text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
               >
@@ -192,6 +196,8 @@ export function RepositoryHome({
             <span>{REPOSITORY_HOME_COLUMN_TITLES.Archived}: {categoryCounts.Archived}</span>
           </div>
         </header>
+
+        <GithubTermHint terms={['repository', 'issue', 'pullRequest']} />
 
         <RepositoryList
           repos={visibleRepos}

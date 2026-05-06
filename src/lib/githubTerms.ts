@@ -1,4 +1,4 @@
-export type GitHubTermKey = 'issue' | 'pullRequest' | 'branch' | 'merge';
+export type GitHubTermKey = 'repository' | 'issue' | 'pullRequest' | 'branch' | 'merge';
 
 export interface GitHubTerm {
   key: GitHubTermKey;
@@ -7,9 +7,15 @@ export interface GitHubTerm {
   description: string;
 }
 
-export const GITHUB_TERM_KEYS = ['issue', 'pullRequest', 'branch', 'merge'] as const satisfies readonly GitHubTermKey[];
+export const GITHUB_TERM_KEYS = ['repository', 'issue', 'pullRequest', 'branch', 'merge'] as const satisfies readonly GitHubTermKey[];
 
 const GITHUB_TERMS: Record<GitHubTermKey, GitHubTerm> = {
+  repository: {
+    key: 'repository',
+    label: 'Repository',
+    beginnerLabel: 'プロジェクトの保管場所',
+    description: 'コード、メモ、履歴などをひとまとめに置いておくプロジェクトの入れ物です。',
+  },
   issue: {
     key: 'issue',
     label: 'Issue',

@@ -35,4 +35,14 @@ describe('TabNavigation', () => {
 
     expect(onTabChange).toHaveBeenCalledWith('advanced');
   });
+
+  it('supports arrow-key navigation inside the tablist', () => {
+    const onTabChange = vi.fn();
+
+    render(<TabNavigation activeTab="board" onTabChange={onTabChange} />);
+
+    fireEvent.keyDown(screen.getByRole('tab', { name: /リポジトリ/ }), { key: 'ArrowRight' });
+
+    expect(onTabChange).toHaveBeenCalledWith('practice');
+  });
 });

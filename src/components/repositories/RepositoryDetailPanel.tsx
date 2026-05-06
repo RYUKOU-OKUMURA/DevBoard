@@ -316,6 +316,8 @@ export function RepositoryDetailPanel({
                 <span className="text-caption font-semibold text-[var(--text-muted)]">自分の状態</span>
                 <select
                   value={status}
+                  name="repository-user-status"
+                  autoComplete="off"
                   onChange={(event) =>
                     onUserMetaChange(repo.id, { status: event.target.value as RepoUserStatus })
                   }
@@ -333,6 +335,8 @@ export function RepositoryDetailPanel({
                 <span className="text-caption font-semibold text-[var(--text-muted)]">このリポジトリの目的</span>
                 <input
                   type="text"
+                  name="repository-purpose"
+                  autoComplete="off"
                   value={purpose}
                   onChange={(event) => onUserMetaChange(repo.id, { purpose: event.target.value })}
                   placeholder="例: ポートフォリオ用に公開できる状態へ整える"
@@ -344,6 +348,8 @@ export function RepositoryDetailPanel({
                 <span className="text-caption font-semibold text-[var(--text-muted)]">次にやること</span>
                 <input
                   type="text"
+                  name="repository-next-action"
+                  autoComplete="off"
                   value={nextAction}
                   onChange={(event) => onUserMetaChange(repo.id, { nextAction: event.target.value })}
                   placeholder="例: READMEに使い方を3行足す"
@@ -354,6 +360,8 @@ export function RepositoryDetailPanel({
               <label className="grid gap-stack-xs">
                 <span className="text-caption font-semibold text-[var(--text-muted)]">メモ</span>
                 <textarea
+                  name="repository-note"
+                  autoComplete="off"
                   value={note}
                   onChange={(event) => onUserMetaChange(repo.id, { note: event.target.value })}
                   rows={4}
@@ -484,7 +492,7 @@ export function RepositoryDetailPanel({
                             disabled={!onCreateGitHubIssueFromDraft || publishingPracticeIssueDraftId === draft.id}
                             className={`inline-flex items-center justify-center rounded-lg bg-[var(--accent-green)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse shadow-sm transition-colors motion-reduce:transition-none hover:bg-[var(--accent-green-strong)] disabled:cursor-not-allowed disabled:opacity-60 ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
                           >
-                            {publishingPracticeIssueDraftId === draft.id ? '作成中...' : 'GitHub Issueを作成'}
+                            {publishingPracticeIssueDraftId === draft.id ? '作成中…' : 'GitHub Issueを作成'}
                           </button>
                         )}
                       </div>
