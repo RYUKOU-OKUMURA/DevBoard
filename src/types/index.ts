@@ -81,6 +81,8 @@ export interface ToastMessage {
   duration?: number;
 }
 
+export * from './repo';
+
 // Export ToDo types
 export * from './todo';
 

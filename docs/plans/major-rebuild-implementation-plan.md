@@ -68,71 +68,71 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] ログイン後にリポジトリ画面が表示される。
 - [x] `npm run check:ci`
 
-### フェーズ 2: RepositoryHomeの1カラム一覧追加
+### フェーズ 2: RepositoryHomeの1カラム一覧追加 ✅ 完了
 
 目的: カンバン操作中心の画面から、リポジトリを読む・探す画面へ寄せる。
 
-- [ ] `src/components/repositories/RepositoryHome.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryList.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryCard.tsx` を追加する。
-- [ ] 既存のRepo型とリポジトリ取得フックを再利用して一覧表示する。
-- [ ] 既存の検索ヘルパーを再利用する。
-- [ ] 既存の並び替えロジックを再利用する。
-- [ ] 自動状態を日本語表示に変換する。
-- [ ] 一覧カードにリポジトリ名、説明、言語、最終更新、自動状態、公開/非公開を表示する。
-- [ ] カード全体のクリックでGitHubへ遷移しないようにする。
-- [ ] 既存の `RepoBoard` は削除せず、後続で奥に置ける状態に保つ。
+- [x] `src/components/repositories/RepositoryHome.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryList.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryCard.tsx` を追加する。
+- [x] 既存のRepo型とリポジトリ取得フックを再利用して一覧表示する。
+- [x] 既存の検索ヘルパーを再利用する。
+- [x] 既存の並び替えロジックを再利用する。
+- [x] 自動状態を日本語表示に変換する。
+- [x] 一覧カードにリポジトリ名、説明、言語、最終更新、自動状態、公開/非公開を表示する。
+- [x] カード全体のクリックでGitHubへ遷移しないようにする。
+- [x] 既存の `RepoBoard` は削除せず、後続で奥に置ける状態に保つ。
 
 検証:
 
-- [ ] リポジトリが1カラムで読める。
-- [ ] 検索が `nameWithOwner`, `description`, `primaryLanguage`, `topics` に効く。
-- [ ] 並び替えが最終更新日降順、名前昇順で動く。
-- [ ] カードクリックでGitHubへ勝手に遷移しない。
-- [ ] `npm run check:ci`
+- [x] リポジトリが1カラムで読める。
+- [x] 検索が `nameWithOwner`, `description`, `primaryLanguage`, `topics` に効く。
+- [x] 並び替えが最終更新日降順、名前昇順で動く。
+- [x] カードクリックでGitHubへ勝手に遷移しない。
+- [x] `npm run check:ci`
 
-### フェーズ 3: リポジトリ詳細パネル追加
+### フェーズ 3: リポジトリ詳細パネル追加 ✅ 完了
 
 目的: GitHubを開かなくても、リポジトリの概要と次の行動を理解できるようにする。
 
-- [ ] `src/components/repositories/RepositoryDetailPanel.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryHealthBadge.tsx` を追加する。
-- [ ] `src/components/repositories/RepositoryStatusBadge.tsx` を追加する。
-- [ ] カードクリックで詳細パネルを開く。
-- [ ] 詳細パネルにリポジトリ名、説明、URL、最終更新日、言語、Public / Private、Archivedを表示する。
-- [ ] GitHub外部遷移は「GitHubで開く」ボタンに限定する。
-- [ ] 詳細パネルを閉じる操作をマウスとキーボードの両方で用意する。
-- [ ] `aria-label`, `role="dialog"`, フォーカス管理など最低限のアクセシビリティを整える。
-- [ ] 詳細パネル内に、後続のメモ保存とIssue練習導線を置ける領域を確保する。
+- [x] `src/components/repositories/RepositoryDetailPanel.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryHealthBadge.tsx` を追加する。
+- [x] `src/components/repositories/RepositoryStatusBadge.tsx` を追加する。
+- [x] カードクリックで詳細パネルを開く。
+- [x] 詳細パネルにリポジトリ名、説明、URL、最終更新日、言語、Public / Private、Archivedを表示する。
+- [x] GitHub外部遷移は「GitHubで開く」ボタンに限定する。
+- [x] 詳細パネルを閉じる操作をマウスとキーボードの両方で用意する。
+- [x] `aria-label`, `role="dialog"`, フォーカス管理など最低限のアクセシビリティを整える。
+- [x] 詳細パネル内に、後続のメモ保存とIssue練習導線を置ける領域を確保する。
 
 検証:
 
-- [ ] カードクリックで詳細パネルが開く。
-- [ ] Enter / Space操作でも詳細を開ける。
-- [ ] Escapeまたは閉じるボタンで詳細を閉じられる。
-- [ ] GitHubは明示ボタンからのみ開く。
-- [ ] `npm run check:ci`
+- [x] カードクリックで詳細パネルが開く。
+- [x] Enter / Space操作でも詳細を開ける。
+- [x] Escapeまたは閉じるボタンで詳細を閉じられる。
+- [x] GitHubは明示ボタンからのみ開く。
+- [x] `npm run check:ci`
 
-### フェーズ 4: RepoUserMeta保存
+### フェーズ 4: RepoUserMeta保存 ✅ 完了
 
 目的: リポジトリごとに「目的」「次にやること」「メモ」「自分の状態」を保存できるようにする。
 
-- [ ] `src/types/repo.ts` に `RepoUserStatus`, `RepoAutoHealth`, `RepoUserMeta` を定義する。
-- [ ] `src/storage/repositoryMetaStorage.ts` を追加する。
-- [ ] `src/hooks/useRepositoryMeta.ts` を追加する。
-- [ ] 保存対象を `repoId`, `status`, `purpose`, `nextAction`, `note`, `createdAt`, `updatedAt` に絞る。
-- [ ] 保存keyをアカウント単位にスコープする方針を実装する。
-- [ ] localStorageの不正データを安全に無視・復旧できるようにする。
-- [ ] 詳細パネルで `purpose`, `nextAction`, `note`, `status` を編集できるようにする。
-- [ ] 一覧カードにも `nextAction` と `status` を控えめに表示する。
-- [ ] `difficulty`, `confidence`, `lastReviewedAt` は後続拡張として実装しない。
+- [x] `src/types/repo.ts` に `RepoUserStatus`, `RepoAutoHealth`, `RepoUserMeta` を定義する。
+- [x] `src/storage/repositoryMetaStorage.ts` を追加する。
+- [x] `src/hooks/useRepositoryMeta.ts` を追加する。
+- [x] 保存対象を `repoId`, `status`, `purpose`, `nextAction`, `note`, `createdAt`, `updatedAt` に絞る。
+- [x] 保存keyをアカウント単位にスコープする方針を実装する。
+- [x] localStorageの不正データを安全に無視・復旧できるようにする。
+- [x] 詳細パネルで `purpose`, `nextAction`, `note`, `status` を編集できるようにする。
+- [x] 一覧カードにも `nextAction` と `status` を控えめに表示する。
+- [x] `difficulty`, `confidence`, `lastReviewedAt` は後続拡張として実装しない。
 
 検証:
 
-- [ ] リロード後もリポジトリごとのメモが残る。
-- [ ] 別アカウント利用時の保存衝突方針が明確になっている。
-- [ ] localStorageに不正JSONが入っても画面がクラッシュしない。
-- [ ] `npm run check:ci`
+- [x] リロード後もリポジトリごとのメモが残る。
+- [x] 別アカウント利用時の保存衝突方針が明確になっている。
+- [x] localStorageに不正JSONが入っても画面がクラッシュしない。
+- [x] `npm run check:ci`
 
 ### フェーズ 5: Issue練習ドラフト最小実装
 

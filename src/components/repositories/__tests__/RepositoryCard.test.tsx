@@ -1,0 +1,176 @@
+// @vitest-environment jsdom
+
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Repo, RepoUserMeta } from '../../../types';
+import { RepositoryCard } from '../RepositoryCard';
+import { RepositoryDetailPanel } from '../RepositoryDetailPanel';
+
+function createRepo(): Repo {
+  return {
+    id: 'repo-1',
+    nameWithOwner: 'alice/frontend-app',
+    htmlUrl: 'https://github.com/alice/frontend-app',
+    pushedAt: '2025-01-01T00:00:00.000Z',
+    isArchived: false,
+    isPrivate: false,
+    description: 'React dashboard',
+    primaryLanguage: 'TypeScript',
+    topics: ['react'],
+  };
+}
+
+function createMeta(): RepoUserMeta {
+  return {
+    repoId: 'repo-1',
+    status: 'in_progress',
+    purpose: '公開前の整理',
+    nextAction: 'READMEに使い方を足す',
+    note: 'Issue練習で分解する',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+function renderDetailPanel(props: Partial<ComponentProps<typeof RepositoryDetailPanel>> = {}) {
+  return render(
+    <RepositoryDetailPanel
+      repo={createRepo()}
+      autoHealth="Active"
+      userMeta={null}
+      saveError={null}
+      onUserMetaChange={() => undefined}
+      onClose={() => undefined}
+      {...props}
+    />
+  );
+}
+
+describe('RepositoryCard', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('limits GitHub navigation to the explicit link', () => {
+    const markup = renderToStaticMarkup(
+      <RepositoryCard
+        repo={createRepo()}
+        autoHealth="Active"
+        userMeta={null}
+        onOpenDetail={() => undefined}
+      />
+    );
+
+    expect(markup).toContain('<article');
+    expect(markup).toContain('GitHubで開く');
+    expect(markup).toContain('href="https://github.com/alice/frontend-app"');
+    expect(markup).not.toContain('role="button"');
+  });
+
+  it('opens details from the card detail button', () => {
+    const repo = createRepo();
+    const onOpenDetail = vi.fn();
+
+    render(<RepositoryCard repo={repo} autoHealth="Active" userMeta={null} onOpenDetail={onOpenDetail} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'alice/frontend-app の詳細を開く' }));
+
+    expect(onOpenDetail).toHaveBeenCalledWith(repo);
+  });
+
+  it('does not open details from the explicit GitHub link', () => {
+    const onOpenDetail = vi.fn();
+
+    render(<RepositoryCard repo={createRepo()} autoHealth="Active" userMeta={null} onOpenDetail={onOpenDetail} />);
+
+    fireEvent.click(screen.getByRole('link', { name: 'alice/frontend-app をGitHubで開く' }));
+
+    expect(onOpenDetail).not.toHaveBeenCalled();
+  });
+
+  it('shows saved user status and next action quietly', () => {
+    render(
+      <RepositoryCard
+        repo={createRepo()}
+        autoHealth="Active"
+        userMeta={createMeta()}
+        onOpenDetail={() => undefined}
+      />
+    );
+
+    expect(screen.getByText('自分の状態: 進行中')).toBeTruthy();
+    expect(screen.getByText('次にやること: READMEに使い方を足す')).toBeTruthy();
+  });
+});
+
+describe('RepositoryDetailPanel', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('shows repository details and the explicit GitHub actions', () => {
+    renderDetailPanel();
+
+    expect(screen.getByRole('dialog', { name: /frontend-app/ })).toBeTruthy();
+    expect(screen.getByText('React dashboard')).toBeTruthy();
+    expect(screen.getByText('https://github.com/alice/frontend-app')).toBeTruthy();
+    expect(screen.getByText('TypeScript')).toBeTruthy();
+    expect(screen.getAllByText('Public / 公開').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'alice/frontend-app をGitHubで開く' })).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'https://github.com/alice/frontend-app' })).toBeNull();
+  });
+
+  it('shows private and archived states', () => {
+    renderDetailPanel({
+      repo: { ...createRepo(), isArchived: true, isPrivate: true },
+      autoHealth: 'Archived',
+    });
+
+    expect(screen.getAllByText('Private / 非公開').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Archived / アーカイブ').length).toBeGreaterThan(0);
+    expect(screen.getByText('Archived / アーカイブ済み')).toBeTruthy();
+  });
+
+  it('closes with the close button and Escape key', () => {
+    const onClose = vi.fn();
+    renderDetailPanel({ onClose });
+
+    fireEvent.click(screen.getByRole('button', { name: 'リポジトリ詳細を閉じる' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows editable user metadata fields', () => {
+    renderDetailPanel({ userMeta: createMeta() });
+
+    expect((screen.getByLabelText('自分の状態') as HTMLSelectElement).value).toBe('in_progress');
+    expect((screen.getByLabelText('このリポジトリの目的') as HTMLInputElement).value).toBe('公開前の整理');
+    expect((screen.getByLabelText('次にやること') as HTMLInputElement).value).toBe('READMEに使い方を足す');
+    expect((screen.getByLabelText('メモ') as HTMLTextAreaElement).value).toBe('Issue練習で分解する');
+  });
+
+  it('shows a save error when metadata cannot be persisted', () => {
+    renderDetailPanel({ saveError: '自分用メモを保存できませんでした。' });
+
+    expect(screen.getByText('保存できていません')).toBeTruthy();
+    expect(screen.getByText('自分用メモを保存できませんでした。')).toBeTruthy();
+  });
+
+  it('notifies parent when user metadata changes', () => {
+    const onUserMetaChange = vi.fn();
+    renderDetailPanel({ userMeta: createMeta(), onUserMetaChange });
+
+    fireEvent.change(screen.getByLabelText('自分の状態'), { target: { value: 'paused' } });
+    fireEvent.change(screen.getByLabelText('このリポジトリの目的'), { target: { value: '練習用に整理する' } });
+    fireEvent.change(screen.getByLabelText('次にやること'), { target: { value: '小さなTODOに分ける' } });
+    fireEvent.change(screen.getByLabelText('メモ'), { target: { value: '焦らず進める' } });
+
+    expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { status: 'paused' });
+    expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { purpose: '練習用に整理する' });
+    expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { nextAction: '小さなTODOに分ける' });
+    expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { note: '焦らず進める' });
+  });
+});

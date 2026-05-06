@@ -17,6 +17,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { buildErrorToast } from './utils/errorHandling';
 
 const TabNavigation = lazy(() => import('./components/TabNavigation').then((m) => ({ default: m.TabNavigation })));
+const RepositoryHome = lazy(() => import('./components/repositories/RepositoryHome').then((m) => ({ default: m.RepositoryHome })));
 const RepoBoard = lazy(() => import('./components/RepoBoard').then((m) => ({ default: m.RepoBoard })));
 const ManualRepoBoard = lazy(() => import('./components/ManualRepoBoard').then((m) => ({ default: m.ManualRepoBoard })));
 const ActivityTab = lazy(() => import('./components/ActivityTab').then((m) => ({ default: m.ActivityTab })));
@@ -117,6 +118,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [repositoryView, setRepositoryView] = useState<'home' | 'legacy'>('home');
 
   const {
     repos,
@@ -228,6 +230,43 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const handleSidebarToggle = useCallback(() => {
     setIsSidebarCollapsed((prev) => !prev);
   }, []);
+
+  const repositoryPanel = repositoryView === 'legacy' ? (
+    <div className="flex h-full flex-col bg-surface-app">
+      <div className="flex shrink-0 flex-col gap-stack-sm border-b border-[var(--border-subtle)] bg-surface-primary px-inset-lg py-inset-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-caption font-semibold text-[var(--text-muted)]">高度な整理</p>
+          <h2 className="text-title-3 font-semibold text-[var(--text-primary)]">旧カンバンと保存ビュー</h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setRepositoryView('home')}
+          className="inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] shadow-sm transition-colors motion-reduce:transition-none hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]"
+        >
+          1カラム一覧へ戻る
+        </button>
+      </div>
+      <div className="min-h-0 flex-1">
+        <RepoBoard
+          repos={repos}
+          onRefresh={handleRefresh}
+          onStatsUpdate={memoizedHandleStatsUpdate}
+          lastUpdateTime={lastUpdateTime}
+          isLoading={isRepoLoading}
+        />
+      </div>
+    </div>
+  ) : (
+    <RepositoryHome
+      accountId={user.userId || user.username}
+      repos={repos}
+      onRefresh={handleRefresh}
+      onStatsUpdate={memoizedHandleStatsUpdate}
+      lastUpdateTime={lastUpdateTime}
+      isLoading={isRepoLoading}
+      onOpenLegacyBoard={() => setRepositoryView('legacy')}
+    />
+  );
 
   return (
     <div className="App h-screen bg-surface-app flex flex-col transition-colors overflow-hidden">
@@ -395,13 +434,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                 <Suspense fallback={<LoadingScreen />}>
                   <SplitPanel
                     topPanel={
-                      <RepoBoard
-                        repos={repos}
-                        onRefresh={handleRefresh}
-                        onStatsUpdate={memoizedHandleStatsUpdate}
-                        lastUpdateTime={lastUpdateTime}
-                        isLoading={isRepoLoading}
-                      />
+                      repositoryPanel
                     }
                     bottomPanel={<Workspace />}
                     initialBottomHeight={panelHeight}
