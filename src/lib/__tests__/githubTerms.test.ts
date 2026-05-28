@@ -3,18 +3,32 @@ import { GITHUB_TERM_KEYS, getGitHubTerm, getGitHubTerms } from '../githubTerms'
 
 describe('githubTerms', () => {
   it('returns the phase 6 GitHub terms in a stable order', () => {
-    expect(GITHUB_TERM_KEYS).toEqual(['issue', 'pullRequest', 'branch', 'merge']);
-    expect(getGitHubTerms().map((term) => term.label)).toEqual(['Issue', 'Pull Request', 'Branch', 'Merge']);
+    expect(GITHUB_TERM_KEYS).toEqual(['repository', 'issue', 'pullRequest', 'branch', 'merge']);
+    expect(getGitHubTerms().map((term) => term.label)).toEqual([
+      'Repository',
+      'Issue',
+      'Pull Request',
+      'Branch',
+      'Merge',
+    ]);
   });
 
   it('pairs each GitHub term with beginner friendly Japanese copy', () => {
     const terms = getGitHubTerms();
 
-    expect(terms).toHaveLength(4);
+    expect(terms).toHaveLength(5);
     terms.forEach((term) => {
       expect(term.beginnerLabel).toMatch(/[ぁ-んァ-ン一-龥]/);
       expect(term.description).toMatch(/[ぁ-んァ-ン一-龥]/);
       expect(term.description.length).toBeLessThanOrEqual(50);
+    });
+  });
+
+  it('explains Repository as a project container', () => {
+    expect(getGitHubTerm('repository')).toMatchObject({
+      label: 'Repository',
+      beginnerLabel: 'プロジェクトの保管場所',
+      description: expect.stringContaining('プロジェクト'),
     });
   });
 

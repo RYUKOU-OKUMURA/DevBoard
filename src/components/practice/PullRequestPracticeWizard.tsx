@@ -108,6 +108,8 @@ export function PullRequestPracticeWizard({
           <span className="text-caption font-semibold text-[var(--text-muted)]">PRタイトル</span>
           <input
             type="text"
+            name="practice-pr-title"
+            autoComplete="off"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="例: READMEに起動手順を追加する"
@@ -118,6 +120,8 @@ export function PullRequestPracticeWizard({
         <label className="grid gap-stack-xs">
           <span className="text-caption font-semibold text-[var(--text-muted)]">関連するやることカード</span>
           <select
+            name="practice-pr-related-issue"
+            autoComplete="off"
             value={relatedIssueDraftId}
             onChange={(event) => setRelatedIssueDraftId(event.target.value)}
             className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
@@ -134,6 +138,8 @@ export function PullRequestPracticeWizard({
         <label className="grid gap-stack-xs">
           <span className="text-caption font-semibold text-[var(--text-muted)]">変更したこと</span>
           <textarea
+            name="practice-pr-changed-items"
+            autoComplete="off"
             value={changedItemsText}
             onChange={(event) => setChangedItemsText(event.target.value)}
             rows={4}
@@ -145,6 +151,8 @@ export function PullRequestPracticeWizard({
         <label className="grid gap-stack-xs">
           <span className="text-caption font-semibold text-[var(--text-muted)]">見てほしいこと</span>
           <textarea
+            name="practice-pr-review-points"
+            autoComplete="off"
             value={reviewPointsText}
             onChange={(event) => setReviewPointsText(event.target.value)}
             rows={4}

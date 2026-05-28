@@ -104,7 +104,7 @@ export default function LandingPage({ onContinue }: LandingPageProps) {
             </div>
             <div className="space-y-4">
               <h1
-                className="text-display-lg font-bold mb-stack-md motion-reduce:animate-none"
+                className="mb-stack-md text-title-2 font-bold motion-reduce:animate-none sm:text-display lg:text-display-lg"
                 style={{
                   background: 'var(--brand-gradient)',
                   WebkitBackgroundClip: 'text',

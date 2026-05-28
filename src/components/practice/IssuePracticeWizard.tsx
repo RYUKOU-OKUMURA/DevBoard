@@ -82,6 +82,8 @@ export function IssuePracticeWizard({
           <span className="text-caption font-semibold text-[var(--text-muted)]">やりたいこと</span>
           <input
             type="text"
+            name="practice-issue-title"
+            autoComplete="off"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="例: トップページのボタンを見やすくする"
@@ -92,6 +94,8 @@ export function IssuePracticeWizard({
         <label className="grid gap-stack-xs">
           <span className="text-caption font-semibold text-[var(--text-muted)]">なぜやる？</span>
           <textarea
+            name="practice-issue-reason"
+            autoComplete="off"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
@@ -103,6 +107,8 @@ export function IssuePracticeWizard({
         <label className="grid gap-stack-xs">
           <span className="text-caption font-semibold text-[var(--text-muted)]">終わりの条件</span>
           <textarea
+            name="practice-issue-done-criteria"
+            autoComplete="off"
             value={doneCriteriaText}
             onChange={(event) => setDoneCriteriaText(event.target.value)}
             rows={4}
