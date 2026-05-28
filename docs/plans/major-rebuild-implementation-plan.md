@@ -134,30 +134,30 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] localStorageに不正JSONが入っても画面がクラッシュしない。
 - [x] `npm run check:ci`
 
-### フェーズ 5: Issue練習ドラフト最小実装
+### フェーズ 5: Issue練習ドラフト最小実装 ✅ 完了
 
 目的: Issueを知らない人でも「やることカード」をIssue風Markdownにできるようにする。
 
-- [ ] `src/types/practice.ts` に `PracticeSyncStatus` と `PracticeIssueDraft` を定義する。
-- [ ] `src/storage/practiceStorage.ts` を追加する。
-- [ ] `src/hooks/usePracticeIssues.ts` を追加する。
-- [ ] `src/lib/practiceTemplates.ts` を追加し、Issue風Markdown生成を切り出す。
-- [ ] `src/components/practice/IssuePracticeWizard.tsx` を追加する。
-- [ ] 入力項目は `title`, `reason`, `doneCriteria` に絞る。
-- [ ] 完了条件を複数行またはリストとして入力できるようにする。
-- [ ] 生成Markdownをプレビュー表示する。
-- [ ] `syncStatus` の初期値を `local_only` にする。
-- [ ] GitHubには作成せず、DevBoard内だけに保存する。
-- [ ] リポジトリ詳細からIssue練習を開始できる導線を追加する。
-- [ ] 保存済みドラフトを対象リポジトリの詳細に表示する。
+- [x] `src/types/practice.ts` に `PracticeSyncStatus` と `PracticeIssueDraft` を定義する。
+- [x] `src/storage/practiceStorage.ts` を追加する。
+- [x] `src/hooks/usePracticeIssues.ts` を追加する。
+- [x] `src/lib/practiceTemplates.ts` を追加し、Issue風Markdown生成を切り出す。
+- [x] `src/components/practice/IssuePracticeWizard.tsx` を追加する。
+- [x] 入力項目は `title`, `reason`, `doneCriteria` に絞る。
+- [x] 完了条件を複数行またはリストとして入力できるようにする。
+- [x] 生成Markdownをプレビュー表示する。
+- [x] `syncStatus` の初期値を `local_only` にする。
+- [x] GitHubには作成せず、DevBoard内だけに保存する。
+- [x] リポジトリ詳細からIssue練習を開始できる導線を追加する。
+- [x] 保存済みドラフトを対象リポジトリの詳細に表示する。
 
 検証:
 
-- [ ] 「Issue」という言葉を知らなくても入力できるコピーになっている。
-- [ ] 保存後、対象リポジトリの詳細にドラフトが表示される。
-- [ ] 生成Markdownに「やりたいこと」「理由」「完了条件」が含まれる。
-- [ ] GitHubにデータが作成されない。
-- [ ] `npm run check:ci`
+- [x] 「Issue」という言葉を知らなくても入力できるコピーになっている。
+- [x] 保存後、対象リポジトリの詳細にドラフトが表示される。
+- [x] 生成Markdownに「やりたいこと」「理由」「完了条件」が含まれる。
+- [x] GitHubにデータが作成されない。
+- [x] `npm run check:ci`
 
 ### フェーズ 6: PracticeHome追加
 

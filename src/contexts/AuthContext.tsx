@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check authentication status on mount
   useEffect(() => {
+    isMountedRef.current = true;
     checkAuth();
     return () => {
       isMountedRef.current = false;
