@@ -2,16 +2,16 @@ import { motion } from 'framer-motion';
 import React from 'react';
 import { focusRing } from '../lib/focusRing';
 
-export type TabType = 'board' | 'activity' | 'manual';
+export type TabType = 'board' | 'practice' | 'advanced' | 'activity' | 'manual';
+type PrimaryTabType = 'board' | 'practice' | 'advanced';
 
 interface TabNavigationProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
-  activityCount?: number;
-  manualRepoCount?: number;
+  advancedCount?: number;
 }
 
-const ICONS: Record<TabType, JSX.Element> = {
+const ICONS: Record<PrimaryTabType, JSX.Element> = {
   board: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" />
@@ -20,17 +20,16 @@ const ICONS: Record<TabType, JSX.Element> = {
       <rect x="3" y="14" width="7" height="7" />
     </svg>
   ),
-  activity: (
+  practice: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 12 8 7 13 12 21 4" />
-      <path d="M21 4v6" />
-      <rect x="3" y="14" width="6" height="6" rx="1" />
-      <rect x="12" y="14" width="9" height="6" rx="1" />
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
     </svg>
   ),
-  manual: (
+  advanced: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5v14M5 12h14" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 008.92 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.31.22.65.22 1h.38a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
     </svg>
   ),
 };
@@ -42,8 +41,7 @@ const BADGE_STYLE = {
 export const TabNavigation: React.FC<TabNavigationProps> = ({
   activeTab,
   onTabChange,
-  activityCount = 0,
-  manualRepoCount = 0,
+  advancedCount = 0,
 }) => {
   const handleTabChange = (tab: TabType) => {
     if (tab !== activeTab) {
@@ -51,10 +49,10 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     }
   };
 
-  const tabs: Array<{ id: TabType; label: string; badge?: number }> = [
+  const tabs: Array<{ id: PrimaryTabType; label: string; badge?: number }> = [
     { id: 'board', label: 'リポジトリ' },
-    { id: 'activity', label: '練習・記録', badge: activityCount },
-    { id: 'manual', label: '手動追加', badge: manualRepoCount },
+    { id: 'practice', label: '練習' },
+    { id: 'advanced', label: '高度な機能', badge: advancedCount },
   ];
 
   return (
@@ -64,7 +62,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       aria-label="ビュー切り替え"
     >
       {tabs.map((tab, index) => {
-        const isActive = activeTab === tab.id;
+        const isActive = activeTab === tab.id || (tab.id === 'advanced' && (activeTab === 'activity' || activeTab === 'manual'));
         const isSecondary = index > 0;
         return (
           <motion.button

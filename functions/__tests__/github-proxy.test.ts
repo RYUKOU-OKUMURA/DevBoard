@@ -172,4 +172,40 @@ describe('GitHub proxy allowlist', () => {
     expect((init as RequestInit).method).toBe('GET');
     expect((init as RequestInit).body).toBeUndefined();
   });
+
+  it('allows whitelisted REST POST requests to create GitHub issues', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(
+      JSON.stringify({ number: 42, html_url: 'https://github.com/octocat/hello-world/issues/42' }),
+      {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    ));
+
+    const request = makeRequest(
+      'https://devboard.test/api/github/repos/octocat/hello-world/issues',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'READMEを書く', body: '## やりたいこと' }),
+      }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path: ['repos', 'octocat', 'hello-world', 'issues'] },
+    } as any);
+
+    expect(response.status).toBe(201);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.github.com/repos/octocat/hello-world/issues');
+    expect((init as RequestInit).method).toBe('POST');
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+      title: 'READMEを書く',
+      body: '## やりたいこと',
+    });
+  });
 });

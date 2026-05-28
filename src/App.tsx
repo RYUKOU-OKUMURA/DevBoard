@@ -18,6 +18,8 @@ import { buildErrorToast } from './utils/errorHandling';
 
 const TabNavigation = lazy(() => import('./components/TabNavigation').then((m) => ({ default: m.TabNavigation })));
 const RepositoryHome = lazy(() => import('./components/repositories/RepositoryHome').then((m) => ({ default: m.RepositoryHome })));
+const PracticeHome = lazy(() => import('./components/practice/PracticeHome').then((m) => ({ default: m.PracticeHome })));
+const AdvancedHome = lazy(() => import('./components/advanced/AdvancedHome').then((m) => ({ default: m.AdvancedHome })));
 const RepoBoard = lazy(() => import('./components/RepoBoard').then((m) => ({ default: m.RepoBoard })));
 const ManualRepoBoard = lazy(() => import('./components/ManualRepoBoard').then((m) => ({ default: m.ManualRepoBoard })));
 const ActivityTab = lazy(() => import('./components/ActivityTab').then((m) => ({ default: m.ActivityTab })));
@@ -80,9 +82,9 @@ function TabMigrationDialog({ open, legacyTab, onSelect }: TabMigrationDialogPro
           <button
             type="button"
             className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border-strong)] bg-surface-secondary text-[var(--text-primary)] font-semibold shadow-sm hover:bg-surface-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2"
-            onClick={() => onSelect('activity')}
+            onClick={() => onSelect('advanced')}
           >
-            <span>練習・記録を見る</span>
+            <span>高度な機能を見る</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 12 8 7 13 12 21 4" />
               <path d="M21 4v6" />
@@ -231,7 +233,17 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     setIsSidebarCollapsed((prev) => !prev);
   }, []);
 
-  const repositoryPanel = repositoryView === 'legacy' ? (
+  const handleOpenLegacyBoard = useCallback(() => {
+    setRepositoryView('legacy');
+    setActiveTab('board');
+  }, [setActiveTab]);
+
+  const handleOpenRepositoryHome = useCallback(() => {
+    setRepositoryView('home');
+    setActiveTab('board');
+  }, [setActiveTab]);
+
+  const legacyRepositoryPanel = (
     <div className="flex h-full flex-col bg-surface-app">
       <div className="flex shrink-0 flex-col gap-stack-sm border-b border-[var(--border-subtle)] bg-surface-primary px-inset-lg py-inset-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -240,7 +252,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         </div>
         <button
           type="button"
-          onClick={() => setRepositoryView('home')}
+          onClick={handleOpenRepositoryHome}
           className="inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] shadow-sm transition-colors motion-reduce:transition-none hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]"
         >
           1カラム一覧へ戻る
@@ -256,7 +268,9 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         />
       </div>
     </div>
-  ) : (
+  );
+
+  const repositoryPanel = repositoryView === 'legacy' ? legacyRepositoryPanel : (
     <RepositoryHome
       accountId={user.userId || user.username}
       repos={repos}
@@ -264,7 +278,8 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
       onStatsUpdate={memoizedHandleStatsUpdate}
       lastUpdateTime={lastUpdateTime}
       isLoading={isRepoLoading}
-      onOpenLegacyBoard={() => setRepositoryView('legacy')}
+      onOpenAdvancedFeatures={() => setActiveTab('advanced')}
+      onOpenPracticeHome={() => setActiveTab('practice')}
     />
   );
 
@@ -396,15 +411,14 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         <TabNavigation
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          activityCount={activityBadgeCount}
-          manualRepoCount={manualRepoCount}
+          advancedCount={activityBadgeCount + manualRepoCount}
         />
       </Suspense>
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Only show on board tab */}
-        {activeTab === 'board' && (
+        {/* Left Sidebar - Only show with the legacy advanced board */}
+        {activeTab === 'board' && repositoryView === 'legacy' && (
           <Suspense
             fallback={
               <div
@@ -432,24 +446,50 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
             {activeTab === 'board' && (
               <TagsProvider scope="kanban">
                 <Suspense fallback={<LoadingScreen />}>
-                  <SplitPanel
-                    topPanel={
-                      repositoryPanel
-                    }
-                    bottomPanel={<Workspace />}
-                    initialBottomHeight={panelHeight}
-                    minBottomHeight={200}
-                    maxBottomHeightPercent={80}
-                    isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
-                    onCollapseChange={(collapsed) => {
-                      if (collapsed) {
-                        toggleWorkspace();
-                      }
-                    }}
-                    onHeightChange={setPanelHeight}
-                  />
+                  {repositoryView === 'legacy' ? (
+                    <SplitPanel
+                      topPanel={repositoryPanel}
+                      bottomPanel={<Workspace />}
+                      initialBottomHeight={panelHeight}
+                      minBottomHeight={200}
+                      maxBottomHeightPercent={80}
+                      isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
+                      onCollapseChange={(collapsed) => {
+                        if (collapsed) {
+                          toggleWorkspace();
+                        }
+                      }}
+                      onHeightChange={setPanelHeight}
+                    />
+                  ) : (
+                    repositoryPanel
+                  )}
                 </Suspense>
               </TagsProvider>
+            )}
+          </div>
+
+          {/* Practice Tab */}
+          <div className={activeTab === 'practice' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'practice' && (
+              <Suspense fallback={<LoadingScreen />}>
+                <PracticeHome accountId={user.userId || user.username} repos={repos} />
+              </Suspense>
+            )}
+          </div>
+
+          {/* Advanced Tab */}
+          <div className={activeTab === 'advanced' ? 'h-full overflow-auto animate-slide-fade-in' : 'hidden'}>
+            {activeTab === 'advanced' && (
+              <Suspense fallback={<LoadingScreen />}>
+                <AdvancedHome
+                  activityCount={activityBadgeCount}
+                  manualRepoCount={manualRepoCount}
+                  onOpenActivity={() => setActiveTab('activity')}
+                  onOpenManualRepos={() => setActiveTab('manual')}
+                  onOpenLegacyBoard={handleOpenLegacyBoard}
+                />
+              </Suspense>
             )}
           </div>
 

@@ -7,6 +7,7 @@ import { useTagsContext } from '../../contexts/TagsContext';
 import { getStorageItem } from '../../utils/storage';
 import { useRepositoryMeta } from '../../hooks/useRepositoryMeta';
 import { usePracticeIssues } from '../../hooks/usePracticeIssues';
+import { usePracticePullRequests } from '../../hooks/usePracticePullRequests';
 import { RepositoryDetailPanel } from './RepositoryDetailPanel';
 import { RepositoryList } from './RepositoryList';
 import {
@@ -28,7 +29,8 @@ interface RepositoryHomeProps {
     columnTitles: Record<ColumnKey, string>
   ) => void;
   lastUpdateTime?: number | null;
-  onOpenLegacyBoard?: () => void;
+  onOpenAdvancedFeatures?: () => void;
+  onOpenPracticeHome?: () => void;
 }
 
 const SORT_OPTIONS: Array<{ value: SortOrder; label: string }> = [
@@ -44,15 +46,24 @@ export function RepositoryHome({
   onRefresh,
   onStatsUpdate,
   lastUpdateTime,
-  onOpenLegacyBoard,
+  onOpenAdvancedFeatures,
+  onOpenPracticeHome,
 }: RepositoryHomeProps) {
   const { getTagObjectsForRepo } = useTagsContext();
   const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
   const {
     createIssueDraft,
+    createGitHubIssueFromDraft,
     getDraftsForRepo,
+    publishError: practiceIssuePublishError,
+    publishingDraftId: publishingPracticeIssueDraftId,
     saveError: practiceIssueSaveError,
   } = usePracticeIssues(accountId);
+  const {
+    createPullRequestDraft,
+    getDraftsForRepo: getPullRequestDraftsForRepo,
+    saveError: practicePullRequestSaveError,
+  } = usePracticePullRequests(accountId);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('lastUpdated');
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
@@ -113,13 +124,13 @@ export function RepositoryHome({
                   {isLoading ? '読み込み中...' : '更新'}
                 </button>
               )}
-              {onOpenLegacyBoard && (
+              {onOpenAdvancedFeatures && (
                 <button
                   type="button"
-                  onClick={onOpenLegacyBoard}
+                  onClick={onOpenAdvancedFeatures}
                   className={`inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] shadow-sm transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
                 >
-                  詳しいカンバンを開く
+                  高度な機能を見る
                 </button>
               )}
             </div>
@@ -199,9 +210,18 @@ export function RepositoryHome({
           userMeta={getMeta(selectedRepo.id)}
           saveError={repositoryMetaSaveError}
           practiceIssueDrafts={getDraftsForRepo(selectedRepo.id)}
+          practicePullRequestDrafts={getPullRequestDraftsForRepo(selectedRepo.id)}
           practiceIssueSaveError={practiceIssueSaveError}
+          practiceIssuePublishError={practiceIssuePublishError}
+          publishingPracticeIssueDraftId={publishingPracticeIssueDraftId}
+          practicePullRequestSaveError={practicePullRequestSaveError}
           onCreatePracticeIssueDraft={(input) => createIssueDraft(selectedRepo.id, input)}
+          onCreateGitHubIssueFromDraft={(draftId) => createGitHubIssueFromDraft(selectedRepo.nameWithOwner, draftId)}
+          onCreatePracticePullRequestDraft={(input) =>
+            createPullRequestDraft(selectedRepo.id, input, getDraftsForRepo(selectedRepo.id))
+          }
           onUserMetaChange={updateMeta}
+          onOpenPracticeHome={onOpenPracticeHome}
           onClose={handleCloseDetail}
         />
       )}

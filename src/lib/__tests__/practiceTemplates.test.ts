@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { generatePracticeIssueMarkdown, parseDoneCriteria } from '../practiceTemplates';
+import {
+  generatePracticeIssueMarkdown,
+  generatePracticePullRequestMarkdown,
+  parseDoneCriteria,
+  parsePracticeList,
+} from '../practiceTemplates';
 
 describe('practiceTemplates', () => {
   it('parses multiline done criteria into a clean list', () => {
@@ -7,6 +12,14 @@ describe('practiceTemplates', () => {
       'ボタンの色が目立つ',
       '説明文が短い',
       'スマホ幅で崩れない',
+    ]);
+  });
+
+  it('parses pull request list fields into clean lists', () => {
+    expect(parsePracticeList('READMEを更新\n- 環境変数を追記\n\n* リンクを確認')).toEqual([
+      'READMEを更新',
+      '環境変数を追記',
+      'リンクを確認',
     ]);
   });
 
@@ -24,5 +37,23 @@ describe('practiceTemplates', () => {
     expect(markdown).toContain('## 完了条件');
     expect(markdown).toContain('- ボタンの色が目立つ');
     expect(markdown).toContain('- 説明文が短く分かりやすい');
+  });
+
+  it('generates pull request practice markdown without implying GitHub creation', () => {
+    const markdown = generatePracticePullRequestMarkdown({
+      title: 'READMEに起動手順を追加する',
+      changedItems: ['READMEに起動手順を追加した', '必要な環境変数を追記した'],
+      reviewPoints: ['手順が初めての人にも分かるか'],
+      relatedIssueTitle: 'READMEを書く',
+    });
+
+    expect(markdown).toContain('## 変更の確認リクエスト');
+    expect(markdown).toContain('READMEに起動手順を追加する');
+    expect(markdown).toContain('## 関連するやることカード');
+    expect(markdown).toContain('READMEを書く');
+    expect(markdown).toContain('## 変更したこと');
+    expect(markdown).toContain('- READMEに起動手順を追加した');
+    expect(markdown).toContain('## 見てほしいこと');
+    expect(markdown).toContain('- 手順が初めての人にも分かるか');
   });
 });
