@@ -6,6 +6,7 @@ interface RepositoryListProps {
   getAutoHealth: (repo: Repo) => ColumnKey;
   getUserMeta?: (repoId: string) => RepoUserMeta | null;
   onOpenDetail: (repo: Repo) => void;
+  onToggleTracked?: (repoId: string) => void;
   isLoading?: boolean;
   hasSearchQuery?: boolean;
 }
@@ -66,6 +67,7 @@ export function RepositoryList({
   getAutoHealth,
   getUserMeta,
   onOpenDetail,
+  onToggleTracked,
   isLoading = false,
   hasSearchQuery = false,
 }: RepositoryListProps) {
@@ -85,7 +87,9 @@ export function RepositoryList({
           repo={repo}
           autoHealth={getAutoHealth(repo)}
           userMeta={getUserMeta?.(repo.id)}
+          tracked={getUserMeta?.(repo.id)?.tracked}
           onOpenDetail={onOpenDetail}
+          onToggleTracked={onToggleTracked}
         />
       ))}
     </div>

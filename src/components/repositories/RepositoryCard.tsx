@@ -2,13 +2,19 @@ import type { ColumnKey, Repo, RepoUserMeta } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { RepositoryHealthBadge } from './RepositoryHealthBadge';
 import { RepositoryStatusBadge } from './RepositoryStatusBadge';
-import { getRepositoryUserStatusLabel } from './repositoryMetaLabels';
+import {
+  getRepositoryProjectStageLabel,
+  getRepositoryScheduleBucketLabel,
+  getRepositoryUserStatusLabel,
+} from './repositoryMetaLabels';
 
 interface RepositoryCardProps {
   repo: Repo;
   autoHealth: ColumnKey;
   userMeta?: RepoUserMeta | null;
+  tracked?: boolean;
   onOpenDetail: (repo: Repo) => void;
+  onToggleTracked?: (repoId: string) => void;
 }
 
 function splitNameWithOwner(nameWithOwner: string): { owner: string; name: string } {
@@ -32,12 +38,22 @@ function formatUpdatedDate(value: string): string {
   }).format(date);
 }
 
-export function RepositoryCard({ repo, autoHealth, userMeta, onOpenDetail }: RepositoryCardProps) {
+export function RepositoryCard({
+  repo,
+  autoHealth,
+  userMeta,
+  tracked,
+  onOpenDetail,
+  onToggleTracked,
+}: RepositoryCardProps) {
   const { owner, name } = splitNameWithOwner(repo.nameWithOwner);
   const topics = repo.topics.slice(0, 4);
   const remainingTopicCount = repo.topics.length - topics.length;
   const hasUserMeta = userMeta !== null && userMeta !== undefined;
   const nextAction = userMeta?.nextAction.trim();
+  const isTracked = tracked ?? userMeta?.tracked ?? false;
+  const stage = userMeta?.stage;
+  const scheduleBucket = userMeta?.scheduleBucket;
 
   return (
     <article className="relative rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-lg shadow-sm transition-colors motion-reduce:transition-none hover:border-[var(--accent-green-border)]">
@@ -89,15 +105,54 @@ export function RepositoryCard({ repo, autoHealth, userMeta, onOpenDetail }: Rep
       {hasUserMeta && (
         <div className="relative mt-stack-md rounded-lg border border-[var(--border-subtle)] bg-surface-secondary px-inset-md py-inset-sm">
           <div className="flex flex-col gap-stack-xs sm:flex-row sm:items-center sm:justify-between">
-            <span className="inline-flex w-fit items-center rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inline-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
-              自分の状態: {getRepositoryUserStatusLabel(userMeta.status)}
-            </span>
+            <div className="flex flex-wrap items-center gap-inline-xs">
+              {isTracked && (
+                <span className="inline-flex items-center rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inline-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
+                  進捗管理対象
+                </span>
+              )}
+              <span className="inline-flex w-fit items-center rounded-lg border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] px-inset-sm py-inline-xs text-caption font-semibold text-[var(--accent-green-emphasis)]">
+                自分の状態: {getRepositoryUserStatusLabel(userMeta.status)}
+              </span>
+              {stage && stage !== 'unassigned' && (
+                <span className="inline-flex items-center rounded-lg border border-[var(--accent-blue-border)] bg-[var(--accent-blue-muted)] px-inset-sm py-inline-xs text-caption font-medium text-[var(--accent-blue-emphasis)]">
+                  {getRepositoryProjectStageLabel(stage)}
+                </span>
+              )}
+              {scheduleBucket && scheduleBucket !== 'unscheduled' && (
+                <span className="inline-flex items-center rounded-lg border border-[var(--accent-purple-border)] bg-[var(--accent-purple-muted)] px-inset-sm py-inline-xs text-caption font-medium text-[var(--accent-purple-emphasis)]">
+                  {getRepositoryScheduleBucketLabel(scheduleBucket)}
+                </span>
+              )}
+            </div>
             {nextAction && (
               <p className="min-w-0 truncate text-body-sm text-[var(--text-secondary)]">
                 次にやること: {nextAction}
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {onToggleTracked && (
+        <div className="relative mt-stack-md flex flex-wrap items-center justify-between gap-inline-sm">
+          {!isTracked && (
+            <span className="text-caption text-[var(--text-muted)]">
+              まだ進捗管理に入っていません
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => onToggleTracked(repo.id)}
+            aria-pressed={isTracked}
+            className={`inline-flex shrink-0 items-center justify-center rounded-lg px-inset-md py-inset-xs text-body-sm font-semibold shadow-sm transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] ${
+              isTracked
+                ? 'border border-[var(--border-strong)] bg-surface-secondary text-[var(--text-primary)] hover:bg-surface-hover'
+                : 'bg-[var(--accent-green)] text-text-inverse hover:bg-[var(--accent-green-strong)]'
+            }`}
+          >
+            {isTracked ? '進捗管理から外す' : '進捗管理に追加'}
+          </button>
         </div>
       )}
 

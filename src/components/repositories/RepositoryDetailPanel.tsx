@@ -1,6 +1,16 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { ColumnKey, PracticeIssueDraft, PracticePullRequestDraft, Repo, RepoUserMeta, RepoUserStatus } from '../../types';
+import type {
+  ColumnKey,
+  PracticeIssueDraft,
+  PracticePullRequestDraft,
+  Repo,
+  RepoProjectStage,
+  RepoScheduleBucket,
+  RepoUserMeta,
+  RepoUserStatus,
+  RepositoryMetaPatch,
+} from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { type PracticeIssueDraftInput } from '../../hooks/usePracticeIssues';
 import { type PracticePullRequestDraftInput } from '../../hooks/usePracticePullRequests';
@@ -8,7 +18,11 @@ import { IssuePracticeWizard } from '../practice/IssuePracticeWizard';
 import { PullRequestPracticeWizard } from '../practice/PullRequestPracticeWizard';
 import { RepositoryHealthBadge } from './RepositoryHealthBadge';
 import { RepositoryStatusBadge } from './RepositoryStatusBadge';
-import { REPOSITORY_USER_STATUS_OPTIONS } from './repositoryMetaLabels';
+import {
+  REPOSITORY_PROJECT_STAGE_OPTIONS,
+  REPOSITORY_SCHEDULE_BUCKET_OPTIONS,
+  REPOSITORY_USER_STATUS_OPTIONS,
+} from './repositoryMetaLabels';
 
 interface RepositoryDetailPanelProps {
   repo: Repo;
@@ -21,10 +35,7 @@ interface RepositoryDetailPanelProps {
   practiceIssuePublishError?: string | null;
   publishingPracticeIssueDraftId?: string | null;
   practicePullRequestSaveError?: string | null;
-  onUserMetaChange: (
-    repoId: string,
-    patch: Partial<Pick<RepoUserMeta, 'status' | 'purpose' | 'nextAction' | 'note'>>
-  ) => void;
+  onUserMetaChange: (repoId: string, patch: RepositoryMetaPatch) => void;
   onCreatePracticeIssueDraft?: (input: PracticeIssueDraftInput) => PracticeIssueDraft | null;
   onCreateGitHubIssueFromDraft?: (draftId: string) => Promise<PracticeIssueDraft | null>;
   onCreatePracticePullRequestDraft?: (input: PracticePullRequestDraftInput) => PracticePullRequestDraft | null;
@@ -91,10 +102,15 @@ export function RepositoryDetailPanel({
   const pullRequestWizardId = useId();
   const { owner, name } = splitNameWithOwner(repo.nameWithOwner);
   const topics = repo.topics.slice(0, 8);
+  const tracked = userMeta?.tracked ?? false;
   const status = userMeta?.status ?? 'unreviewed';
+  const stage = userMeta?.stage ?? 'unassigned';
+  const scheduleBucket = userMeta?.scheduleBucket ?? 'unscheduled';
   const purpose = userMeta?.purpose ?? '';
   const nextAction = userMeta?.nextAction ?? '';
   const note = userMeta?.note ?? '';
+  const selectClassName = `w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`;
+  const inputClassName = `w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`;
   const [isPracticeWizardOpen, setIsPracticeWizardOpen] = useState(false);
   const [isPullRequestWizardOpen, setIsPullRequestWizardOpen] = useState(false);
 
@@ -305,6 +321,27 @@ export function RepositoryDetailPanel({
               </p>
             </div>
 
+            <div className="mt-stack-md flex flex-col gap-stack-xs rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-body-sm font-semibold text-[var(--text-primary)]">進捗管理に含める</p>
+                <p className="mt-stack-xs text-caption leading-relaxed text-[var(--text-muted)]">
+                  カンバンとロードマップに表示して「どの状態で・いつやるか」をDevBoard内で把握します。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onUserMetaChange(repo.id, { tracked: !tracked })}
+                aria-pressed={tracked}
+                className={`inline-flex shrink-0 items-center justify-center rounded-lg px-inset-md py-inset-sm text-body-sm font-semibold shadow-sm transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] ${
+                  tracked
+                    ? 'border border-[var(--border-strong)] bg-surface-secondary text-[var(--text-primary)] hover:bg-surface-hover'
+                    : 'bg-[var(--accent-green)] text-text-inverse hover:bg-[var(--accent-green-strong)]'
+                }`}
+              >
+                {tracked ? '進捗管理から外す' : '進捗管理に追加'}
+              </button>
+            </div>
+
             {saveError && (
               <p className="mt-stack-sm rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] px-inset-md py-inset-sm text-body-sm font-medium text-[var(--accent-red-emphasis)]">
                 {saveError}
@@ -321,9 +358,49 @@ export function RepositoryDetailPanel({
                   onChange={(event) =>
                     onUserMetaChange(repo.id, { status: event.target.value as RepoUserStatus })
                   }
-                  className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
+                  className={selectClassName}
                 >
                   {REPOSITORY_USER_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-stack-xs">
+                <span className="text-caption font-semibold text-[var(--text-muted)]">開発段階</span>
+                <select
+                  value={stage}
+                  name="repository-project-stage"
+                  autoComplete="off"
+                  onChange={(event) =>
+                    onUserMetaChange(repo.id, { stage: event.target.value as RepoProjectStage })
+                  }
+                  className={selectClassName}
+                >
+                  {REPOSITORY_PROJECT_STAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-stack-xs">
+                <span className="text-caption font-semibold text-[var(--text-muted)]">作業予定</span>
+                <select
+                  value={scheduleBucket}
+                  name="repository-schedule-bucket"
+                  autoComplete="off"
+                  onChange={(event) =>
+                    onUserMetaChange(repo.id, {
+                      scheduleBucket: event.target.value as RepoScheduleBucket,
+                    })
+                  }
+                  className={selectClassName}
+                >
+                  {REPOSITORY_SCHEDULE_BUCKET_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -337,10 +414,11 @@ export function RepositoryDetailPanel({
                   type="text"
                   name="repository-purpose"
                   autoComplete="off"
+                  maxLength={200}
                   value={purpose}
                   onChange={(event) => onUserMetaChange(repo.id, { purpose: event.target.value })}
                   placeholder="例: ポートフォリオ用に公開できる状態へ整える"
-                  className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
+                  className={inputClassName}
                 />
               </label>
 
@@ -350,10 +428,11 @@ export function RepositoryDetailPanel({
                   type="text"
                   name="repository-next-action"
                   autoComplete="off"
+                  maxLength={200}
                   value={nextAction}
                   onChange={(event) => onUserMetaChange(repo.id, { nextAction: event.target.value })}
                   placeholder="例: READMEに使い方を3行足す"
-                  className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:border-[var(--accent-green)] focus-visible:ring-[var(--accent-green)]`}
+                  className={inputClassName}
                 />
               </label>
 
@@ -362,6 +441,7 @@ export function RepositoryDetailPanel({
                 <textarea
                   name="repository-note"
                   autoComplete="off"
+                  maxLength={2000}
                   value={note}
                   onChange={(event) => onUserMetaChange(repo.id, { note: event.target.value })}
                   rows={4}

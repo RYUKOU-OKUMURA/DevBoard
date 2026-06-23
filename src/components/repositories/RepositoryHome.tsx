@@ -6,11 +6,16 @@ import { focusRing } from '../../lib/focusRing';
 import { useTagsContext } from '../../contexts/TagsContext';
 import { getStorageItem } from '../../utils/storage';
 import { useRepositoryMeta } from '../../hooks/useRepositoryMeta';
+import { useRepositoryView } from '../../hooks/useRepositoryView';
 import { usePracticeIssues } from '../../hooks/usePracticeIssues';
 import { usePracticePullRequests } from '../../hooks/usePracticePullRequests';
 import { GithubTermHint } from '../practice/GithubTermHint';
 import { RepositoryDetailPanel } from './RepositoryDetailPanel';
 import { RepositoryList } from './RepositoryList';
+import { RepositoryProgressKanban } from './RepositoryProgressKanban';
+import { RepositoryProgressRoadmap } from './RepositoryProgressRoadmap';
+import { RepositoryViewSwitcher } from './RepositoryViewSwitcher';
+import { resolveRepositoryMeta } from './repositoryProgressModel';
 import {
   HIDDEN_REPOS_STORAGE_KEY,
   REPOSITORY_HOME_COLUMN_TITLES,
@@ -52,6 +57,7 @@ export function RepositoryHome({
 }: RepositoryHomeProps) {
   const { getTagObjectsForRepo } = useTagsContext();
   const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
+  const { viewMode, setViewMode } = useRepositoryView(accountId);
   const {
     createIssueDraft,
     createGitHubIssueFromDraft,
@@ -89,6 +95,16 @@ export function RepositoryHome({
   const handleCloseDetail = useCallback(() => {
     setSelectedRepo(null);
   }, []);
+
+  const handleToggleTracked = useCallback(
+    (repoId: string) => {
+      const current = resolveRepositoryMeta(repoId, getMeta(repoId));
+      updateMeta(repoId, { tracked: !current.tracked });
+    },
+    [getMeta, updateMeta]
+  );
+
+  const handleShowAll = useCallback(() => setViewMode('all'), [setViewMode]);
 
   useEffect(() => {
     onStatsUpdate?.(visibleRepos.length, categoryCounts, REPOSITORY_HOME_COLUMN_TITLES);
@@ -137,7 +153,7 @@ export function RepositoryHome({
             </div>
           </div>
 
-          <div className="mt-stack-lg grid grid-cols-1 gap-stack-sm lg:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="mt-stack-lg grid grid-cols-1 gap-stack-sm lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
             <label className="block">
               <span className="sr-only">リポジトリを検索</span>
               <div className="relative">
@@ -182,6 +198,11 @@ export function RepositoryHome({
                 ))}
               </select>
             </label>
+
+            <div className="flex items-end">
+              <span className="sr-only">表示切り替え</span>
+              <RepositoryViewSwitcher value={viewMode} onChange={setViewMode} />
+            </div>
           </div>
 
           <div className="mt-stack-md flex flex-wrap items-center gap-inline-sm text-caption text-[var(--text-muted)]">
@@ -199,14 +220,37 @@ export function RepositoryHome({
 
         <GithubTermHint terms={['repository', 'issue', 'pullRequest']} />
 
-        <RepositoryList
-          repos={visibleRepos}
-          getAutoHealth={getAutoHealth}
-          getUserMeta={getMeta}
-          onOpenDetail={setSelectedRepo}
-          isLoading={isLoading}
-          hasSearchQuery={searchQuery.trim().length > 0}
-        />
+        {viewMode === 'all' ? (
+          <RepositoryList
+            repos={visibleRepos}
+            getAutoHealth={getAutoHealth}
+            getUserMeta={getMeta}
+            onOpenDetail={setSelectedRepo}
+            onToggleTracked={handleToggleTracked}
+            isLoading={isLoading}
+            hasSearchQuery={searchQuery.trim().length > 0}
+          />
+        ) : viewMode === 'kanban' ? (
+          <RepositoryProgressKanban
+            repos={visibleRepos}
+            getMeta={getMeta}
+            getAutoHealth={getAutoHealth}
+            onOpenDetail={setSelectedRepo}
+            onToggleTracked={handleToggleTracked}
+            onShowAll={handleShowAll}
+            isLoading={isLoading}
+          />
+        ) : (
+          <RepositoryProgressRoadmap
+            repos={visibleRepos}
+            getMeta={getMeta}
+            getAutoHealth={getAutoHealth}
+            onOpenDetail={setSelectedRepo}
+            onToggleTracked={handleToggleTracked}
+            onShowAll={handleShowAll}
+            isLoading={isLoading}
+          />
+        )}
       </div>
 
       {selectedRepo && (

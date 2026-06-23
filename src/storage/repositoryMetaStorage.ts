@@ -1,8 +1,14 @@
-import type { RepoUserMeta, RepoUserStatus } from '../types';
+import type {
+  RepoProjectStage,
+  RepoScheduleBucket,
+  RepoUserMeta,
+  RepoUserStatus,
+  RepositoryMetaPatch,
+} from '../types';
 import { getStorageItem, removeStorageItem, setStorageItem } from '../utils/storage';
 
 const REPOSITORY_META_STORAGE_PREFIX = 'repository-meta:';
-const REPOSITORY_META_VERSION = 1;
+const REPOSITORY_META_VERSION = 2;
 
 type RepositoryMetaEnvelope = {
   version: number;
@@ -15,6 +21,25 @@ const USER_STATUS_VALUES = new Set<RepoUserStatus>([
   'in_progress',
   'paused',
   'done',
+]);
+
+const PROJECT_STAGE_VALUES = new Set<RepoProjectStage>([
+  'unassigned',
+  'idea',
+  'planning',
+  'implementation',
+  'testing',
+  'released',
+  'maintenance',
+]);
+
+const SCHEDULE_BUCKET_VALUES = new Set<RepoScheduleBucket>([
+  'this_week',
+  'next_week',
+  'this_month',
+  'next_month',
+  'later',
+  'unscheduled',
 ]);
 
 function assertAccountId(accountId: string): string {
@@ -30,6 +55,14 @@ export function getRepositoryMetaKey(accountId: string): string {
 
 function isRepoUserStatus(value: unknown): value is RepoUserStatus {
   return typeof value === 'string' && USER_STATUS_VALUES.has(value as RepoUserStatus);
+}
+
+function isRepoProjectStage(value: unknown): value is RepoProjectStage {
+  return typeof value === 'string' && PROJECT_STAGE_VALUES.has(value as RepoProjectStage);
+}
+
+function isRepoScheduleBucket(value: unknown): value is RepoScheduleBucket {
+  return typeof value === 'string' && SCHEDULE_BUCKET_VALUES.has(value as RepoScheduleBucket);
 }
 
 function readString(value: unknown): string {
@@ -61,7 +94,12 @@ function normalizeRepositoryMeta(value: unknown): RepoUserMeta | null {
 
   return {
     repoId,
+    tracked: typeof record.tracked === 'boolean' ? record.tracked : true,
     status: isRepoUserStatus(record.status) ? record.status : 'unreviewed',
+    stage: isRepoProjectStage(record.stage) ? record.stage : 'unassigned',
+    scheduleBucket: isRepoScheduleBucket(record.scheduleBucket)
+      ? record.scheduleBucket
+      : 'unscheduled',
     purpose: readString(record.purpose),
     nextAction: readString(record.nextAction),
     note: readString(record.note),
@@ -91,7 +129,10 @@ function parseRepositoryMetaEnvelope(value: unknown): RepoUserMeta[] | null {
 export function createDefaultRepositoryMeta(repoId: string, now = new Date().toISOString()): RepoUserMeta {
   return {
     repoId,
+    tracked: false,
     status: 'unreviewed',
+    stage: 'unassigned',
+    scheduleBucket: 'unscheduled',
     purpose: '',
     nextAction: '',
     note: '',
@@ -143,14 +184,17 @@ export function saveRepositoryMetaMap(accountId: string, metaByRepoId: Record<st
 export function upsertRepositoryMeta(
   accountId: string,
   repoId: string,
-  patch: Partial<Pick<RepoUserMeta, 'status' | 'purpose' | 'nextAction' | 'note'>>,
+  patch: RepositoryMetaPatch,
   now = new Date().toISOString()
 ): RepoUserMeta {
   const existing = getRepositoryMetaMap(accountId)[repoId];
   const base = existing ?? createDefaultRepositoryMeta(repoId, now);
   const next: RepoUserMeta = {
     repoId,
+    tracked: patch.tracked ?? base.tracked,
     status: patch.status ?? base.status,
+    stage: patch.stage ?? base.stage,
+    scheduleBucket: patch.scheduleBucket ?? base.scheduleBucket,
     purpose: patch.purpose ?? base.purpose,
     nextAction: patch.nextAction ?? base.nextAction,
     note: patch.note ?? base.note,

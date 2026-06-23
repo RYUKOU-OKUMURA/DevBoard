@@ -23,10 +23,12 @@
   /* より落ち着いたアクセントカラー - エメラルドグリーン系 */
   --accent-green: #059669;
   --accent-green-emphasis: #047857;
+  --accent-green-strong: var(--accent-green-emphasis);
   --accent-green-muted: rgba(5, 150, 105, 0.12);
   --accent-green-border: rgba(5, 150, 105, 0.24);
   --accent-blue: #2563eb;
   --accent-blue-emphasis: #1d4ed8;
+  --accent-blue-strong: var(--accent-blue-emphasis);
   --accent-blue-muted: rgba(37, 99, 235, 0.12);
   --accent-blue-border: rgba(37, 99, 235, 0.24);
   --accent-purple: #7c3aed;
@@ -41,6 +43,7 @@
   /* より温かみのあるテラコッタ系 */
   --accent-orange: #c2410c;
   --accent-orange-emphasis: #9a3412;
+  --accent-orange-strong: var(--accent-orange-emphasis);
   --accent-orange-muted: rgba(194, 65, 12, 0.12);
   --accent-orange-border: rgba(194, 65, 12, 0.24);
   /* より落ち着いたローズ系 */
@@ -112,10 +115,12 @@
   /* より落ち着いたエメラルドグリーン系 */
   --accent-green: #2ea043;
   --accent-green-emphasis: #238636;
+  --accent-green-strong: var(--accent-green-emphasis);
   --accent-green-muted: rgba(46, 160, 67, 0.16);
   --accent-green-border: rgba(46, 160, 67, 0.32);
   --accent-blue: #58a6ff;
   --accent-blue-emphasis: #3d8bff;
+  --accent-blue-strong: var(--accent-blue-emphasis);
   --accent-blue-muted: rgba(88, 166, 255, 0.16);
   --accent-blue-border: rgba(88, 166, 255, 0.32);
   --accent-purple: #a371f7;
@@ -130,6 +135,7 @@
   /* より温かみのあるテラコッタ系 */
   --accent-orange: #fb8f44;
   --accent-orange-emphasis: #e67e22;
+  --accent-orange-strong: var(--accent-orange-emphasis);
   --accent-orange-muted: rgba(251, 143, 68, 0.16);
   --accent-orange-border: rgba(251, 143, 68, 0.32);
   /* より落ち着いたローズ系 */

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { RepoUserMeta } from '../types';
+import type { RepoUserMeta, RepositoryMetaPatch } from '../types';
 import {
   createDefaultRepositoryMeta,
   getRepositoryMetaMap,
   saveRepositoryMetaMap,
 } from '../storage/repositoryMetaStorage';
 
-type RepositoryMetaPatch = Partial<Pick<RepoUserMeta, 'status' | 'purpose' | 'nextAction' | 'note'>>;
+export type { RepositoryMetaPatch };
 
 interface UseRepositoryMetaReturn {
   metaByRepoId: Record<string, RepoUserMeta>;
@@ -42,7 +42,10 @@ export function useRepositoryMeta(accountId: string): UseRepositoryMetaReturn {
       const current = currentMap[repoId] ?? createDefaultRepositoryMeta(repoId, now);
       const next: RepoUserMeta = {
         repoId,
+        tracked: patch.tracked ?? current.tracked,
         status: patch.status ?? current.status,
+        stage: patch.stage ?? current.stage,
+        scheduleBucket: patch.scheduleBucket ?? current.scheduleBucket,
         purpose: patch.purpose ?? current.purpose,
         nextAction: patch.nextAction ?? current.nextAction,
         note: patch.note ?? current.note,

@@ -25,7 +25,10 @@ function createRepo(): Repo {
 function createMeta(): RepoUserMeta {
   return {
     repoId: 'repo-1',
+    tracked: true,
     status: 'in_progress',
+    stage: 'implementation',
+    scheduleBucket: 'this_week',
     purpose: '公開前の整理',
     nextAction: 'READMEに使い方を足す',
     note: 'Issue練習で分解する',
@@ -134,6 +137,41 @@ describe('RepositoryCard', () => {
     expect(screen.getByText('自分の状態: 進行中')).toBeTruthy();
     expect(screen.getByText('次にやること: READMEに使い方を足す')).toBeTruthy();
   });
+
+  it('toggles progress tracking from the all view', () => {
+    const onToggleTracked = vi.fn();
+    render(
+      <RepositoryCard
+        repo={createRepo()}
+        autoHealth="Active"
+        userMeta={null}
+        onOpenDetail={() => undefined}
+        onToggleTracked={onToggleTracked}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '進捗管理に追加' }));
+
+    expect(onToggleTracked).toHaveBeenCalledWith('repo-1');
+  });
+
+  it('shows the untrack button for tracked repositories', () => {
+    const onToggleTracked = vi.fn();
+    render(
+      <RepositoryCard
+        repo={createRepo()}
+        autoHealth="Active"
+        userMeta={createMeta()}
+        tracked
+        onOpenDetail={() => undefined}
+        onToggleTracked={onToggleTracked}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '進捗管理から外す' }));
+
+    expect(onToggleTracked).toHaveBeenCalledWith('repo-1');
+  });
 });
 
 describe('RepositoryDetailPanel', () => {
@@ -204,6 +242,34 @@ describe('RepositoryDetailPanel', () => {
     expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { purpose: '練習用に整理する' });
     expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { nextAction: '小さなTODOに分ける' });
     expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { note: '焦らず進める' });
+  });
+
+  it('edits project stage and schedule bucket from the detail panel', () => {
+    const onUserMetaChange = vi.fn();
+    renderDetailPanel({ userMeta: createMeta(), onUserMetaChange });
+
+    fireEvent.change(screen.getByLabelText('開発段階'), { target: { value: 'testing' } });
+    fireEvent.change(screen.getByLabelText('作業予定'), { target: { value: 'next_month' } });
+
+    expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { stage: 'testing' });
+    expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { scheduleBucket: 'next_month' });
+  });
+
+  it('toggles progress tracking from the detail panel', () => {
+    const onUserMetaChange = vi.fn();
+    renderDetailPanel({ userMeta: createMeta(), onUserMetaChange });
+
+    fireEvent.click(screen.getByRole('button', { name: '進捗管理から外す' }));
+
+    expect(onUserMetaChange).toHaveBeenCalledWith('repo-1', { tracked: false });
+  });
+
+  it('shows defaults for unsaved metadata', () => {
+    renderDetailPanel({ userMeta: null });
+
+    expect((screen.getByLabelText('開発段階') as HTMLSelectElement).value).toBe('unassigned');
+    expect((screen.getByLabelText('作業予定') as HTMLSelectElement).value).toBe('unscheduled');
+    expect(screen.getByRole('button', { name: '進捗管理に追加' }).getAttribute('aria-pressed')).toBe('false');
   });
 
   it('shows saved practice issue drafts inside the repository detail', () => {
