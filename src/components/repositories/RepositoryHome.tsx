@@ -218,8 +218,6 @@ export function RepositoryHome({
           </div>
         </header>
 
-        <GithubTermHint terms={['repository', 'issue', 'pullRequest']} />
-
         {viewMode === 'all' ? (
           <RepositoryList
             repos={visibleRepos}
@@ -251,6 +249,8 @@ export function RepositoryHome({
             isLoading={isLoading}
           />
         )}
+
+        <GithubTermHint terms={['repository', 'issue', 'pullRequest']} />
       </div>
 
       {selectedRepo && (
