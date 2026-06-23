@@ -88,7 +88,7 @@ export function RepositoryProgressRoadmap({
       <div className="overflow-x-auto">
         <div className={`${ROADMAP_GRID_CLASS}`}>
           <div className="contents">
-            <div className="sticky top-0 z-20 border-b border-l border-[var(--border-subtle)] bg-surface-secondary px-inset-sm py-inset-xs text-caption font-semibold text-[var(--text-muted)]">
+            <div className="sticky left-0 top-0 z-30 border-b border-l border-[var(--border-subtle)] bg-surface-secondary px-inset-sm py-inset-xs text-caption font-semibold text-[var(--text-muted)]">
               プロジェクト
             </div>
             {ROADMAP_BUCKET_ORDER.map((bucket) => (
