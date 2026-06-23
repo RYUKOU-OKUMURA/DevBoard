@@ -150,7 +150,10 @@ describe('RepositoryCard', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '進捗管理に追加' }));
+    const trackingButton = screen.getByRole('button', { name: '進捗管理に追加' });
+    expect(trackingButton.className).toContain('z-20');
+
+    fireEvent.click(trackingButton);
 
     expect(onToggleTracked).toHaveBeenCalledWith('repo-1');
   });

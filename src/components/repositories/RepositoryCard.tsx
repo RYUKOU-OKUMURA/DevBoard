@@ -145,7 +145,7 @@ export function RepositoryCard({
             type="button"
             onClick={() => onToggleTracked(repo.id)}
             aria-pressed={isTracked}
-            className={`inline-flex shrink-0 items-center justify-center rounded-lg px-inset-md py-inset-xs text-body-sm font-semibold shadow-sm transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] ${
+            className={`relative z-20 inline-flex shrink-0 items-center justify-center rounded-lg px-inset-md py-inset-xs text-body-sm font-semibold shadow-sm transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] ${
               isTracked
                 ? 'border border-[var(--border-strong)] bg-surface-secondary text-[var(--text-primary)] hover:bg-surface-hover'
                 : 'bg-[var(--accent-green)] text-text-inverse hover:bg-[var(--accent-green-strong)]'
