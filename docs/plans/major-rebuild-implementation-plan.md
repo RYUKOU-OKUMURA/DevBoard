@@ -231,6 +231,8 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 
 ### フェーズ 9: 既存高度機能の置き場整理 ✅ 完了
 
+> 注: フェーズ12で「高度な機能」タブがサブタブ式（概要/旧カンバン/Activity/手動追加/TODO・AI）に再編され、旧カンバンは同タブ配下に移動しました。各機能自体は削除せず導線を集約しています。
+
 目的: 保存ビュー、プリセット、カンバン詳細操作、Activity、TODO、AI、Workspaceなどを初心者向け主導線から整理する。
 
 - [x] 保存ビュー / プリセット / 列管理の表示位置を棚卸しする。
@@ -287,6 +289,28 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 
 - [ ] 各更新PRで `npm run check:ci` が通る。
 - [ ] Cloudflare Pagesのビルド環境で動く。
+
+### フェーズ 12: ナビ・ビュー切り替えのブラッシュアップ ✅ 完了
+
+目的: 「画面の切り替えがわからなくなる」を解消し、今どこにいるか・さっきどこにいたかを可視化する。リリース済み機能の破壊を避けつつ、情報設計の3点セットで整える。
+
+- [x] `useActiveTab` のURL履歴を `replaceState` から `pushState` + `popstate` 購読に変更し、ブラウザ戻る/進むでタブが復元されるようにする。
+- [x] `useRepositoryView` の既定ビューを `all` から `roadmap` に変更（ストレージキーは変更せず既存ユーザー保存値を維持、テスト期望値を更新）。
+- [x] `RepositoryHome` のヘッダーカードをコンパクト化し、ロードマップ表を上に引き上げる。
+- [x] `RepositoryViewSwitcher` をアイコン＋ラベルの大型セグメントコントロールにして主役化。
+- [x] `AdvancedSubTab` 型と `AdvancedSubTabs` / `AdvancedHome` を新設し、高度な機能タブを概要/旧カンバン/Activity/手動追加/TODO・AI のサブタブ式に集約。
+- [x] `App.tsx` の `repositoryView: 'home' | 'legacy'` 分岐を廃止し、旧カンバンを高度な機能配下に移動。Board タブは常に `RepositoryHome`。
+- [x] リポジトリタブ直下に「今: ロードマップ/カンバン/すべて」表示を追加（`aria-live=polite`）。
+- [x] `useAdvancedSubTab` フックを新設し `?sub=` をURL履歴同期、`?view=` も `App.tsx` で replaceState/popstate 同期。
+- [x] `TabType` を増やさず、サブタブは別状態で管理（既存 `activeTab` 直列化を壊さない）。
+- [x] `AdvancedHome` の `onOpenActivity`/`onOpenManualRepos`/`onOpenLegacyBoard` インターフェースを維持。
+- [x] `TabNavigation.test.tsx` の「`activity` で `高度な機能` アクティブ」契約を維持。
+
+検証:
+
+- [x] `npm run check:ci` が通る。
+- [x] 全238テストが通る。
+- [x] 既存機能（RepoBoard/Workspace/SplitPanel/ActivityTab/ManualRepoBoard）を削除せず、導線を高度な機能配下へ移動。
 
 ## 5. MVPから明示的に外すもの
 
