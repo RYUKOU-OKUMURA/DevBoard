@@ -62,11 +62,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   }
 
   // 2.5. レート制限チェック（APIエンドポイントのみ）
+  // LOCAL_DEV=true のときはローカル開発用にレート制限をスキップ（プレビューで429になるのを防ぐ）
+  const isLocalDev = env.LOCAL_DEV === 'true';
   let rateLimitResult: { allowed: boolean; remaining: number; resetAt: number } | null = null;
-  if (isApiPath) {
+  if (isApiPath && !isLocalDev) {
     const clientIP = getClientIP(request);
     rateLimitResult = await checkRateLimit(env.SESSIONS, clientIP);
-    
+
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(rateLimitResult.resetAt, validOrigin);
     }

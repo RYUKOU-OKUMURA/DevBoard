@@ -11,6 +11,9 @@ export interface Env {
   ENCRYPTION_KEY: string;
   ALLOWED_ORIGINS?: string;
   GITHUB_REDIRECT_URI?: string;
+  // ローカル開発時のみレート制限を緩和するためのフラグ。
+  // .dev.vars に LOCAL_DEV=true を設定すると wrangler pages dev でレート制限が実質無効になる。
+  LOCAL_DEV?: string;
 }
 
 export interface SessionData {

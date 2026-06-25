@@ -9,3 +9,7 @@ GITHUB_CLIENT_SECRET=your_dev_client_secret_here
 # Generate with: openssl rand -hex 32
 SESSION_SECRET=your_random_32_character_session_secret_here
 ENCRYPTION_KEY=your_random_32_character_encryption_key_here
+
+# ローカル開発時のみレート制限をスキップ（プレビューで429になるのを防ぐ）
+# wrangler pages dev で使うときだけ true にする。本番には設定しないこと。
+LOCAL_DEV=true
