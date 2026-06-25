@@ -17,15 +17,17 @@ export interface UseRepositoryViewReturn {
   setViewMode: (next: RepositoryViewMode) => void;
 }
 
+const DEFAULT_VIEW_MODE: RepositoryViewMode = 'roadmap';
+
 export function useRepositoryView(accountId: string): UseRepositoryViewReturn {
   const [viewMode, setViewModeState] = useState<RepositoryViewMode>(() => {
-    const stored = getStorageItem<unknown>(getRepositoryViewKey(accountId), 'all');
-    return isRepositoryViewMode(stored) ? stored : 'all';
+    const stored = getStorageItem<unknown>(getRepositoryViewKey(accountId), DEFAULT_VIEW_MODE);
+    return isRepositoryViewMode(stored) ? stored : DEFAULT_VIEW_MODE;
   });
 
   useEffect(() => {
-    const stored = getStorageItem<unknown>(getRepositoryViewKey(accountId), 'all');
-    setViewModeState(isRepositoryViewMode(stored) ? stored : 'all');
+    const stored = getStorageItem<unknown>(getRepositoryViewKey(accountId), DEFAULT_VIEW_MODE);
+    setViewModeState(isRepositoryViewMode(stored) ? stored : DEFAULT_VIEW_MODE);
   }, [accountId]);
 
   const setViewMode = useCallback(

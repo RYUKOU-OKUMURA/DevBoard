@@ -9,10 +9,10 @@ describe('useRepositoryView', () => {
     localStorage.clear();
   });
 
-  it('defaults to the all view when nothing is stored', () => {
+  it('defaults to the roadmap view when nothing is stored', () => {
     const { result } = renderHook(() => useRepositoryView('alice-id'));
 
-    expect(result.current.viewMode).toBe('all');
+    expect(result.current.viewMode).toBe('roadmap');
   });
 
   it('persists the selected view mode per account', () => {
@@ -34,11 +34,11 @@ describe('useRepositoryView', () => {
     expect(result.current.viewMode).toBe('kanban');
   });
 
-  it('falls back to all when the stored value is invalid', () => {
+  it('falls back to roadmap when the stored value is invalid', () => {
     localStorage.setItem(getRepositoryViewKey('alice-id'), '"gantt"');
 
     const { result } = renderHook(() => useRepositoryView('alice-id'));
 
-    expect(result.current.viewMode).toBe('all');
+    expect(result.current.viewMode).toBe('roadmap');
   });
 });
