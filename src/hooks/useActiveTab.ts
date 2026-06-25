@@ -50,6 +50,31 @@ function buildInitialState() {
   return resolveTabCandidate(candidate);
 }
 
+function pushTabToHistory(tab: TabType) {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  const current = params.get('tab');
+  if (current === tab) return;
+  params.set('tab', tab);
+  const query = params.toString();
+  const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+  // タブ切り替えは履歴に積むことでブラウザの戻る/進むを効かせる
+  window.history.pushState({ tab }, '', newUrl);
+}
+
+function replaceTabInHistory(tab: TabType) {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  const current = params.get('tab');
+  if (!current) return;
+  if (current === tab) return;
+  params.set('tab', tab);
+  const query = params.toString();
+  const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+  // 初期ロード時の旧値/不正値の上書きは履歴を汚さないreplaceで行う
+  window.history.replaceState({ tab }, '', newUrl);
+}
+
 export function useActiveTab() {
   const initialState = useMemo(buildInitialState, []);
   const [activeTab, setActiveTab] = useState<TabType>(initialState.tab);
@@ -65,18 +90,35 @@ export function useActiveTab() {
     setStorageString(TAB_STORAGE_KEY, activeTab);
   }, [activeTab, needsMigration]);
 
-  // URLクエリの旧値/不正値は新しいtabで上書きする
+  // URLクエリの旧値/不正値は新しいtabで上書きする（履歴は汚さない）
   useEffect(() => {
-    if (typeof window === 'undefined' || needsMigration) return;
-    const params = new URLSearchParams(window.location.search);
-    const current = params.get('tab');
-    if (!current) return;
-    if (current === activeTab) return;
-    params.set('tab', activeTab);
-    const query = params.toString();
-    const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
-    window.history.replaceState({}, '', newUrl);
+    if (needsMigration) return;
+    replaceTabInHistory(activeTab);
   }, [activeTab, needsMigration]);
+
+  // ブラウザの戻る/進むでタブを復元する
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = (event: PopStateEvent) => {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get('tab');
+      if (!urlTab) {
+        // URLからtabが消えたら既定へ戻す
+        setActiveTab((prev) => (prev === DEFAULT_TAB ? prev : DEFAULT_TAB));
+        return;
+      }
+      const { tab, pendingLegacy } = resolveTabCandidate(urlTab);
+      setPendingLegacyTab(pendingLegacy);
+      setNeedsMigration(pendingLegacy !== null);
+      setActiveTab((prev) => (prev === tab ? prev : tab));
+      // popstate時はstateがすでにURLへ反映済みなのでpush/replaceしない
+      void event;
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const handleTabChange = useCallback(
     (tab: TabType) => {
@@ -86,6 +128,8 @@ export function useActiveTab() {
       setNeedsMigration(false);
       setPendingLegacyTab(null);
       setActiveTab(tab);
+      // ユーザー操作によるタブ切り替えは履歴に積む
+      pushTabToHistory(tab);
     },
     [activeTab]
   );
@@ -95,6 +139,7 @@ export function useActiveTab() {
       setNeedsMigration(false);
       setPendingLegacyTab(null);
       setActiveTab(tab);
+      pushTabToHistory(tab);
     },
     []
   );
