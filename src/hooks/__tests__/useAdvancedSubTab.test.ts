@@ -88,6 +88,8 @@ describe('useAdvancedSubTab', () => {
   });
 
   it('restores the sub tab via popstate event when advanced', () => {
+    // 初期URLを tab=advanced にしてpopstate時にreadUrlTabがadvancedを返すようにする
+    window.history.replaceState({}, '', '/?tab=advanced');
     const { result } = renderHook(() => useAdvancedSubTab('advanced', 'alice-id'));
 
     act(() => {
@@ -96,9 +98,9 @@ describe('useAdvancedSubTab', () => {
 
     expect(result.current.subTab).toBe('activity');
 
-    // ブラウザの戻るでURLが?sub=legacyに変わった状況をシミュレート
+    // ブラウザの戻るでURLが?tab=advanced&sub=legacyに変わった状況をシミュレート
     act(() => {
-      window.history.replaceState({}, '', '/?sub=legacy');
+      window.history.replaceState({}, '', '/?tab=advanced&sub=legacy');
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
 

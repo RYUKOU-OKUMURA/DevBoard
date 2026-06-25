@@ -3,6 +3,7 @@ import type { TabType } from '../components/TabNavigation';
 import type { AdvancedSubTab } from '../types';
 import { DEFAULT_ADVANCED_SUB_TAB, isAdvancedSubTab } from '../types';
 import { getStorageItem, setStorageItem } from '../utils/storage';
+import { DEFAULT_TAB, resolveTabCandidate } from './useActiveTab';
 
 const STORAGE_PREFIX = 'advanced-sub-tab:';
 
@@ -14,6 +15,12 @@ function readUrlSub(): string | null {
   if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
   return params.get('sub');
+}
+
+function readUrlTab(): TabType {
+  if (typeof window === 'undefined') return DEFAULT_TAB;
+  const params = new URLSearchParams(window.location.search);
+  return resolveTabCandidate(params.get('tab') ?? DEFAULT_TAB).tab;
 }
 
 function pushSubToHistory(sub: AdvancedSubTab) {
@@ -40,10 +47,15 @@ function replaceSubInHistory(sub: AdvancedSubTab) {
 }
 
 function resolveInitialSubTab(activeTab: TabType, accountId: string): AdvancedSubTab {
-  // advancedタブ以外のときはURL/ストレージを参照せず既定を返す（他タブでsubが残っていても無視）
-  if (activeTab !== 'advanced') return DEFAULT_ADVANCED_SUB_TAB;
+  // advanced系（advanced/activity/manual）以外はURL/ストレージを参照せず既定を返す
+  if (activeTab !== 'advanced' && activeTab !== 'activity' && activeTab !== 'manual') {
+    return DEFAULT_ADVANCED_SUB_TAB;
+  }
   const urlSub = readUrlSub();
   if (urlSub && isAdvancedSubTab(urlSub)) return urlSub;
+  // 旧 tab=activity/manual の場合は sub もそれに合わせる
+  if (activeTab === 'activity') return 'activity';
+  if (activeTab === 'manual') return 'manual';
   const stored = getStorageItem<unknown>(getSubStorageKey(accountId), DEFAULT_ADVANCED_SUB_TAB);
   return isAdvancedSubTab(stored) ? stored : DEFAULT_ADVANCED_SUB_TAB;
 }
@@ -58,33 +70,41 @@ export function useAdvancedSubTab(activeTab: TabType, accountId: string): UseAdv
     resolveInitialSubTab(activeTab, accountId)
   );
 
-  // activeTabがadvanced以外に切り替わったら既定へ戻す（状態をクリアしないと古いsubが残る）
+  // activeTab が advanced 系に切り替わったら URL/ストレージから sub を復元、
+  // advanced 系以外に離脱したら既定へ戻す（古い sub が残らないように）
   useEffect(() => {
-    if (activeTab !== 'advanced') return;
-    setSubTabState((prev) => (prev === DEFAULT_ADVANCED_SUB_TAB ? prev : prev));
-  }, [activeTab]);
+    if (activeTab === 'advanced' || activeTab === 'activity' || activeTab === 'manual') {
+      const next = resolveInitialSubTab(activeTab, accountId);
+      setSubTabState((prev) => (prev === next ? prev : next));
+    } else {
+      setSubTabState((prev) => (prev === DEFAULT_ADVANCED_SUB_TAB ? prev : DEFAULT_ADVANCED_SUB_TAB));
+    }
+  }, [activeTab, accountId]);
 
-  // サブタブ変更時にストレージへ保存（アカウント単位）
+  // サブタブ変更時にストレージへ保存（アカウント単位、advanced系のときのみ）
   useEffect(() => {
-    if (activeTab !== 'advanced') return;
+    if (activeTab !== 'advanced' && activeTab !== 'activity' && activeTab !== 'manual') return;
     setStorageItem(getSubStorageKey(accountId), subTab);
   }, [subTab, activeTab, accountId]);
 
-  // URLのsubを同期（advanced時のみ。それ以外はURLにsubを残さない）
+  // URLのsubを同期（advanced系のときのみ）
   useEffect(() => {
-    if (activeTab !== 'advanced') return;
+    if (activeTab !== 'advanced' && activeTab !== 'activity' && activeTab !== 'manual') return;
     replaceSubInHistory(subTab);
   }, [subTab, activeTab]);
 
-  // ブラウザ戻る/進むでsubを復元
+  // ブラウザ戻る/進むでsubを復元。stateではなくURLのtabを正とする（stale closure回避）
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handlePopState = () => {
-      if (activeTab !== 'advanced') return;
+      const urlTab = readUrlTab();
+      if (urlTab !== 'advanced' && urlTab !== 'activity' && urlTab !== 'manual') return;
       const params = new URLSearchParams(window.location.search);
       const urlSub = params.get('sub');
       if (!urlSub) {
-        setSubTabState((prev) => (prev === DEFAULT_ADVANCED_SUB_TAB ? prev : DEFAULT_ADVANCED_SUB_TAB));
+        // sub が URL に無ければ activeTab から推論
+        const fallback = urlTab === 'activity' ? 'activity' : urlTab === 'manual' ? 'manual' : DEFAULT_ADVANCED_SUB_TAB;
+        setSubTabState((prev) => (prev === fallback ? prev : fallback));
         return;
       }
       if (isAdvancedSubTab(urlSub)) {
@@ -95,12 +115,12 @@ export function useAdvancedSubTab(activeTab: TabType, accountId: string): UseAdv
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [activeTab]);
+  }, []);
 
   const setSubTab = useCallback(
     (sub: AdvancedSubTab) => {
       setSubTabState((prev) => (prev === sub ? prev : sub));
-      if (activeTab === 'advanced') {
+      if (activeTab === 'advanced' || activeTab === 'activity' || activeTab === 'manual') {
         pushSubToHistory(sub);
       }
     },

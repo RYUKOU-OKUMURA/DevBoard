@@ -9,7 +9,7 @@ import { useRepositories } from './hooks/useRepositories';
 import { useRecentActivities } from './hooks/useRecentActivities';
 import { useTodos } from './hooks/useTodos';
 import { ColumnKey } from './types';
-import { useActiveTab } from './hooks/useActiveTab';
+import { useActiveTab, resolveTabCandidate, DEFAULT_TAB } from './hooks/useActiveTab';
 import { useRepositoryView } from './hooks/useRepositoryView';
 import { useAdvancedSubTab } from './hooks/useAdvancedSubTab';
 import { useManualRepositories } from './hooks/useManualRepositories';
@@ -131,6 +131,10 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     user.userId || user.username
   );
 
+  // activity/manual の旧 tab 値も高度な機能面として扱い、空白画面を防ぐ
+  const isAdvancedSurface =
+    activeTab === 'advanced' || activeTab === 'activity' || activeTab === 'manual';
+
   // URL履歴にviewを同期し、ブラウザ戻る/進むでビューModeを復元する
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -149,8 +153,10 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handlePopState = () => {
-      if (activeTab !== 'board') return;
+      // state ではなく URL の tab を正とする（stale closure 回避）
       const params = new URLSearchParams(window.location.search);
+      const urlTab = resolveTabCandidate(params.get('tab') ?? DEFAULT_TAB).tab;
+      if (urlTab !== 'board') return;
       const urlView = params.get('view');
       if (urlView === 'all' || urlView === 'kanban' || urlView === 'roadmap') {
         setRepositoryViewMode(urlView);
@@ -160,7 +166,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [activeTab, setRepositoryViewMode]);
+  }, [setRepositoryViewMode]);
 
   const {
     repos,
@@ -476,7 +482,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Only show with the legacy advanced board */}
-        {activeTab === 'advanced' && advancedSubTab === 'legacy' && (
+        {isAdvancedSurface && advancedSubTab === 'legacy' && (
           <Suspense
             fallback={
               <div
@@ -519,9 +525,10 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
             )}
           </div>
 
-          {/* Advanced Tab - サブタブで概要/旧カンバン/Activity/手動追加/TODO・AI を切り替え */}
-          <div className={activeTab === 'advanced' ? 'h-full overflow-hidden animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
-            {activeTab === 'advanced' && (
+          {/* Advanced Tab - サブタブで概要/旧カンバン/Activity/手動追加/TODO・AI を切り替え。
+              activity/manual の旧 tab 値もこの面にまとめて描画し、空白画面を防ぐ。 */}
+          <div className={isAdvancedSurface ? 'h-full overflow-hidden animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
+            {isAdvancedSurface && (
               <Suspense fallback={<LoadingScreen />}>
                 <AdvancedHome
                   activeSubTab={advancedSubTab}
