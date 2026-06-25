@@ -10,6 +10,7 @@ import { useRecentActivities } from './hooks/useRecentActivities';
 import { useTodos } from './hooks/useTodos';
 import { ColumnKey, DEFAULT_ADVANCED_SUB_TAB, type AdvancedSubTab } from './types';
 import { useActiveTab } from './hooks/useActiveTab';
+import { useRepositoryView } from './hooks/useRepositoryView';
 import { useManualRepositories } from './hooks/useManualRepositories';
 import { usePreAuthView } from './hooks/usePreAuthView';
 import type { TabType } from './components/TabNavigation';
@@ -122,6 +123,9 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const [uiError, setUiError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [advancedSubTab, setAdvancedSubTab] = useState<AdvancedSubTab>(DEFAULT_ADVANCED_SUB_TAB);
+  const { viewMode: repositoryViewMode, setViewMode: setRepositoryViewMode } = useRepositoryView(
+    user.userId || user.username
+  );
 
   const {
     repos,
@@ -275,6 +279,8 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
       isLoading={isRepoLoading}
       onOpenAdvancedFeatures={() => setActiveTab('advanced')}
       onOpenPracticeHome={() => setActiveTab('practice')}
+      viewMode={repositoryViewMode}
+      onViewModeChange={setRepositoryViewMode}
     />
   );
 
@@ -418,6 +424,19 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
           advancedCount={activityBadgeCount + manualRepoCount}
         />
       </Suspense>
+
+      {/* 現在のビュー表示 - リポジトリタブのときだけタブ直下に出す */}
+      {activeTab === 'board' && (
+        <div
+          className="flex shrink-0 items-center gap-inline-xs border-b border-[var(--border-subtle)] bg-surface-secondary px-inset-md py-inset-xs text-caption text-[var(--text-muted)] sm:px-inset-lg motion-reduce:transition-none"
+          aria-live="polite"
+        >
+          <span>今:</span>
+          <span className="font-semibold text-[var(--accent-green-emphasis)]">
+            {repositoryViewMode === 'roadmap' ? 'ロードマップ' : repositoryViewMode === 'kanban' ? 'カンバン' : 'すべて'}
+          </span>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">

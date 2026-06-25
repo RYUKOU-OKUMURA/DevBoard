@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AppConfig, ColumnKey, Repo, SortOrder } from '../../types';
+import type { AppConfig, ColumnKey, Repo, RepositoryViewMode, SortOrder } from '../../types';
 import { DEFAULT_CLASSIFY_CONFIG, classifyRepo, configToOptions } from '../../lib/classifyRepo';
 import { formatLastUpdateTime } from '../../utils/timeFormatter';
 import { focusRing } from '../../lib/focusRing';
@@ -37,6 +37,9 @@ interface RepositoryHomeProps {
   lastUpdateTime?: number | null;
   onOpenAdvancedFeatures?: () => void;
   onOpenPracticeHome?: () => void;
+  // 親からビューModeを制御したい場合に渡す。未指定時は内部useRepositoryViewを使う（後方互換）。
+  viewMode?: RepositoryViewMode;
+  onViewModeChange?: (value: RepositoryViewMode) => void;
 }
 
 const SORT_OPTIONS: Array<{ value: SortOrder; label: string }> = [
@@ -54,10 +57,14 @@ export function RepositoryHome({
   lastUpdateTime,
   onOpenAdvancedFeatures,
   onOpenPracticeHome,
+  viewMode: controlledViewMode,
+  onViewModeChange,
 }: RepositoryHomeProps) {
   const { getTagObjectsForRepo } = useTagsContext();
   const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
-  const { viewMode, setViewMode } = useRepositoryView(accountId);
+  const internalView = useRepositoryView(accountId);
+  const viewMode = controlledViewMode ?? internalView.viewMode;
+  const setViewMode = onViewModeChange ?? internalView.setViewMode;
   const {
     createIssueDraft,
     createGitHubIssueFromDraft,
