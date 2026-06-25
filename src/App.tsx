@@ -8,7 +8,7 @@ import { useToast } from './hooks/useToast';
 import { useRepositories } from './hooks/useRepositories';
 import { useRecentActivities } from './hooks/useRecentActivities';
 import { useTodos } from './hooks/useTodos';
-import { ColumnKey } from './types';
+import { ColumnKey, DEFAULT_ADVANCED_SUB_TAB, type AdvancedSubTab } from './types';
 import { useActiveTab } from './hooks/useActiveTab';
 import { useManualRepositories } from './hooks/useManualRepositories';
 import { usePreAuthView } from './hooks/usePreAuthView';
@@ -121,7 +121,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [repositoryView, setRepositoryView] = useState<'home' | 'legacy'>('home');
+  const [advancedSubTab, setAdvancedSubTab] = useState<AdvancedSubTab>(DEFAULT_ADVANCED_SUB_TAB);
 
   const {
     repos,
@@ -234,13 +234,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     setIsSidebarCollapsed((prev) => !prev);
   }, []);
 
-  const handleOpenLegacyBoard = useCallback(() => {
-    setRepositoryView('legacy');
-    setActiveTab('board');
-  }, [setActiveTab]);
-
-  const handleOpenRepositoryHome = useCallback(() => {
-    setRepositoryView('home');
+  const handleBackToRepositoryHome = useCallback(() => {
     setActiveTab('board');
   }, [setActiveTab]);
 
@@ -253,10 +247,10 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
         </div>
         <button
           type="button"
-          onClick={handleOpenRepositoryHome}
+          onClick={handleBackToRepositoryHome}
           className="inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] shadow-sm transition-colors motion-reduce:transition-none hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-secondary)]"
         >
-          1カラム一覧へ戻る
+          リポジトリタブへ戻る
         </button>
       </div>
       <div className="min-h-0 flex-1">
@@ -271,7 +265,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
     </div>
   );
 
-  const repositoryPanel = repositoryView === 'legacy' ? legacyRepositoryPanel : (
+  const repositoryPanel = (
     <RepositoryHome
       accountId={user.userId || user.username}
       repos={repos}
@@ -428,7 +422,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Only show with the legacy advanced board */}
-        {activeTab === 'board' && repositoryView === 'legacy' && (
+        {activeTab === 'advanced' && advancedSubTab === 'legacy' && (
           <Suspense
             fallback={
               <div
@@ -451,29 +445,12 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
 
         {/* Main Content with Split Panel */}
         <div className="flex-1 overflow-hidden">
-          {/* Board Tab with Split Panel */}
+          {/* Board Tab - 常にRepositoryHome（1カラム一覧） */}
           <div className={activeTab === 'board' ? 'h-full animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
             {activeTab === 'board' && (
               <TagsProvider scope="kanban">
                 <Suspense fallback={<LoadingScreen />}>
-                  {repositoryView === 'legacy' ? (
-                    <SplitPanel
-                      topPanel={repositoryPanel}
-                      bottomPanel={<Workspace />}
-                      initialBottomHeight={panelHeight}
-                      minBottomHeight={200}
-                      maxBottomHeightPercent={80}
-                      isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
-                      onCollapseChange={(collapsed) => {
-                        if (collapsed) {
-                          toggleWorkspace();
-                        }
-                      }}
-                      onHeightChange={setPanelHeight}
-                    />
-                  ) : (
-                    repositoryPanel
-                  )}
+                  {repositoryPanel}
                 </Suspense>
               </TagsProvider>
             )}
@@ -488,42 +465,47 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
             )}
           </div>
 
-          {/* Advanced Tab */}
-          <div className={activeTab === 'advanced' ? 'h-full overflow-auto animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
+          {/* Advanced Tab - サブタブで概要/旧カンバン/Activity/手動追加/TODO・AI を切り替え */}
+          <div className={activeTab === 'advanced' ? 'h-full overflow-hidden animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
             {activeTab === 'advanced' && (
               <Suspense fallback={<LoadingScreen />}>
                 <AdvancedHome
+                  activeSubTab={advancedSubTab}
+                  onSubTabChange={setAdvancedSubTab}
                   activityCount={activityBadgeCount}
                   manualRepoCount={manualRepoCount}
-                  onOpenActivity={() => setActiveTab('activity')}
-                  onOpenManualRepos={() => setActiveTab('manual')}
-                  onOpenLegacyBoard={handleOpenLegacyBoard}
+                  onOpenActivity={() => setAdvancedSubTab('activity')}
+                  onOpenManualRepos={() => setAdvancedSubTab('manual')}
+                  onOpenLegacyBoard={() => setAdvancedSubTab('legacy')}
+                  legacyContent={
+                    <SplitPanel
+                      topPanel={legacyRepositoryPanel}
+                      bottomPanel={<Workspace />}
+                      initialBottomHeight={panelHeight}
+                      minBottomHeight={200}
+                      maxBottomHeightPercent={80}
+                      isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
+                      onCollapseChange={(collapsed) => {
+                        if (collapsed) {
+                          toggleWorkspace();
+                        }
+                      }}
+                      onHeightChange={setPanelHeight}
+                    />
+                  }
+                  activityContent={<ActivityTab repos={repos} />}
+                  manualContent={
+                    <TagsProvider scope="manual">
+                      <ManualRepoBoard
+                        accountId={user.username}
+                        manualRepos={manualRepos}
+                        onReposChange={setManualRepos}
+                      />
+                    </TagsProvider>
+                  }
+                  todoAiContent={null}
                 />
               </Suspense>
-            )}
-          </div>
-
-          {/* Activity Tab */}
-          <div className={activeTab === 'activity' ? 'h-full overflow-auto animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
-            {activeTab === 'activity' && (
-              <Suspense fallback={<LoadingScreen />}>
-                <ActivityTab repos={repos} />
-              </Suspense>
-            )}
-          </div>
-
-          {/* Manual Repos Tab */}
-          <div className={activeTab === 'manual' ? 'h-full overflow-auto animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
-            {activeTab === 'manual' && (
-              <TagsProvider scope="manual">
-                <Suspense fallback={<LoadingScreen />}>
-                  <ManualRepoBoard
-                    accountId={user.username}
-                    manualRepos={manualRepos}
-                    onReposChange={setManualRepos}
-                  />
-                </Suspense>
-              </TagsProvider>
             )}
           </div>
         </div>

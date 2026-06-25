@@ -81,6 +81,17 @@ export interface ToastMessage {
   duration?: number;
 }
 
+// 高度な機能タブ配下のサブタブ。旧カンバン、Activity、手動追加、TODO/AI をここに集約する。
+// TabType は増やさず、advanced タブ内の表示用状態として扱う。
+export type AdvancedSubTab = 'overview' | 'legacy' | 'activity' | 'manual' | 'todoai';
+
+export const DEFAULT_ADVANCED_SUB_TAB: AdvancedSubTab = 'legacy';
+const VALID_ADVANCED_SUB_TABS: AdvancedSubTab[] = ['overview', 'legacy', 'activity', 'manual', 'todoai'];
+
+export function isAdvancedSubTab(value: unknown): value is AdvancedSubTab {
+  return typeof value === 'string' && (VALID_ADVANCED_SUB_TABS as string[]).includes(value);
+}
+
 export * from './repo';
 export * from './practice';
 
