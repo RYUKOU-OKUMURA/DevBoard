@@ -8,9 +8,10 @@ import { useToast } from './hooks/useToast';
 import { useRepositories } from './hooks/useRepositories';
 import { useRecentActivities } from './hooks/useRecentActivities';
 import { useTodos } from './hooks/useTodos';
-import { ColumnKey, DEFAULT_ADVANCED_SUB_TAB, type AdvancedSubTab } from './types';
+import { ColumnKey } from './types';
 import { useActiveTab } from './hooks/useActiveTab';
 import { useRepositoryView } from './hooks/useRepositoryView';
+import { useAdvancedSubTab } from './hooks/useAdvancedSubTab';
 import { useManualRepositories } from './hooks/useManualRepositories';
 import { usePreAuthView } from './hooks/usePreAuthView';
 import type { TabType } from './components/TabNavigation';
@@ -122,10 +123,44 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const [isAddRepoModalOpen, setIsAddRepoModalOpen] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [advancedSubTab, setAdvancedSubTab] = useState<AdvancedSubTab>(DEFAULT_ADVANCED_SUB_TAB);
+  const { subTab: advancedSubTab, setSubTab: setAdvancedSubTab } = useAdvancedSubTab(
+    activeTab,
+    user.userId || user.username
+  );
   const { viewMode: repositoryViewMode, setViewMode: setRepositoryViewMode } = useRepositoryView(
     user.userId || user.username
   );
+
+  // URL履歴にviewを同期し、ブラウザ戻る/進むでビューModeを復元する
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (activeTab !== 'board') return;
+    const params = new URLSearchParams(window.location.search);
+    const current = params.get('view');
+    if (current !== repositoryViewMode) {
+      params.set('view', repositoryViewMode);
+      const query = params.toString();
+      const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+      // タブ切り替えのpushStateとは独立に、ビュー変更はreplaceで同期（履歴膨張を避ける）
+      window.history.replaceState({ view: repositoryViewMode }, '', newUrl);
+    }
+  }, [repositoryViewMode, activeTab]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      if (activeTab !== 'board') return;
+      const params = new URLSearchParams(window.location.search);
+      const urlView = params.get('view');
+      if (urlView === 'all' || urlView === 'kanban' || urlView === 'roadmap') {
+        setRepositoryViewMode(urlView);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [activeTab, setRepositoryViewMode]);
 
   const {
     repos,
