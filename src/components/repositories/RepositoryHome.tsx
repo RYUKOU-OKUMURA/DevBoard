@@ -112,15 +112,15 @@ export function RepositoryHome({
 
   return (
     <div className="h-full overflow-auto bg-surface-app">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-stack-lg px-inset-lg py-inset-lg">
-        <header className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-lg shadow-sm">
-          <div className="flex flex-col gap-stack-md lg:flex-row lg:items-start lg:justify-between">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-stack-md px-inset-lg py-inset-md">
+        <header className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-md shadow-sm">
+          <div className="flex flex-col gap-stack-sm lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <p className="text-caption font-semibold text-[var(--text-muted)]">リポジトリ</p>
-              <h1 className="mt-stack-xs text-title-1 font-bold text-[var(--text-primary)]">
+              <h1 className="mt-stack-xs text-title-2 font-bold text-[var(--text-primary)]">
                 読んで整理する一覧
               </h1>
-              <p className="mt-stack-sm max-w-2xl text-body-sm leading-relaxed text-[var(--text-secondary)]">
+              <p className="mt-stack-xs max-w-2xl text-body-sm leading-relaxed text-[var(--text-secondary)]">
                 カードを押してもGitHubへ移動しません。外部で開くときだけ「GitHubで開く」を使います。
               </p>
             </div>
@@ -153,7 +153,7 @@ export function RepositoryHome({
             </div>
           </div>
 
-          <div className="mt-stack-lg grid grid-cols-1 gap-stack-sm lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
+          <div className="mt-stack-md grid grid-cols-1 gap-stack-sm lg:grid-cols-[minmax(0,1fr)_220px_auto] lg:items-end">
             <label className="block">
               <span className="sr-only">リポジトリを検索</span>
               <div className="relative">
@@ -205,7 +205,7 @@ export function RepositoryHome({
             </div>
           </div>
 
-          <div className="mt-stack-md flex flex-wrap items-center gap-inline-sm text-caption text-[var(--text-muted)]">
+          <div className="mt-stack-sm flex flex-wrap items-center gap-inline-sm text-caption text-[var(--text-muted)]">
             <span>
               表示中: {visibleRepos.length} / {repos.length}
             </span>
