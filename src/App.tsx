@@ -539,20 +539,22 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                   onOpenManualRepos={() => setAdvancedSubTab('manual')}
                   onOpenLegacyBoard={() => setAdvancedSubTab('legacy')}
                   legacyContent={
-                    <SplitPanel
-                      topPanel={legacyRepositoryPanel}
-                      bottomPanel={<Workspace />}
-                      initialBottomHeight={panelHeight}
-                      minBottomHeight={200}
-                      maxBottomHeightPercent={80}
-                      isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
-                      onCollapseChange={(collapsed) => {
-                        if (collapsed) {
-                          toggleWorkspace();
-                        }
-                      }}
-                      onHeightChange={setPanelHeight}
-                    />
+                    <TagsProvider scope="kanban">
+                      <SplitPanel
+                        topPanel={legacyRepositoryPanel}
+                        bottomPanel={<Workspace />}
+                        initialBottomHeight={panelHeight}
+                        minBottomHeight={200}
+                        maxBottomHeightPercent={80}
+                        isBottomCollapsed={!isWorkspaceOpen || !selectedRepo}
+                        onCollapseChange={(collapsed) => {
+                          if (collapsed) {
+                            toggleWorkspace();
+                          }
+                        }}
+                        onHeightChange={setPanelHeight}
+                      />
+                    </TagsProvider>
                   }
                   activityContent={<ActivityTab repos={repos} />}
                   manualContent={
