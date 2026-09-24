@@ -26,6 +26,8 @@ const REST_ALLOWLIST: RestRule[] = [
   { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+$/, methods: new Set(['PATCH']) },
   // Issue comments create
   { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+\/comments$/, methods: new Set(['POST']) },
+  // Repository labels list
+  { pattern: /^repos\/[^/]+\/[^/]+\/labels$/, methods: new Set(['GET']) },
   // Pull requests list
   { pattern: /^repos\/[^/]+\/[^/]+\/pulls$/, methods: new Set(['GET']) },
 ];
@@ -40,6 +42,15 @@ const createErrorResponse = (status: number, message: string) => {
 
 const logRejection = (reason: string, details: Record<string, unknown>) => {
   console.warn('[GitHub Proxy] Blocked request', { reason, ...details });
+};
+
+const isDotSegment = (segment: string): boolean => {
+  try {
+    const decoded = decodeURIComponent(segment);
+    return decoded === '.' || decoded === '..';
+  } catch {
+    return false;
+  }
 };
 
 export const onRequest: PagesFunction<Env> = async (context) => {
@@ -62,6 +73,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     if (!apiPath) {
       logRejection('empty path', { method: request.method });
+      return createErrorResponse(403, 'Forbidden');
+    }
+
+    if (apiPath.split('/').some(isDotSegment)) {
+      logRejection('dot segment in path', { method: request.method, path: apiPath });
       return createErrorResponse(403, 'Forbidden');
     }
 

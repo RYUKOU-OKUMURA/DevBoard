@@ -103,6 +103,58 @@ describe('GitHub proxy allowlist', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { path: ['repos', 'o', '..', 'issues'] },
+    { path: ['repos', 'o', '%2E%2E', 'issues'] },
+    { path: ['repos', '.', 'r', 'issues'] },
+    { path: ['repos', 'o', '%2e.', 'issues'] },
+  ])('rejects dot segments before forwarding: $path', async ({ path }) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const request = makeRequest(
+      `https://devboard.test/api/github/${path.join('/')}`,
+      { method: 'GET' }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path },
+    } as any);
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      '[GitHub Proxy] Blocked request',
+      expect.objectContaining({ reason: 'dot segment in path' })
+    );
+  });
+
+  it('checks dot segments before the GraphQL operation allowlist', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const request = makeRequest(
+      'https://devboard.test/api/github/graphql/%2e%2e/repos/viewer',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queryId: 'viewerRepos', variables: {} }),
+      }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path: ['graphql', '%2e%2e', 'repos', 'viewer'] },
+    } as any);
+
+    expect(response.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      '[GitHub Proxy] Blocked request',
+      expect.objectContaining({ reason: 'dot segment in path' })
+    );
+  });
+
   it('forwards whitelisted GraphQL queries with server-side templates', async () => {
     fetchMock.mockResolvedValueOnce(new Response(
       JSON.stringify({ data: {} }),
@@ -134,6 +186,7 @@ describe('GitHub proxy allowlist', () => {
     } as any);
 
     expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const [, init] = fetchMock.mock.calls[0];
@@ -207,5 +260,60 @@ describe('GitHub proxy allowlist', () => {
       title: 'READMEを書く',
       body: '## やりたいこと',
     });
+  });
+
+  it('allows only GET on repository labels', async () => {
+    const request = makeRequest(
+      'https://devboard.test/api/github/repos/o/r/labels',
+      { method: 'GET' }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path: ['repos', 'o', 'r', 'labels'] },
+    } as any);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.github.com/repos/o/r/labels',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
+  it('does not allow POST on repository labels', async () => {
+    const request = makeRequest(
+      'https://devboard.test/api/github/repos/o/r/labels',
+      { method: 'POST' }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path: ['repos', 'o', 'r', 'labels'] },
+    } as any);
+
+    expect(response.status).toBe(405);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('allows dots inside a repository name and disables caching on GitHub errors', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('{}', { status: 422 }));
+    const request = makeRequest(
+      'https://devboard.test/api/github/repos/o/r.js/issues',
+      { method: 'GET' }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path: ['repos', 'o', 'r.js', 'issues'] },
+    } as any);
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get('Cache-Control')).toContain('no-store');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
