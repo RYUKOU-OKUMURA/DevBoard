@@ -117,32 +117,46 @@ export function updateIssueLocalMeta(
 }
 
 type LegacyTodo = {
-  repoId?: unknown;
-  issueNumber?: unknown;
+  repoId: string;
+  issueNumber: number;
   priority?: unknown;
   dueDate?: unknown;
   description?: unknown;
-  updatedAt?: unknown;
+  updatedAt: string;
 };
 
-function getLegacyTodos(accountId: string): LegacyTodo[] {
+function getLegacyTodos(accountId: string): unknown[] {
   const raw = getStorageString(`${LEGACY_TODO_PREFIX}${accountId}`, '');
   if (!raw) return [];
   try {
     const value: unknown = JSON.parse(raw);
-    return Array.isArray(value) ? value as LegacyTodo[] : [];
+    return Array.isArray(value) ? value : [];
   } catch {
     return [];
   }
 }
 
+function isLegacyTodo(value: unknown): value is LegacyTodo {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const todo = value as Record<string, unknown>;
+  return typeof todo.repoId === 'string' && todo.repoId.trim() !== '' && todo.repoId === todo.repoId.trim() && !todo.repoId.includes('#') &&
+    typeof todo.issueNumber === 'number' && Number.isSafeInteger(todo.issueNumber) && todo.issueNumber > 0 &&
+    typeof todo.updatedAt === 'string' && !Number.isNaN(Date.parse(todo.updatedAt));
+}
+
+function readLegacyDueDate(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const dateOnly = value.slice(0, 10);
+  if (!isDateOnly(dateOnly)) return undefined;
+  if (value === dateOnly) return dateOnly;
+  const isDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?$/i.test(value);
+  return isDateTime && !Number.isNaN(Date.parse(value)) ? dateOnly : undefined;
+}
+
 function legacyMeta(todo: LegacyTodo): IssueLocalMeta | null {
-  const dueDateValue = typeof todo.dueDate === 'string' && /^\d{4}-\d{2}-\d{2}(?:$|T)/.test(todo.dueDate)
-    ? todo.dueDate.slice(0, 10)
-    : undefined;
   return normalizeMeta({
     priority: todo.priority,
-    dueDate: dueDateValue,
+    dueDate: readLegacyDueDate(todo.dueDate),
     note: todo.description,
     updatedAt: todo.updatedAt,
   });
@@ -155,9 +169,7 @@ export function migrateLinkedIssueTodos(accountId: string): boolean {
   const metas = getIssueLocalMetaMap(accountId);
   const latestTodoByIssue = new Map<string, LegacyTodo>();
   getLegacyTodos(accountId).forEach((todo) => {
-    if (typeof todo.repoId !== 'string' || !todo.repoId.trim() || todo.repoId !== todo.repoId.trim() || todo.repoId.includes('#') ||
-      typeof todo.issueNumber !== 'number' || !Number.isSafeInteger(todo.issueNumber) || todo.issueNumber < 1 ||
-      typeof todo.updatedAt !== 'string' || Number.isNaN(Date.parse(todo.updatedAt))) return;
+    if (!isLegacyTodo(todo)) return;
     const key = getIssueLocalMetaEntryKey(todo.repoId, todo.issueNumber);
     if (metas[key]) return;
     const existing = latestTodoByIssue.get(key);

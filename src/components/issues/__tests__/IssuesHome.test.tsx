@@ -75,6 +75,8 @@ describe('IssuesHome', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -134,6 +136,29 @@ describe('IssuesHome', () => {
     expect((within(reopenedDialog).getByLabelText('優先度') as HTMLSelectElement).value).toBe('high');
     expect((within(reopenedDialog).getByLabelText('期限') as HTMLInputElement).value).toBe('2026-12-31');
     expect((within(reopenedDialog).getByLabelText('自分メモ') as HTMLTextAreaElement).value).toBe('ローカルメモ');
+  });
+
+  it('mounts with mixed malformed legacy todos and migrates the valid todo', async () => {
+    const repo = createRepo('repo-a');
+    setTracked('alice-id', repo.id);
+    localStorage.setItem('github-dashboard-todos:alice-id', JSON.stringify([
+      null,
+      42,
+      'x',
+      { repoId: 'repo-a' },
+      {
+        repoId: repo.id, issueNumber: 12, priority: 'high', dueDate: '2026-09-24',
+        description: 'migrated memo', updatedAt: '2026-09-20T00:00:00.000Z',
+      },
+    ]));
+    mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12)], rawCount: 1 });
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+
+    const card = await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' });
+    expect(card.textContent).toContain('優先度: 高');
+    expect(card.textContent).toContain('期限: 2026-09-24');
+    expect(getIssueLocalMeta('alice-id', repo.id, 12)).toMatchObject({ note: 'migrated memo' });
   });
 
   it('updates the selected issue and hides a newly closed issue from the default filter', async () => {
@@ -605,13 +630,13 @@ describe('IssuesHome', () => {
   });
 
   it('shows priority and due status, filters by priority, and does not emphasize closed deadlines', async () => {
+    vi.stubEnv('TZ', 'Asia/Tokyo');
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-23T15:30:00.000Z'));
     const repo = createRepo('repo-a');
     setTracked('alice-id', repo.id);
-    const today = new Date();
-    const todayText = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const yesterdayText = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    const todayText = '2026-09-24';
+    const yesterdayText = '2026-09-23';
     updateIssueLocalMeta('alice-id', repo.id, 1, { priority: 'high', dueDate: yesterdayText });
     updateIssueLocalMeta('alice-id', repo.id, 2, { priority: 'medium', dueDate: todayText });
     updateIssueLocalMeta('alice-id', repo.id, 4, { priority: 'low', dueDate: '2000-01-01' });
@@ -621,7 +646,12 @@ describe('IssuesHome', () => {
     });
 
     render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
-    const overdueCard = await screen.findByRole('button', { name: 'alice/repo-a #1: Issue 1 の詳細を開く' });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const overdueCard = screen.getByRole('button', { name: 'alice/repo-a #1: Issue 1 の詳細を開く' });
     const todayCard = screen.getByRole('button', { name: 'alice/repo-a #2: Issue 2 の詳細を開く' });
     expect(overdueCard.textContent).toContain('優先度: 高');
     expect(overdueCard.textContent).toContain(`期限: ${yesterdayText}（期限切れ）`);

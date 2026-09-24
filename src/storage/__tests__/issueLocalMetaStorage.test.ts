@@ -65,20 +65,62 @@ describe('issueLocalMetaStorage', () => {
     expect(localStorage.getItem(LEGACY_KEY)).toBe(raw);
   });
 
-  it('does not overwrite existing metadata and runs only once', () => {
-    updateIssueLocalMeta(ACCOUNT, 'repo-a', 8, { note: 'existing' });
+  it('skips malformed linked todos and migrates valid entries after them', () => {
+    const validTodo = {
+      repoId: 'repo-a', issueNumber: 8, priority: 'high', dueDate: '2026-04-04',
+      description: 'valid', updatedAt: '2026-02-01T00:00:00.000Z',
+    };
     localStorage.setItem(LEGACY_KEY, JSON.stringify([
-      { repoId: 'repo-a', issueNumber: 8, priority: 'high', updatedAt: '2026-02-01T00:00:00.000Z' },
+      null,
+      42,
+      'x',
+      { repoId: 'repo-a' },
+      validTodo,
+    ]));
+
+    expect(() => migrateLinkedIssueTodos(ACCOUNT)).not.toThrow();
+    expect(getIssueLocalMetaMap(ACCOUNT)).toEqual({
+      'repo-a#8': {
+        priority: 'high', dueDate: '2026-04-04', note: 'valid', updatedAt: '2026-02-01T00:00:00.000Z',
+      },
+    });
+  });
+
+  it('does not migrate an invalid legacy due date while keeping other fields', () => {
+    localStorage.setItem(LEGACY_KEY, JSON.stringify([
+      {
+        repoId: 'repo-a', issueNumber: 8, priority: 'medium', dueDate: '2026-04-01Tbad',
+        description: 'keep this note', updatedAt: '2026-02-01T00:00:00.000Z',
+      },
+    ]));
+
+    expect(migrateLinkedIssueTodos(ACCOUNT)).toBe(true);
+    expect(getIssueLocalMeta(ACCOUNT, 'repo-a', 8)).toEqual({
+      priority: 'medium', note: 'keep this note', updatedAt: '2026-02-01T00:00:00.000Z',
+    });
+  });
+
+  it('does not overwrite existing metadata and runs only once', () => {
+    updateIssueLocalMeta(ACCOUNT, 'repo-a', 8, {
+      priority: 'high', dueDate: '2026-04-04', note: 'existing',
+    });
+    const existingMeta = getIssueLocalMeta(ACCOUNT, 'repo-a', 8);
+    localStorage.setItem(LEGACY_KEY, JSON.stringify([
+      {
+        repoId: 'repo-a', issueNumber: 8, priority: 'low', dueDate: '2026-04-05',
+        description: 'legacy overwrite', updatedAt: '2026-02-01T00:00:00.000Z',
+      },
       { repoId: 'repo-b', issueNumber: 9, priority: 'low', updatedAt: '2026-02-01T00:00:00.000Z' },
     ]));
 
     migrateLinkedIssueTodos(ACCOUNT);
+    expect(getIssueLocalMeta(ACCOUNT, 'repo-a', 8)).toEqual(existingMeta);
     localStorage.setItem(LEGACY_KEY, JSON.stringify([
       { repoId: 'repo-b', issueNumber: 9, priority: 'high', updatedAt: '2026-03-01T00:00:00.000Z' },
     ]));
     migrateLinkedIssueTodos(ACCOUNT);
 
-    expect(getIssueLocalMeta(ACCOUNT, 'repo-a', 8)?.note).toBe('existing');
+    expect(getIssueLocalMeta(ACCOUNT, 'repo-a', 8)).toEqual(existingMeta);
     expect(getIssueLocalMeta(ACCOUNT, 'repo-b', 9)?.priority).toBe('low');
     expect(localStorage.getItem(getIssueLocalMetaMigrationKey(ACCOUNT))).toBe('1');
   });
