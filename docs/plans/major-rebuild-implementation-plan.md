@@ -312,10 +312,81 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] 全238テストが通る。
 - [x] 既存機能（RepoBoard/Workspace/SplitPanel/ActivityTab/ManualRepoBoard）を削除せず、導線を高度な機能配下へ移動。
 
+### フェーズ 13: 複数リポジトリのIssue管理画面
+
+目的: 「進捗管理に追加」したリポジトリのIssueを、DevBoard内の1画面で横断して見て・動かせるようにする。バックログ「5.1 GitHub Issue一覧」のうちIssue部分と、「4.2 独立したやること画面」を、この画面に統合する。
+
+方針（2026-09-24決定）:
+
+- 対象リポジトリは `RepoUserMeta` で進捗管理対象になっているものだけ。全リポジトリ横断（Search API追加）はやらない。
+- 最初のリリース（13-A）は読み取り専用。書き込みは13-Bで、P0のproxy・認証補強を済ませてから入れる。
+- 旧TODO↔Issue同期（`useTodos` / `issueSync` / `IssueSyncSettings` / `IssueImportDialog`）は新画面に統合する。旧コードは13-Cで新画面に置き換わるまで削除しない。
+- 新画面はUI刷新の最初の画面として作る。ただし全体のUI刷新は別フェーズで範囲を決め、このフェーズには混ぜない。
+- フェーズ11（依存のメジャー更新）と同じPRに混ぜない。
+
+#### 13-0: 着手前の整理
+
+- [ ] Issueアクセス経路を1つに決める。現状、REST（`src/api/issues.ts`：Workspace `IssuesTab` / `AICommandTab` / `usePracticeIssues`）とGraphQL（`src/utils/issueSync.ts`：`repositoryIssues` / `createIssue` / `updateIssue` / `closeIssue`）の2系統がある。新画面はどちらか一方だけを使い、選んだ理由を本計画書に1行残す。
+- [ ] `GitHubIssue` 型の二重定義（`src/api/issues.ts` と `src/types/todo.ts`）を解消する。新画面は `src/api/issues.ts` の `GitHubIssue` を使い、`src/types/todo.ts` 側は旧同期専用の別名に改名する（振る舞いは変えない。13-Cで旧同期ごと削除）。
+- [ ] 複数リポジトリを並行取得する際の同時実行数の上限とキャッシュ（`fetchedAt`）の方針を決める。
+  - 決定（2026-09-24）: Issueアクセス経路はREST（`src/api/issues.ts`）に統一する。13-Bの再オープン・コメント・ラベル変更がRESTの既存proxy許可（PATCH issue / POST comments）だけで済み、GraphQL側にはreopen・コメント・ラベルのmutationが無いため。GraphQL版（`issueSync`）は13-Cで置き換えるまで旧TODO専用として残す。
+  - 決定（2026-09-24）: 取得は同時3リポジトリまで、1リポジトリあたり `per_page=100` を最大3ページ。結果はメモリ内に `fetchedAt` 付きで保持し、5分以内の再表示では再取得しない（手動の再読み込みボタンで強制取得）。`src/utils/rateLimiter.ts` は「1分3リクエスト」のクライアント制限でこの用途に合わないため使わない。
+- [ ] 非破壊で直せる `npm audit` 指摘だけ先に処理する（フェーズ11の該当項目も同時に `[x]` にする）。
+
+#### 13-A: 読み取り専用の横断Issue一覧
+
+- [ ] `TabType` に `'issues'` を追加し、トップレベルタブ「Issue（やること）」を置く。旧値の `activeTab` 復元と `?tab=` のURL同期を壊さないことをテストで確認する。
+- [ ] 進捗管理対象リポジトリのIssueを取得するhookを追加する（PRを除外、ページング対応、失敗したリポジトリだけエラー表示）。
+- [ ] 1カラムのIssue一覧を表示する（タイトル、リポジトリ名、Open/Closedの日本語表示、ラベル、担当者、更新日時）。
+- [ ] 状態・リポジトリ・ラベル・担当者で絞り込みできる。
+- [ ] カードクリックでDevBoard内の詳細パネルを開く。外部遷移は「GitHubで開く」ボタンのみ。
+- [ ] 進捗管理対象が0件のとき、リポジトリ画面で追加する方法を案内する空状態を出す。
+- [ ] GitHub用語（Issue / Label / Assignee / Open / Closed）に初心者向け日本語を併記する。
+
+検証:
+
+- [ ] hookのテスト（PR除外、一部リポジトリ失敗時、ページング）。
+- [ ] 実機ブラウザで、進捗管理対象が複数あるアカウントで一覧・絞り込み・詳細パネルを確認する。
+- [ ] `npm run check:ci` が通る。
+
+#### 13-B: Issueの軽い操作（書き込み）
+
+前提（先に完了させる）:
+
+- [ ] バックログ3.1: GitHub API proxyの許可リストとOriginガード・`Cache-Control: no-store` を、13-Bで使うpath / methodについて点検する。
+- [ ] バックログ3.5: `SESSION_SECRET` / `ENCRYPTION_KEY` の長さ検証と、`/api/auth/status` の準備判定への `SESSION_SECRET` 追加。
+
+実装:
+
+- [ ] Issueを閉じる / 再オープンできる。
+- [ ] コメントを投稿できる。
+- [ ] ラベルを付け外しできる。
+- [ ] すべての書き込みで確認ダイアログを必須にし、二重送信を防ぐ。
+- [ ] 失敗時に日本語エラーを表示し、画面の状態を元に戻す。
+
+検証:
+
+- [ ] 確認ダイアログでキャンセルした場合にAPIが呼ばれないことをテストする。
+- [ ] 実機で、テスト用リポジトリに対して各操作を1回ずつ確認する。
+- [ ] `npm run check:ci` が通る。
+
+#### 13-C: 旧TODO同期と練習ドラフトの統合
+
+- [ ] 旧TODO（`Todo`：状態・優先度・期限）のうち、新画面で残す項目を決める。GitHubにない情報（優先度・期限・自分メモ）は、Issueに紐づくローカルメタとしてアカウント単位のlocalStorageに保存する。
+- [ ] 既存TODOデータ（`todoStorage`）を新しい保存形式へ移行し、不正データや古いデータでは画面を壊さずフォールバックする。移行テストを書く。
+- [ ] 旧 `IssueSyncSettings` の自動取り込み・自動クローズは新画面に持ち込まない。必要になったら別途検討する。
+- [ ] 練習ドラフトからGitHub Issueを作成済みのもの（`githubIssueNumber` あり）を、新画面の該当Issueと相互に行き来できるようにする。
+- [ ] 高度な機能タブの「TODO・AI」から新画面へ案内する。旧TODO画面の削除は、移行を実機で確認してから別PRで判断する。
+
+検証:
+
+- [ ] 既存TODOデータがあるlocalStorageで、移行後も内容が失われないことを実機で確認する。
+- [ ] `npm run check:ci` が通る。
+
 ## 5. MVPから明示的に外すもの
 
-- [ ] 独立したTODO / やることタブの本格実装。
-- [ ] GitHub Issue一覧 / Pull Request一覧の本格同期。
+- [ ] 独立したTODO / やることタブの本格実装。（→ フェーズ13で新Issue画面に統合）
+- [ ] GitHub Issue一覧 / Pull Request一覧の本格同期。（→ Issue一覧はフェーズ13で扱う。PR一覧は対象外のまま）
 - [ ] GitHub Pull Requestの実作成。
 - [ ] ブランチ作成、コミット作成、ファイル編集自動化。
 - [ ] AI実装連携の新規拡張。
