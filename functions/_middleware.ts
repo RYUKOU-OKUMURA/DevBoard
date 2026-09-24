@@ -45,7 +45,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     const headers = new Headers({
       'Access-Control-Allow-Origin': validOrigin,
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
       'Vary': 'Origin',
@@ -64,13 +64,16 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   // 2.5. レート制限チェック（APIエンドポイントのみ）
   // LOCAL_DEV=true のときはローカル開発用にレート制限をスキップ（プレビューで429になるのを防ぐ）
   const isLocalDev = env.LOCAL_DEV === 'true';
-  let rateLimitResult: { allowed: boolean; remaining: number; resetAt: number } | null = null;
+  let rateLimitResult: { allowed: boolean; remaining: number; resetAt: number; limit: number } | null = null;
   if (isApiPath && !isLocalDev) {
     const clientIP = getClientIP(request);
-    rateLimitResult = await checkRateLimit(env.SESSIONS, clientIP);
+    const rateLimitOptions = isGithubPath
+      ? { maxRequests: 60, keyPrefix: 'rate_limit:github' }
+      : undefined;
+    rateLimitResult = await checkRateLimit(env.SESSIONS, clientIP, rateLimitOptions);
 
     if (!rateLimitResult.allowed) {
-      return createRateLimitResponse(rateLimitResult.resetAt, validOrigin);
+      return createRateLimitResponse(rateLimitResult.resetAt, validOrigin, rateLimitResult.limit);
     }
   }
 
@@ -102,7 +105,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
   // レート制限情報ヘッダー（APIエンドポイントの場合、既にチェック済みの結果を使用）
   if (pathname.startsWith('/api/') && rateLimitResult) {
-    headers.set('X-RateLimit-Limit', '10');
+    headers.set('X-RateLimit-Limit', String(rateLimitResult.limit));
     headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining));
     headers.set('X-RateLimit-Reset', String(rateLimitResult.resetAt));
   }

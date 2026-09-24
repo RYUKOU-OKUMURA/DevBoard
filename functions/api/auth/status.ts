@@ -1,6 +1,7 @@
 // Diagnostics endpoint - reports auth configuration readiness (safe, no secrets)
 
 import type { Env } from '../../lib/types';
+import { isValidHexSecret } from '../../lib/secretValidation';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
@@ -17,6 +18,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const hasClientId = Boolean(env.GITHUB_CLIENT_ID);
   const hasClientSecret = Boolean(env.GITHUB_CLIENT_SECRET);
   const hasEncryptionKey = Boolean(env.ENCRYPTION_KEY);
+  const hasSessionSecret = Boolean(env.SESSION_SECRET);
+  const sessionSecretValid = isValidHexSecret(env.SESSION_SECRET, { minBytes: 32 });
+  const encryptionKeyValid = isValidHexSecret(env.ENCRYPTION_KEY, { exactBytes: 32 });
 
   // KV health check (no user data, short‑lived dummy key)
   let kvOk = false;
@@ -33,14 +37,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   }
 
   // Summarize readiness
-  const ready = hasClientId && hasClientSecret && hasEncryptionKey && kvOk;
+  const ready = hasClientId && hasClientSecret && sessionSecretValid && encryptionKeyValid && kvOk;
 
   const body = {
     ok: ready,
     environment: {
       hasClientId,
       hasClientSecret,
+      hasSessionSecret,
+      sessionSecretValid,
       hasEncryptionKey,
+      encryptionKeyValid,
       kvOk,
       kvError,
       publicOriginConfigured: Boolean(publicOrigin),
@@ -54,6 +61,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       secrets: [
         'Set GITHUB_CLIENT_ID (Cloudflare Pages → Settings → Environment variables)',
         'Set GITHUB_CLIENT_SECRET (same as above)',
+        'Set SESSION_SECRET (use: openssl rand -hex 32)',
         'Set ENCRYPTION_KEY (use: openssl rand -hex 32)',
       ],
       kv: 'Bind your KV namespace as variable name "SESSIONS" (Pages → Settings → Functions → KV bindings)',

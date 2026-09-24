@@ -181,11 +181,15 @@ export const getClientIP = (request: Request): string => {
 /** レート制限チェック */
 export const checkRateLimit = async (
   kv: KVNamespace,
-  identifier: string
-): Promise<{ allowed: boolean; remaining: number; resetAt: number }> => {
+  identifier: string,
+  { maxRequests = RATE_LIMIT.MAX_REQUESTS, keyPrefix = 'rate_limit' }: {
+    maxRequests?: number;
+    keyPrefix?: string;
+  } = {}
+): Promise<{ allowed: boolean; remaining: number; resetAt: number; limit: number }> => {
   const now = Date.now();
   const windowMs = RATE_LIMIT.WINDOW_SECONDS * 1000;
-  const key = `rate_limit:${identifier}`;
+  const key = `${keyPrefix}:${identifier}`;
   
   // KVからリクエスト履歴を取得
   const historyJson = await kv.get(key);
@@ -206,7 +210,7 @@ export const checkRateLimit = async (
   
   // リクエスト数が上限を超えているかチェック
   const count = recentTimestamps.length;
-  const allowed = count < RATE_LIMIT.MAX_REQUESTS;
+  const allowed = count < maxRequests;
   
   if (allowed) {
     // 現在のリクエストを追加
@@ -228,20 +232,22 @@ export const checkRateLimit = async (
   
   return {
     allowed,
-    remaining: Math.max(0, RATE_LIMIT.MAX_REQUESTS - count - (allowed ? 1 : 0)),
+    remaining: Math.max(0, maxRequests - count - (allowed ? 1 : 0)),
     resetAt: Math.ceil(resetAt / 1000), // Unix timestamp (秒)
+    limit: maxRequests,
   };
 };
 
 /** レート制限エラーレスポンスを生成 */
 export const createRateLimitResponse = (
   resetAt: number,
-  origin: string | null
+  origin: string | null,
+  maxRequests = RATE_LIMIT.MAX_REQUESTS
 ): Response => {
   const headers = new Headers({
     'Content-Type': 'application/json',
     'Retry-After': String(Math.max(1, resetAt - Math.floor(Date.now() / 1000))),
-    'X-RateLimit-Limit': String(RATE_LIMIT.MAX_REQUESTS),
+    'X-RateLimit-Limit': String(maxRequests),
     'X-RateLimit-Remaining': '0',
     'X-RateLimit-Reset': String(resetAt),
   });
@@ -251,7 +257,7 @@ export const createRateLimitResponse = (
   const response = new Response(
     JSON.stringify({
       error: 'Too Many Requests',
-      message: `Rate limit exceeded. Maximum ${RATE_LIMIT.MAX_REQUESTS} requests per ${RATE_LIMIT.WINDOW_SECONDS} seconds.`,
+      message: `Rate limit exceeded. Maximum ${maxRequests} requests per ${RATE_LIMIT.WINDOW_SECONDS} seconds.`,
       retryAfter: resetAt - Math.floor(Date.now() / 1000),
     }),
     {

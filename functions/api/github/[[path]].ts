@@ -26,6 +26,8 @@ const REST_ALLOWLIST: RestRule[] = [
   { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+$/, methods: new Set(['PATCH']) },
   // Issue comments create
   { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+\/comments$/, methods: new Set(['POST']) },
+  // Repository labels list
+  { pattern: /^repos\/[^/]+\/[^/]+\/labels$/, methods: new Set(['GET']) },
   // Pull requests list
   { pattern: /^repos\/[^/]+\/[^/]+\/pulls$/, methods: new Set(['GET']) },
 ];
@@ -58,10 +60,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     const url = new URL(request.url);
     const pathArray = (params.path as string[] | undefined) ?? [];
-    const apiPath = pathArray.filter(Boolean).join('/');
+    const apiPath = pathArray.join('/');
 
     if (!apiPath) {
       logRejection('empty path', { method: request.method });
+      return createErrorResponse(403, 'Forbidden');
+    }
+
+    if (apiPath.split('/').some((segment) =>
+      !/^[A-Za-z0-9_.-]+$/.test(segment) || segment === '.' || segment === '..'
+    )) {
+      logRejection('invalid path segment', { method: request.method, path: apiPath });
       return createErrorResponse(403, 'Forbidden');
     }
 
