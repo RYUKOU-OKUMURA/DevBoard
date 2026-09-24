@@ -109,6 +109,7 @@ export function useIssueActions({
 
   const postComment = useCallback((body: string) => {
     if (!body.trim()) return Promise.resolve(null);
+    const commentsAtSubmission = issue.comments;
     const preview = body.trim().replace(/\s+/g, ' ').slice(0, 40);
     const commentText = preview.length < body.trim().replace(/\s+/g, ' ').length ? `${preview}…` : preview;
     return runAction(
@@ -120,7 +121,7 @@ export function useIssueActions({
         const comment = await addIssueComment(owner, repoName, issue.number, body);
         return (current: GitHubIssue) => ({
           ...current,
-          comments: current.comments + 1,
+          comments: Math.max(current.comments, commentsAtSubmission + 1),
           updated_at: comment.created_at,
         });
       }

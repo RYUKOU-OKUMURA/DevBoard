@@ -459,6 +459,37 @@ describe('IssuesHome', () => {
     expect(mockAddIssueComment).toHaveBeenCalledTimes(2);
   });
 
+  it('does not double-count a comment when a reload already includes it', async () => {
+    const repo = createRepo('repo-a');
+    const issue = createIssue(12, { comments: 2, html_url: 'https://github.com/alice/repo-a/issues/12' });
+    const reloadedIssue = createIssue(12, { comments: 3, updated_at: '2026-02-01T00:00:00.000Z' });
+    let resolveComment: (comment: { id: number; body: string; created_at: string }) => void = () => undefined;
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage
+      .mockResolvedValueOnce({ issues: [issue], rawCount: 1 })
+      .mockResolvedValueOnce({ issues: [reloadedIssue], rawCount: 1 });
+    mockAddIssueComment.mockReturnValueOnce(new Promise((resolve) => { resolveComment = resolve; }));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    fireEvent.change(screen.getByLabelText('コメント本文'), { target: { value: 'One comment' } });
+    fireEvent.click(screen.getByRole('button', { name: 'コメントを投稿' }));
+    await waitFor(() => expect(mockAddIssueComment).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: '再読み込み' }));
+    await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('3 件')).toBeTruthy();
+
+    await act(async () => resolveComment({
+      id: 20,
+      body: 'One comment',
+      created_at: '2026-02-02T00:00:00.000Z',
+    }));
+
+    expect(within(screen.getByRole('dialog')).getByText('3 件')).toBeTruthy();
+  });
+
   it('keeps a local close over a stale reload in the panel, list, and cache', async () => {
     let now = 1_800_000_000_000;
     vi.spyOn(Date, 'now').mockImplementation(() => now);
