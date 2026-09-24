@@ -2,8 +2,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import React from 'react';
 import { focusRing } from '../lib/focusRing';
 
-export type TabType = 'board' | 'practice' | 'advanced' | 'activity' | 'manual';
-type PrimaryTabType = 'board' | 'practice' | 'advanced';
+export type TabType = 'board' | 'issues' | 'practice' | 'advanced' | 'activity' | 'manual';
+type PrimaryTabType = 'board' | 'issues' | 'practice' | 'advanced';
 
 interface TabNavigationProps {
   activeTab: TabType;
@@ -18,6 +18,12 @@ const ICONS: Record<PrimaryTabType, JSX.Element> = {
       <rect x="14" y="3" width="7" height="7" />
       <rect x="14" y="14" width="7" height="7" />
       <rect x="3" y="14" width="7" height="7" />
+    </svg>
+  ),
+  issues: (
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12h8M12 8v8" />
     </svg>
   ),
   practice: (
@@ -48,6 +54,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
 
   const tabs: Array<{ id: PrimaryTabType; label: string; badge?: number }> = [
     { id: 'board', label: 'リポジトリ' },
+    { id: 'issues', label: 'Issue（やること）' },
     { id: 'practice', label: '練習' },
     { id: 'advanced', label: '高度な機能', badge: advancedCount },
   ];

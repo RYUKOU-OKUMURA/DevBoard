@@ -6,7 +6,7 @@ type LegacyTabType = 'updates' | 'todos';
 
 const TAB_STORAGE_KEY = 'activeTab';
 export const DEFAULT_TAB: TabType = 'board';
-const VALID_TABS: TabType[] = ['board', 'practice', 'advanced', 'activity', 'manual'];
+const VALID_TABS: TabType[] = ['board', 'issues', 'practice', 'advanced', 'activity', 'manual'];
 const LEGACY_TABS: LegacyTabType[] = ['updates', 'todos'];
 const LEGACY_TAB_MAP: Record<LegacyTabType, TabType> = {
   updates: 'advanced',
