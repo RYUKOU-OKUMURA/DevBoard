@@ -179,6 +179,30 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
   const reload = useCallback(() => {
     void loadRef.current(true);
   }, []);
+  const replaceIssue = useCallback((repoId: string, issue: GitHubIssue) => {
+    const cacheKey = getCacheKey(accountId, repoId);
+    const cached = repoIssueCache.get(cacheKey);
+    if (cached) {
+      repoIssueCache.set(cacheKey, {
+        ...cached,
+        issues: cached.issues.map((cachedIssue) =>
+          cachedIssue.number === issue.number ? issue : cachedIssue
+        ),
+      });
+    }
+    setState((current) =>
+      current.identity !== identity
+        ? current
+        : {
+            ...current,
+            items: current.items.map((item) =>
+              item.repo.id === repoId && item.issue.number === issue.number
+                ? { ...item, issue }
+                : item
+            ),
+          }
+    );
+  }, [accountId, identity]);
   const visibleState = state.identity === identity ? state : null;
   const currentReposById = new Map(trackedRepos.map((repo) => [repo.id, repo]));
 
@@ -191,6 +215,7 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
     isLoading: visibleState?.isLoading ?? trackedRepos.length > 0,
     lastFetchedAt: visibleState?.lastFetchedAt ?? null,
     reload,
+    replaceIssue,
     trackedCount: trackedRepos.length,
   };
 }

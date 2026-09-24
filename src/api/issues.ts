@@ -106,6 +106,11 @@ export async function fetchIssuesPage(
   return { issues, rawCount: issues.length };
 }
 
+/** Fetch the labels available to assign to an issue in a repository. */
+export async function fetchRepoLabels(owner: string, repo: string): Promise<GitHubLabel[]> {
+  return githubRestRequest<GitHubLabel[]>(`/repos/${owner}/${repo}/labels?per_page=100`);
+}
+
 /**
  * Fetch pull requests for a repository
  */

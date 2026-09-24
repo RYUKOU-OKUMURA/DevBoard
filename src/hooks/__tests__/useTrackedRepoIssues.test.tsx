@@ -197,6 +197,25 @@ describe('useTrackedRepoIssues', () => {
     expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2);
   });
 
+  it('replaces one issue in the account cache so it stays updated after remount', async () => {
+    const repo = createRepo('repo');
+    const initialIssue = createIssue(1);
+    const closedIssue = createIssue(1, { state: 'closed', closed_at: '2026-02-01T00:00:00.000Z' });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [initialIssue], rawCount: 1 });
+
+    const first = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(first.result.current.isLoading).toBe(false));
+    act(() => first.result.current.replaceIssue(repo.id, closedIssue));
+    expect(first.result.current.items[0]?.issue).toEqual(closedIssue);
+    first.unmount();
+
+    const second = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(second.result.current.isLoading).toBe(false));
+    expect(second.result.current.items[0]?.issue).toEqual(closedIssue);
+    expect(mockFetchIssuesPage).toHaveBeenCalledTimes(1);
+  });
+
   it('ignores a previous account response after switching accounts', async () => {
     const repo = createRepo('shared-repo');
     setTracked('account-a', repo.id);
