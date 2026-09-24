@@ -9,12 +9,17 @@ describe('TabNavigation', () => {
     cleanup();
   });
 
-  it('keeps the primary navigation focused on repositories, practice, and advanced features', () => {
+  it('keeps the primary navigation focused on repositories, issues, practice, and advanced features', () => {
     render(<TabNavigation activeTab="board" onTabChange={() => undefined} advancedCount={3} />);
 
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
-    expect(screen.getByRole('tab', { name: /リポジトリ/ })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: /練習/ })).toBeTruthy();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs).toHaveLength(4);
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      'リポジトリ',
+      'Issue（やること）',
+      '練習',
+      '高度な機能3',
+    ]);
     expect(screen.getByRole('tab', { name: /高度な機能/ })).toBeTruthy();
     expect(screen.queryByRole('tab', { name: /記録/ })).toBeNull();
     expect(screen.queryByRole('tab', { name: /手動追加/ })).toBeNull();
@@ -36,6 +41,16 @@ describe('TabNavigation', () => {
     expect(onTabChange).toHaveBeenCalledWith('advanced');
   });
 
+  it('notifies when the issues tab is selected', () => {
+    const onTabChange = vi.fn();
+
+    render(<TabNavigation activeTab="board" onTabChange={onTabChange} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Issue（やること）' }));
+
+    expect(onTabChange).toHaveBeenCalledWith('issues');
+  });
+
   it('supports arrow-key navigation inside the tablist', () => {
     const onTabChange = vi.fn();
 
@@ -43,6 +58,6 @@ describe('TabNavigation', () => {
 
     fireEvent.keyDown(screen.getByRole('tab', { name: /リポジトリ/ }), { key: 'ArrowRight' });
 
-    expect(onTabChange).toHaveBeenCalledWith('practice');
+    expect(onTabChange).toHaveBeenCalledWith('issues');
   });
 });

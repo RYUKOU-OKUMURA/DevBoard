@@ -6,7 +6,7 @@ import { createGraphQLClient } from '../api/octokit';
 import { GraphQLOperations } from '../api/githubQueryIds';
 import type {
   Todo,
-  GitHubIssue,
+  LegacySyncIssue,
   TodoStatus,
   SyncConflict,
   SyncResult,
@@ -35,7 +35,7 @@ const MAX_ISSUE_COUNT = 300;
 type RepositoryIssuesResponse = {
   repository: {
     issues: {
-      nodes: GitHubIssue[];
+      nodes: LegacySyncIssue[];
       pageInfo: {
         hasNextPage: boolean;
         endCursor: string;
@@ -49,11 +49,11 @@ type RepositoryIssuesResponse = {
  */
 export async function fetchIssuesFromGitHub(
   repoNameWithOwner: string
-): Promise<{ issues: GitHubIssue[]; truncated: boolean }> {
+): Promise<{ issues: LegacySyncIssue[]; truncated: boolean }> {
   const graphql = createGraphQLClient('/github/graphql');
   const { owner, name } = parseRepoName(repoNameWithOwner);
 
-  const allIssues: GitHubIssue[] = [];
+  const allIssues: LegacySyncIssue[] = [];
   let cursor: string | null = null;
   let hasNextPage = true;
   let page = 0;
@@ -107,7 +107,7 @@ export function todoStatusToIssueState(status: TodoStatus): 'OPEN' | 'CLOSED' {
  * Map GitHub Issue to ToDo data
  */
 export function mapIssueToTodo(
-  issue: GitHubIssue,
+  issue: LegacySyncIssue,
   repoId: string
 ): Omit<Todo, 'id' | 'createdAt' | 'updatedAt'> {
   return {
@@ -243,7 +243,7 @@ export async function closeGitHubIssue(issueId: string): Promise<void> {
 export async function syncTodoWithIssue(
   accountId: string,
   todo: Todo,
-  issue: GitHubIssue
+  issue: LegacySyncIssue
 ): Promise<{ todo: Todo; conflict?: SyncConflict }> {
   if (!todo.issueNumber || !todo.syncEnabled) {
     return { todo };

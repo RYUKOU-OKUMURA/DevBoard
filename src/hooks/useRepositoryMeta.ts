@@ -9,6 +9,7 @@ import {
 export type { RepositoryMetaPatch };
 
 interface UseRepositoryMetaReturn {
+  metaAccountId: string;
   metaByRepoId: Record<string, RepoUserMeta>;
   saveError: string | null;
   getMeta: (repoId: string) => RepoUserMeta | null;
@@ -23,10 +24,12 @@ export function useRepositoryMeta(accountId: string): UseRepositoryMetaReturn {
   const [metaByRepoId, setMetaByRepoId] = useState<Record<string, RepoUserMeta>>(() =>
     getRepositoryMetaMap(accountId)
   );
+  const [metaAccountId, setMetaAccountId] = useState(accountId);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setMetaByRepoId(getRepositoryMetaMap(accountId));
+    setMetaAccountId(accountId);
     setSaveError(null);
   }, [accountId]);
 
@@ -71,6 +74,7 @@ export function useRepositoryMeta(accountId: string): UseRepositoryMetaReturn {
   );
 
   return {
+    metaAccountId,
     metaByRepoId,
     saveError,
     getMeta,

@@ -94,10 +94,8 @@ export type TodoSort =
   | 'updatedAt'                  // By updated date
   | 'title';                     // By title
 
-/**
- * GitHub Issue data (for sync)
- */
-export type GitHubIssue = {
+// 旧TODO↔Issue同期（GraphQL）専用。フェーズ13-Cで旧同期ごと削除予定。新規コードは src/api/issues.ts の GitHubIssue を使う。
+export type LegacySyncIssue = {
   id: string;
   number: number;
   title: string;
@@ -116,7 +114,7 @@ export type GitHubIssue = {
  */
 export type SyncConflict = {
   todo: Todo;
-  issue: GitHubIssue;
+  issue: LegacySyncIssue;
   conflictType: 'both_updated' | 'todo_deleted' | 'issue_deleted';
 };
 

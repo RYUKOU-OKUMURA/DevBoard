@@ -39,7 +39,7 @@ build
 # Security / private artifacts
 bug_report/
 Security Scan.md
-issues/
+/issues/
 docs/security/
 .npm-cache/
 .cache/
