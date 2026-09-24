@@ -362,9 +362,10 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
   - 実施（2026-09-24）: 各セグメントを `/^[A-Za-z0-9_.-]+$/` かつ `.` / `..` 以外に制限。初回実装のドット判定はバックスラッシュ・`#`・`?` 入りのセグメントで `/user/repos` 等へ届く抜け道があり、レビューで差し戻して修正した。
   - 残課題（レビューminor、未対応）: `params.path` の1要素に復号済みの `/` が入る場合、結合後に分割して検証するため要素境界が失われる。到達先はallowlist内に限られるので保留。Cloudflare Pagesの復号仕様を実環境で確かめたら要素単位の検証に変える。
 - [x] `/api/*` 全体に掛かっているIP単位のレート制限（1分10回、`functions/utils/security.ts`）を見直す。2026-09-24に判明: 13-Aは1リポジトリ1ページごとに1リクエストのため、進捗管理対象が4件以上や再読み込みで本番が429になりうる（13-0の取得方針決定時の見落とし。ローカルは `LOCAL_DEV=true` で制限が無効なため実機確認で出なかった）。`/api/github/*` を別枠（1分60回）にし、`/api/auth/*` は現状の10回を維持する。
-- [ ] バックログ3.5: `SESSION_SECRET` / `ENCRYPTION_KEY` の長さ検証と、`/api/auth/status` の準備判定への `SESSION_SECRET` 追加。
-  - 実施（2026-09-24）: `/api/auth/status` に `sessionSecretValid` / `encryptionKeyValid` を追加し、readinessに反映（未チェックのまま。fail-closed化が残っている）。
+- [x] バックログ3.5: `SESSION_SECRET` / `ENCRYPTION_KEY` の長さ検証と、`/api/auth/status` の準備判定への `SESSION_SECRET` 追加。
+  - 実施（2026-09-24）: `/api/auth/status` に `sessionSecretValid` / `encryptionKeyValid` を追加し、readinessに反映。
   - 本番のsecretが条件を満たすか未確認のため、まず `/api/auth/status` の判定（ok=false）だけに入れる。本番の `/api/auth/status` で有効と確認できてから、login/callbackで拒否する（fail-closed）変更を別コミットで入れる。
+  - 実施（2026-09-24）: 本番の `/api/auth/status` で両フラグ true を確認後、login / callback の先頭で不正なsecretなら503を返すようにした。IPレート制限（KVのカウンタ書き込み）はsecret検証より先に動くが、セッション情報を書かないため意図どおりとした（レビューのmajor指摘を検討のうえ不採用）。
 
 実装:
 
