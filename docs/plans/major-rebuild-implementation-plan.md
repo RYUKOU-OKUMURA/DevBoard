@@ -279,7 +279,7 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [ ] `npm info typescript version` を確認する。
 - [ ] `npm info vitest version` を確認する。
 - [ ] `npm info eslint version` と `npm info @typescript-eslint/eslint-plugin version` を確認する。
-- [ ] 非破壊で直せる `npm audit` 指摘を先に処理する。
+- [x] 非破壊で直せる `npm audit` 指摘を先に処理する。（13-0で実施、58件→4件。残りはVite 8等の破壊的更新が必要）
 - [ ] Vite / Vitest更新を単独PRで検討する。
 - [ ] React 19系への更新を単独PRで検討する。
 - [ ] Tailwind 4系への移行を単独PRで検討する。
@@ -324,14 +324,14 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - 新画面はUI刷新の最初の画面として作る。ただし全体のUI刷新は別フェーズで範囲を決め、このフェーズには混ぜない。
 - フェーズ11（依存のメジャー更新）と同じPRに混ぜない。
 
-#### 13-0: 着手前の整理
+#### 13-0: 着手前の整理 ✅ 完了
 
-- [ ] Issueアクセス経路を1つに決める。現状、REST（`src/api/issues.ts`：Workspace `IssuesTab` / `AICommandTab` / `usePracticeIssues`）とGraphQL（`src/utils/issueSync.ts`：`repositoryIssues` / `createIssue` / `updateIssue` / `closeIssue`）の2系統がある。新画面はどちらか一方だけを使い、選んだ理由を本計画書に1行残す。
-- [ ] `GitHubIssue` 型の二重定義（`src/api/issues.ts` と `src/types/todo.ts`）を解消する。新画面は `src/api/issues.ts` の `GitHubIssue` を使い、`src/types/todo.ts` 側は旧同期専用の別名に改名する（振る舞いは変えない。13-Cで旧同期ごと削除）。
-- [ ] 複数リポジトリを並行取得する際の同時実行数の上限とキャッシュ（`fetchedAt`）の方針を決める。
-  - 決定（2026-09-24）: Issueアクセス経路はREST（`src/api/issues.ts`）に統一する。13-Bの再オープン・コメント・ラベル変更がRESTの既存proxy許可（PATCH issue / POST comments）だけで済み、GraphQL側にはreopen・コメント・ラベルのmutationが無いため。GraphQL版（`issueSync`）は13-Cで置き換えるまで旧TODO専用として残す。
+- [x] Issueアクセス経路を1つに決める。現状、REST（`src/api/issues.ts`：Workspace `IssuesTab` / `AICommandTab` / `usePracticeIssues`）とGraphQL（`src/utils/issueSync.ts`：`repositoryIssues` / `createIssue` / `updateIssue` / `closeIssue`）の2系統がある。新画面はどちらか一方だけを使い、選んだ理由を本計画書に1行残す。
+- [x] `GitHubIssue` 型の二重定義（`src/api/issues.ts` と `src/types/todo.ts`）を解消する。新画面は `src/api/issues.ts` の `GitHubIssue` を使い、`src/types/todo.ts` 側は旧同期専用の別名に改名する（振る舞いは変えない。13-Cで旧同期ごと削除）。
+- [x] 複数リポジトリを並行取得する際の同時実行数の上限とキャッシュ（`fetchedAt`）の方針を決める。
+  - 決定（2026-09-24、レビュー指摘で根拠を訂正）: Issueアクセス経路はREST（`src/api/issues.ts`）に統一する。13-Bのコメント投稿・ラベル変更がRESTの既存proxy許可（POST comments / PATCH issue）だけで済み、GraphQL側の許可済み操作（`functions/lib/githubQueries.ts`）にはコメント・ラベル変更のmutationが無いため。再オープンはGraphQLの `updateIssue(state)` でも可能だが、経路を分けない。GraphQL版（`issueSync`）は13-Cで置き換えるまで旧TODO専用として残す。
   - 決定（2026-09-24）: 取得は同時3リポジトリまで、1リポジトリあたり `per_page=100` を最大3ページ。結果はメモリ内に `fetchedAt` 付きで保持し、5分以内の再表示では再取得しない（手動の再読み込みボタンで強制取得）。`src/utils/rateLimiter.ts` は「1分3リクエスト」のクライアント制限でこの用途に合わないため使わない。
-- [ ] 非破壊で直せる `npm audit` 指摘だけ先に処理する（フェーズ11の該当項目も同時に `[x]` にする）。
+- [x] 非破壊で直せる `npm audit` 指摘だけ先に処理する（フェーズ11の該当項目も同時に `[x]` にする）。
 
 #### 13-A: 読み取り専用の横断Issue一覧
 
@@ -346,6 +346,7 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 検証:
 
 - [ ] hookのテスト（PR除外、一部リポジトリ失敗時、ページング）。
+- [ ] キャッシュがGitHubアカウント単位で分かれていることを確認する（13-0レビュー指摘。現状はアカウント切替時に `AuthContext` がreloadするが、それに依存しない）。
 - [ ] 実機ブラウザで、進捗管理対象が複数あるアカウントで一覧・絞り込み・詳細パネルを確認する。
 - [ ] `npm run check:ci` が通る。
 
