@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GitHubIssue } from '../../../api/issues';
+import type { IssueAction } from '../../../hooks/useIssueActions';
+import type { TrackedIssueUpdate } from '../../../hooks/useTrackedRepoIssues';
 import type { Repo } from '../../../types';
 import { IssueDetailPanel } from '../IssueDetailPanel';
 
@@ -52,13 +54,28 @@ function renderPanel(initialIssue = createIssue()) {
   const onIssueUpdated = vi.fn();
   function Harness() {
     const [issue, setIssue] = useState(initialIssue);
+    const [pendingAction, setPendingAction] = useState<IssueAction | null>(null);
+    const actionLock = useRef(false);
     return (
       <IssueDetailPanel
         item={{ repo: createRepo(), issue }}
         onClose={() => undefined}
-        onIssueUpdated={(repoId, updatedIssue) => {
+        pendingAction={pendingAction}
+        beginAction={(_repoId, _issueNumber, action) => {
+          if (actionLock.current) return false;
+          actionLock.current = true;
+          setPendingAction(action);
+          return true;
+        }}
+        endAction={() => {
+          actionLock.current = false;
+          setPendingAction(null);
+        }}
+        onIssueUpdated={(repoId, _issueId, update: TrackedIssueUpdate) => {
+          const updatedIssue = typeof update === 'function' ? update(issue) : update;
           onIssueUpdated(repoId, updatedIssue);
           setIssue(updatedIssue);
+          return updatedIssue;
         }}
       />
     );

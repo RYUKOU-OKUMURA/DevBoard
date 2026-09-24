@@ -12,7 +12,10 @@ const MAX_CONCURRENT_REPOS = 3;
 interface CachedRepoIssues {
   issues: GitHubIssue[];
   fetchedAt: number;
+  localIssueVersions: Record<number, number>;
 }
+
+export type TrackedIssueUpdate = GitHubIssue | ((current: GitHubIssue) => GitHubIssue);
 
 export interface TrackedRepoIssueItem {
   repo: Repo;
@@ -28,6 +31,26 @@ interface HookState {
 }
 
 const repoIssueCache = new Map<string, CachedRepoIssues>();
+let nextLocalIssueVersion = 0;
+
+function mergeFetchedIssues(
+  issues: GitHubIssue[],
+  cached: CachedRepoIssues | undefined,
+  versionsAtFetch: Record<number, number>
+): GitHubIssue[] {
+  if (!cached) return issues;
+  const cachedById = new Map(cached.issues.map((issue) => [issue.id, issue]));
+  return issues.map((issue) => {
+    const current = cachedById.get(issue.id);
+    if (!current) return issue;
+    const currentTime = Date.parse(current.updated_at);
+    const fetchedTime = Date.parse(issue.updated_at);
+    const updatedLocallyAtSameTime =
+      currentTime === fetchedTime &&
+      (cached.localIssueVersions[issue.id] ?? 0) > (versionsAtFetch[issue.id] ?? 0);
+    return currentTime > fetchedTime || updatedLocallyAtSameTime ? current : issue;
+  });
+}
 
 function getCacheKey(accountId: string, repoId: string): string {
   return JSON.stringify([accountId, repoId]);
@@ -51,6 +74,7 @@ function getLatestFetchTime(repos: Repo[], accountId: string): number | null {
 
 export function clearTrackedRepoIssuesCache(): void {
   repoIssueCache.clear();
+  nextLocalIssueVersion = 0;
 }
 
 export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
@@ -83,6 +107,7 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
         requestIdRef.current === requestId && accountIdRef.current === accountId;
       const issuesByRepoId = new Map<string, GitHubIssue[]>();
       const toFetch: Repo[] = [];
+      const versionsAtFetchByRepoId = new Map<string, Record<number, number>>();
       const now = Date.now();
 
       trackedRepos.forEach((repo) => {
@@ -95,6 +120,7 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
           now - cached.fetchedAt >= CACHE_TTL_MS
         ) {
           toFetch.push(repo);
+          versionsAtFetchByRepoId.set(repo.id, { ...cached?.localIssueVersions });
         }
       });
 
@@ -121,7 +147,7 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
 
             try {
               if (!owner || !repoName) throw new Error('Invalid repository name');
-              const issues: GitHubIssue[] = [];
+              const fetchedIssues: GitHubIssue[] = [];
               for (let page = 1; page <= MAX_PAGES; page += 1) {
                 const result = await fetchIssuesPage(owner, repoName, {
                   state: 'all',
@@ -131,12 +157,22 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
                   direction: 'desc',
                 });
                 if (!isCurrent()) return;
-                issues.push(...result.issues.filter((issue) => !issue.pull_request));
+                fetchedIssues.push(...result.issues.filter((issue) => !issue.pull_request));
                 if (result.rawCount < PAGE_SIZE) break;
               }
 
-              const cached = { issues, fetchedAt: Date.now() };
-              repoIssueCache.set(getCacheKey(accountId, repo.id), cached);
+              const cacheKey = getCacheKey(accountId, repo.id);
+              const latestCache = repoIssueCache.get(cacheKey);
+              const issues = mergeFetchedIssues(
+                fetchedIssues,
+                latestCache,
+                versionsAtFetchByRepoId.get(repo.id) ?? {}
+              );
+              repoIssueCache.set(cacheKey, {
+                issues,
+                fetchedAt: Date.now(),
+                localIssueVersions: latestCache?.localIssueVersions ?? {},
+              });
               issuesByRepoId.set(repo.id, issues);
             } catch {
               if (!isCurrent()) return;
@@ -148,6 +184,10 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
 
       await Promise.all(workers);
       if (!isCurrent()) return;
+      toFetch.forEach((repo) => {
+        const latestCache = repoIssueCache.get(getCacheKey(accountId, repo.id));
+        if (latestCache) issuesByRepoId.set(repo.id, latestCache.issues);
+      });
       setState({
         identity,
         items: toItems(trackedRepos, issuesByRepoId),
@@ -179,15 +219,29 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
   const reload = useCallback(() => {
     void loadRef.current(true);
   }, []);
-  const replaceIssue = useCallback((repoId: string, issue: GitHubIssue) => {
+  const replaceIssue = useCallback((
+    repoId: string,
+    issueId: number,
+    update: TrackedIssueUpdate
+  ): GitHubIssue | null => {
     const cacheKey = getCacheKey(accountId, repoId);
     const cached = repoIssueCache.get(cacheKey);
+    const currentIssue = cached?.issues.find((cachedIssue) => cachedIssue.id === issueId);
+    const issue = typeof update === 'function'
+      ? currentIssue ? update(currentIssue) : null
+      : currentIssue && Date.parse(currentIssue.updated_at) > Date.parse(update.updated_at)
+        ? currentIssue
+        : update;
+    if (!issue) return null;
+
     if (cached) {
+      const hasIssue = cached.issues.some((cachedIssue) => cachedIssue.id === issueId);
       repoIssueCache.set(cacheKey, {
         ...cached,
-        issues: cached.issues.map((cachedIssue) =>
-          cachedIssue.number === issue.number ? issue : cachedIssue
-        ),
+        issues: cached.issues.map((cachedIssue) => cachedIssue.id === issueId ? issue : cachedIssue),
+        localIssueVersions: hasIssue
+          ? { ...cached.localIssueVersions, [issueId]: ++nextLocalIssueVersion }
+          : cached.localIssueVersions,
       });
     }
     setState((current) =>
@@ -196,12 +250,13 @@ export function useTrackedRepoIssues(accountId: string, repos: Repo[]) {
         : {
             ...current,
             items: current.items.map((item) =>
-              item.repo.id === repoId && item.issue.number === issue.number
+              item.repo.id === repoId && item.issue.id === issueId
                 ? { ...item, issue }
                 : item
             ),
           }
     );
+    return issue;
   }, [accountId, identity]);
   const visibleState = state.identity === identity ? state : null;
   const currentReposById = new Map(trackedRepos.map((repo) => [repo.id, repo]));

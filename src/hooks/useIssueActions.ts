@@ -1,8 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { addIssueComment, updateIssue, type GitHubIssue } from '../api/issues';
-import type { TrackedRepoIssueItem } from './useTrackedRepoIssues';
+import type { TrackedIssueUpdate, TrackedRepoIssueItem } from './useTrackedRepoIssues';
 
-type PendingAction = 'state' | 'comment' | 'labels' | null;
+export type IssueAction = 'state' | 'comment' | 'labels';
 
 function parseRepoNameWithOwner(nameWithOwner: string): { owner: string; repo: string } {
   const [owner, ...repoParts] = nameWithOwner.split('/');
@@ -37,23 +37,29 @@ function toJapaneseIssueActionError(operation: string, error: unknown): string {
 
 interface IssueActionsOptions {
   item: TrackedRepoIssueItem;
-  onIssueUpdated: (repoId: string, issue: GitHubIssue) => void;
+  pendingAction: IssueAction | null;
+  beginAction: (repoId: string, issueNumber: number, action: IssueAction) => boolean;
+  endAction: (repoId: string, issueNumber: number) => void;
+  onIssueUpdated: (repoId: string, issueId: number, update: TrackedIssueUpdate) => GitHubIssue | null;
 }
 
-export function useIssueActions({ item, onIssueUpdated }: IssueActionsOptions) {
+export function useIssueActions({
+  item,
+  pendingAction,
+  beginAction,
+  endAction,
+  onIssueUpdated,
+}: IssueActionsOptions) {
   const { issue, repo } = item;
-  const actionLockRef = useRef(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [error, setError] = useState<string | null>(null);
 
   const runAction = useCallback(async (
-    action: Exclude<PendingAction, null>,
+    action: IssueAction,
     operation: string,
     description: string,
-    request: () => Promise<GitHubIssue>
+    request: () => Promise<TrackedIssueUpdate>
   ): Promise<GitHubIssue | null> => {
-    if (actionLockRef.current) return null;
-    actionLockRef.current = true;
+    if (!beginAction(repo.id, issue.number, action)) return null;
 
     try {
       const confirmed = window.confirm([
@@ -68,18 +74,15 @@ export function useIssueActions({ item, onIssueUpdated }: IssueActionsOptions) {
       if (!confirmed) return null;
 
       setError(null);
-      setPendingAction(action);
-      const updatedIssue = await request();
-      onIssueUpdated(repo.id, updatedIssue);
-      return updatedIssue;
+      const update = await request();
+      return onIssueUpdated(repo.id, issue.id, update);
     } catch (actionError) {
       setError(toJapaneseIssueActionError(operation, actionError));
       return null;
     } finally {
-      setPendingAction(null);
-      actionLockRef.current = false;
+      endAction(repo.id, issue.number);
     }
-  }, [issue.number, issue.title, onIssueUpdated, repo.id, repo.nameWithOwner]);
+  }, [beginAction, endAction, issue.id, issue.number, issue.title, onIssueUpdated, repo.id, repo.nameWithOwner]);
 
   const changeState = useCallback(() => {
     const state = issue.state === 'open' ? 'closed' : 'open';
@@ -107,7 +110,11 @@ export function useIssueActions({ item, onIssueUpdated }: IssueActionsOptions) {
       async () => {
         const { owner, repo: repoName } = parseRepoNameWithOwner(repo.nameWithOwner);
         const comment = await addIssueComment(owner, repoName, issue.number, body);
-        return { ...issue, comments: issue.comments + 1, updated_at: comment.created_at };
+        return (current: GitHubIssue) => ({
+          ...current,
+          comments: current.comments + 1,
+          updated_at: comment.created_at,
+        });
       }
     );
   }, [issue, repo.nameWithOwner, runAction]);

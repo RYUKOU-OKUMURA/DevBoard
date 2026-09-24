@@ -1,14 +1,17 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { fetchRepoLabels, type GitHubIssue, type GitHubLabel } from '../../api/issues';
 import { createPortal } from 'react-dom';
-import { useIssueActions } from '../../hooks/useIssueActions';
-import type { TrackedRepoIssueItem } from '../../hooks/useTrackedRepoIssues';
+import { useIssueActions, type IssueAction } from '../../hooks/useIssueActions';
+import type { TrackedIssueUpdate, TrackedRepoIssueItem } from '../../hooks/useTrackedRepoIssues';
 import { focusRing } from '../../lib/focusRing';
 
 interface IssueDetailPanelProps {
   item: TrackedRepoIssueItem;
   onClose: () => void;
-  onIssueUpdated: (repoId: string, issue: GitHubIssue) => void;
+  pendingAction: IssueAction | null;
+  beginAction: (repoId: string, issueNumber: number, action: IssueAction) => boolean;
+  endAction: (repoId: string, issueNumber: number) => void;
+  onIssueUpdated: (repoId: string, issueId: number, update: TrackedIssueUpdate) => GitHubIssue | null;
 }
 
 function formatIssueDate(value: string): string {
@@ -32,10 +35,17 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
   );
 }
 
-export function IssueDetailPanel({ item, onClose, onIssueUpdated }: IssueDetailPanelProps) {
+export function IssueDetailPanel({
+  item,
+  onClose,
+  pendingAction,
+  beginAction,
+  endAction,
+  onIssueUpdated,
+}: IssueDetailPanelProps) {
   const { issue, repo } = item;
-  const { changeState, postComment, saveLabels, loadLabelsError, clearError, pendingAction, error } =
-    useIssueActions({ item, onIssueUpdated });
+  const { changeState, postComment, saveLabels, loadLabelsError, clearError, error } =
+    useIssueActions({ item, onIssueUpdated, pendingAction, beginAction, endAction });
   const [comment, setComment] = useState('');
   const [isLabelEditorOpen, setIsLabelEditorOpen] = useState(false);
   const [repoLabels, setRepoLabels] = useState<GitHubLabel[]>([]);

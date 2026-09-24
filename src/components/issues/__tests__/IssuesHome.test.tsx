@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GitHubIssue } from '../../../api/issues';
 import type { Repo } from '../../../types';
@@ -129,6 +129,107 @@ describe('IssuesHome', () => {
     fireEvent.change(screen.getByLabelText('状態で絞り込み'), { target: { value: 'closed' } });
     const closedCard = await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' });
     expect(within(closedCard).getByText('完了（Closed）')).toBeTruthy();
+  });
+
+  it('keeps a comment submission locked when the detail panel is reopened', async () => {
+    const repo = createRepo('repo-a');
+    const issue = createIssue(12, { comments: 2, html_url: 'https://github.com/alice/repo-a/issues/12' });
+    let resolveComment: (comment: { id: number; body: string; created_at: string }) => void = () => undefined;
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [issue], rawCount: 1 });
+    mockAddIssueComment.mockReturnValueOnce(new Promise((resolve) => { resolveComment = resolve; }));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    const cardName = 'alice/repo-a #12: Issue 12 の詳細を開く';
+    fireEvent.click(await screen.findByRole('button', { name: cardName }));
+    fireEvent.change(screen.getByLabelText('コメント本文'), { target: { value: 'One comment' } });
+    fireEvent.click(screen.getByRole('button', { name: 'コメントを投稿' }));
+    await waitFor(() => expect(mockAddIssueComment).toHaveBeenCalledTimes(1));
+
+    const firstDialog = screen.getByRole('dialog');
+    fireEvent.click(within(firstDialog).getByRole('button', { name: '詳細パネルを閉じる' }));
+    fireEvent.click(await screen.findByRole('button', { name: cardName }));
+    fireEvent.change(screen.getByLabelText('コメント本文'), { target: { value: 'One comment' } });
+
+    const lockedSubmit = screen.getByRole('button', { name: '投稿中…' }) as HTMLButtonElement;
+    expect(lockedSubmit.disabled).toBe(true);
+    fireEvent.click(lockedSubmit);
+    expect(mockAddIssueComment).toHaveBeenCalledTimes(1);
+
+    await act(async () => resolveComment({
+      id: 20,
+      body: 'One comment',
+      created_at: '2026-01-13T00:00:00.000Z',
+    }));
+    expect(await screen.findByText('3 件')).toBeTruthy();
+    expect(mockAddIssueComment).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds each sequential successful comment to the latest count', async () => {
+    const repo = createRepo('repo-a');
+    const issue = createIssue(12, { comments: 2, html_url: 'https://github.com/alice/repo-a/issues/12' });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [issue], rawCount: 1 });
+    mockAddIssueComment
+      .mockResolvedValueOnce({ id: 20, body: 'First', created_at: issue.updated_at })
+      .mockResolvedValueOnce({ id: 21, body: 'Second', created_at: issue.updated_at });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    const textarea = screen.getByLabelText('コメント本文');
+    fireEvent.change(textarea, { target: { value: 'First' } });
+    fireEvent.click(screen.getByRole('button', { name: 'コメントを投稿' }));
+    expect(await screen.findByText('3 件')).toBeTruthy();
+
+    await waitFor(() => expect((textarea as HTMLTextAreaElement).value).toBe(''));
+    fireEvent.change(textarea, { target: { value: 'Second' } });
+    fireEvent.click(screen.getByRole('button', { name: 'コメントを投稿' }));
+    expect(await screen.findByText('4 件')).toBeTruthy();
+    expect(mockAddIssueComment).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a local close over a stale reload in the panel, list, and cache', async () => {
+    let now = 1_800_000_000_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const repo = createRepo('repo-a');
+    const openIssue = createIssue(12, { updated_at: '2026-01-01T00:00:00.000Z', html_url: 'https://github.com/alice/repo-a/issues/12' });
+    const closedIssue = createIssue(12, {
+      state: 'closed',
+      closed_at: '2026-02-01T00:00:00.000Z',
+      updated_at: openIssue.updated_at,
+      html_url: 'https://github.com/alice/repo-a/issues/12',
+    });
+    let resolveReload: (result: { issues: GitHubIssue[]; rawCount: number }) => void = () => undefined;
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage
+      .mockResolvedValueOnce({ issues: [openIssue], rawCount: 1 })
+      .mockReturnValueOnce(new Promise((resolve) => { resolveReload = resolve; }));
+    mockUpdateIssue.mockResolvedValueOnce(closedIssue);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const view = render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    now += 5 * 60 * 1000;
+    fireEvent.click(screen.getByRole('button', { name: '再読み込み' }));
+    await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'このIssueを閉じる（Close）' }));
+    expect(await screen.findByText('完了（Closed）')).toBeTruthy();
+
+    await act(async () => resolveReload({ issues: [openIssue], rawCount: 1 }));
+    await screen.findByRole('button', { name: '再読み込み' });
+    expect(within(screen.getByRole('dialog')).getByText('完了（Closed）')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('状態で絞り込み'), { target: { value: 'closed' } });
+    expect(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' })).toBeTruthy();
+
+    view.unmount();
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.change(screen.getByLabelText('状態で絞り込み'), { target: { value: 'closed' } });
+    expect(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    expect(within(screen.getByRole('dialog')).getByText('完了（Closed）')).toBeTruthy();
+    expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2);
   });
 
   it('explains how to add a tracked repository when there are none', () => {
