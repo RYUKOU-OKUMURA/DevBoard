@@ -142,4 +142,91 @@ describe('global middleware CORS/CSRF guards', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://any.example');
     expect(response.headers.get('Access-Control-Allow-Credentials')).toBeNull();
   });
+
+  it('allows 60 GitHub API requests per minute and reports that limit', async () => {
+    const env = { SESSIONS: createKV() } as any;
+    const responses = [];
+    for (let i = 0; i < 60; i += 1) {
+      const request = makeRequest({
+        path: '/api/github/repos',
+        method: 'GET',
+        headers: { 'CF-Connecting-IP': '192.0.2.1' },
+      });
+      responses.push(await onRequest({ request, env, next: nextOk } as any));
+    }
+
+    expect(responses[0].headers.get('X-RateLimit-Limit')).toBe('60');
+    expect(responses[10].status).toBe(200);
+
+    const request61 = makeRequest({
+      path: '/api/github/repos',
+      method: 'GET',
+      headers: { 'CF-Connecting-IP': '192.0.2.1' },
+    });
+    const response61 = await onRequest({ request: request61, env, next: nextOk } as any);
+
+    expect(response61.status).toBe(429);
+    expect(response61.headers.get('X-RateLimit-Limit')).toBe('60');
+  });
+
+  it('keeps the 10 request limit for auth APIs', async () => {
+    const env = { SESSIONS: createKV() } as any;
+    for (let i = 0; i < 10; i += 1) {
+      const request = makeRequest({
+        path: '/api/auth/status',
+        method: 'GET',
+        headers: { 'CF-Connecting-IP': '192.0.2.2' },
+      });
+      const response = await onRequest({ request, env, next: nextOk } as any);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('X-RateLimit-Limit')).toBe('10');
+    }
+
+    const request11 = makeRequest({
+      path: '/api/auth/status',
+      method: 'GET',
+      headers: { 'CF-Connecting-IP': '192.0.2.2' },
+    });
+    const response11 = await onRequest({ request: request11, env, next: nextOk } as any);
+
+    expect(response11.status).toBe(429);
+    expect(response11.headers.get('X-RateLimit-Limit')).toBe('10');
+  });
+
+  it('skips rate limits in local development', async () => {
+    const env = { SESSIONS: createKV(), LOCAL_DEV: 'true' } as any;
+    for (let i = 0; i < 61; i += 1) {
+      const request = makeRequest({
+        path: '/api/github/repos',
+        method: 'GET',
+        headers: { 'CF-Connecting-IP': '192.0.2.3' },
+      });
+      const response = await onRequest({ request, env, next: nextOk } as any);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('X-RateLimit-Limit')).toBeNull();
+    }
+  });
+
+  it('allows PATCH in preflight and still requires Origin for PATCH', async () => {
+    const env = { SESSIONS: createKV() } as any;
+    const preflight = makeRequest({
+      path: '/api/github/repos/o/r/issues/1',
+      method: 'OPTIONS',
+      origin: 'https://devboard.test',
+      headers: { 'Access-Control-Request-Method': 'PATCH' },
+    });
+    const preflightResponse = await onRequest({ request: preflight, env, next: nextOk } as any);
+
+    expect(preflightResponse.status).toBe(204);
+    expect(preflightResponse.headers.get('Access-Control-Allow-Methods')).toContain('PATCH');
+
+    const patch = makeRequest({
+      path: '/api/github/repos/o/r/issues/1',
+      method: 'PATCH',
+      headers: { 'CF-Connecting-IP': '192.0.2.4' },
+    });
+    const patchResponse = await onRequest({ request: patch, env, next: nextOk } as any);
+
+    expect(patchResponse.status).toBe(403);
+  });
 });
