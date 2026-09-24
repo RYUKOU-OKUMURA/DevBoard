@@ -82,6 +82,16 @@ export async function fetchIssues(
   repo: string,
   options: FetchOptions = {}
 ): Promise<GitHubIssue[]> {
+  const { issues } = await fetchIssuesPage(owner, repo, options);
+  return issues.filter((issue) => !issue.pull_request);
+}
+
+/** Fetch one raw issue-endpoint page and its count before pull requests are filtered. */
+export async function fetchIssuesPage(
+  owner: string,
+  repo: string,
+  options: FetchOptions = {}
+): Promise<{ issues: GitHubIssue[]; rawCount: number }> {
   const params = new URLSearchParams();
   if (options.state) params.set('state', options.state);
   if (options.per_page) params.set('per_page', String(options.per_page));
@@ -93,9 +103,7 @@ export async function fetchIssues(
   const path = `/repos/${owner}/${repo}/issues${queryString ? `?${queryString}` : ''}`;
 
   const issues = await githubRestRequest<GitHubIssue[]>(path);
-  
-  // Filter out pull requests (they appear in issues endpoint)
-  return issues.filter(issue => !issue.pull_request);
+  return { issues, rawCount: issues.length };
 }
 
 /**
@@ -173,4 +181,3 @@ export async function addIssueComment(
     json: { body },
   });
 }
-
