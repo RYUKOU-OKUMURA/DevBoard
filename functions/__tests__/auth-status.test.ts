@@ -76,6 +76,11 @@ describe('/api/auth/status secret readiness', () => {
       expected: { encryptionKeyValid: false },
     },
     {
+      name: '33-byte ENCRYPTION_KEY',
+      overrides: { ENCRYPTION_KEY: 'ab'.repeat(33) },
+      expected: { hasEncryptionKey: true, encryptionKeyValid: false },
+    },
+    {
       name: 'non-hex ENCRYPTION_KEY',
       overrides: { ENCRYPTION_KEY: 'zz'.repeat(32) },
       expected: { encryptionKeyValid: false },

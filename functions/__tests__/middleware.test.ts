@@ -193,6 +193,67 @@ describe('global middleware CORS/CSRF guards', () => {
     expect(response11.headers.get('X-RateLimit-Limit')).toBe('10');
   });
 
+  it('keeps auth API requests available after the GitHub API limit is used', async () => {
+    const env = { SESSIONS: createKV() } as any;
+    const ip = '192.0.2.5';
+
+    for (let i = 0; i < 60; i += 1) {
+      const request = makeRequest({
+        path: '/api/github/repos',
+        method: 'GET',
+        headers: { 'CF-Connecting-IP': ip },
+      });
+      const response = await onRequest({ request, env, next: nextOk } as any);
+      expect(response.status).toBe(200);
+    }
+
+    for (let i = 0; i < 10; i += 1) {
+      const request = makeRequest({
+        path: '/api/auth/status',
+        method: 'GET',
+        headers: { 'CF-Connecting-IP': ip },
+      });
+      const response = await onRequest({ request, env, next: nextOk } as any);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('X-RateLimit-Limit')).toBe('10');
+    }
+
+    const request11 = makeRequest({
+      path: '/api/auth/status',
+      method: 'GET',
+      headers: { 'CF-Connecting-IP': ip },
+    });
+    const response11 = await onRequest({ request: request11, env, next: nextOk } as any);
+
+    expect(response11.status).toBe(429);
+    expect(response11.headers.get('X-RateLimit-Limit')).toBe('10');
+  });
+
+  it('keeps GitHub API requests available after the auth API limit is used', async () => {
+    const env = { SESSIONS: createKV() } as any;
+    const ip = '192.0.2.6';
+
+    for (let i = 0; i < 10; i += 1) {
+      const request = makeRequest({
+        path: '/api/auth/status',
+        method: 'GET',
+        headers: { 'CF-Connecting-IP': ip },
+      });
+      const response = await onRequest({ request, env, next: nextOk } as any);
+      expect(response.status).toBe(200);
+    }
+
+    const githubRequest = makeRequest({
+      path: '/api/github/repos',
+      method: 'GET',
+      headers: { 'CF-Connecting-IP': ip },
+    });
+    const githubResponse = await onRequest({ request: githubRequest, env, next: nextOk } as any);
+
+    expect(githubResponse.status).toBe(200);
+    expect(githubResponse.headers.get('X-RateLimit-Limit')).toBe('60');
+  });
+
   it('skips rate limits in local development', async () => {
     const env = { SESSIONS: createKV(), LOCAL_DEV: 'true' } as any;
     for (let i = 0; i < 61; i += 1) {
