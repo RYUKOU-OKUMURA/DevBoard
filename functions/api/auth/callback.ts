@@ -1,6 +1,7 @@
 // OAuth callback endpoint - handles GitHub OAuth callback
 
 import type { Env, GitHubTokenResponse, GitHubUser, OAuthSessionData } from '../../lib/types';
+import { getAuthSecretStatus } from '../../lib/secretValidation';
 import {
   generateSessionId,
   createSessionCookie,
@@ -14,6 +15,13 @@ import {
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
+  const { sessionSecretValid, encryptionKeyValid } = getAuthSecretStatus(env);
+
+  if (!sessionSecretValid || !encryptionKeyValid) {
+    return new Response('サーバーの認証設定が不完全です。管理者は /api/auth/status を確認してください。', {
+      status: 503,
+    });
+  }
 
   try {
     const url = new URL(request.url);
