@@ -9,11 +9,13 @@ import { clearTrackedRepoIssuesCache } from '../../../hooks/useTrackedRepoIssues
 import { IssuesHome } from '../IssuesHome';
 
 const mockFetchIssuesPage = vi.hoisted(() => vi.fn());
+const mockFetchIssue = vi.hoisted(() => vi.fn());
 const mockFetchRepoLabels = vi.hoisted(() => vi.fn());
 const mockUpdateIssue = vi.hoisted(() => vi.fn());
 const mockAddIssueComment = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../api/issues', () => ({
+  fetchIssue: (...args: unknown[]) => mockFetchIssue(...args),
   fetchIssuesPage: (...args: unknown[]) => mockFetchIssuesPage(...args),
   fetchRepoLabels: (...args: unknown[]) => mockFetchRepoLabels(...args),
   updateIssue: (...args: unknown[]) => mockUpdateIssue(...args),
@@ -61,10 +63,12 @@ describe('IssuesHome', () => {
     localStorage.clear();
     clearTrackedRepoIssuesCache();
     mockFetchIssuesPage.mockReset();
+    mockFetchIssue.mockReset();
     mockFetchRepoLabels.mockReset();
     mockUpdateIssue.mockReset();
     mockAddIssueComment.mockReset();
     mockFetchIssuesPage.mockResolvedValue({ issues: [], rawCount: 0 });
+    mockFetchIssue.mockResolvedValue(createIssue(12));
     mockFetchRepoLabels.mockResolvedValue([]);
   });
 
@@ -143,6 +147,7 @@ describe('IssuesHome', () => {
       .mockResolvedValueOnce({ issues: [initialIssue], rawCount: 1 })
       .mockResolvedValueOnce({ issues: [latestIssue], rawCount: 1 });
     mockFetchRepoLabels.mockResolvedValue([bug, urgent, docs]);
+    mockFetchIssue.mockResolvedValue(latestIssue);
     mockUpdateIssue.mockResolvedValue(createIssue(12, { labels: [bug, urgent, docs] }));
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
@@ -177,6 +182,7 @@ describe('IssuesHome', () => {
       .mockResolvedValueOnce({ issues: [initialIssue], rawCount: 1 })
       .mockResolvedValueOnce({ issues: [latestIssue], rawCount: 1 });
     mockFetchRepoLabels.mockResolvedValue([bug, urgent, docs]);
+    mockFetchIssue.mockResolvedValue(latestIssue);
     mockUpdateIssue.mockResolvedValue(createIssue(12, { labels: [bug, urgent, docs] }));
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
@@ -195,6 +201,123 @@ describe('IssuesHome', () => {
       12,
       { labels: ['bug', 'urgent', 'docs'] }
     ));
+  });
+
+  it('merges label additions into the latest GitHub labels before saving', async () => {
+    const repo = createRepo('repo-a');
+    const bug = { id: 1, name: 'bug', color: 'ff0000' };
+    const urgent = { id: 2, name: 'urgent', color: 'ff9900' };
+    const docs = { id: 3, name: 'docs', color: '0000ff' };
+    const initialIssue = createIssue(12, { labels: [bug] });
+    const latestIssue = createIssue(12, { labels: [bug, urgent] });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [initialIssue], rawCount: 1 });
+    mockFetchRepoLabels.mockResolvedValue([bug, urgent, docs]);
+    mockFetchIssue.mockResolvedValue(latestIssue);
+    mockUpdateIssue.mockResolvedValue(createIssue(12, { labels: [bug, urgent, docs] }));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを編集' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを保存' }));
+
+    await waitFor(() => expect(mockFetchIssue).toHaveBeenCalledWith('alice', 'repo-a', 12));
+    expect(mockUpdateIssue).toHaveBeenCalledWith('alice', 'repo-a', 12, {
+      labels: ['bug', 'urgent', 'docs'],
+    });
+  });
+
+  it('applies label removals to the latest GitHub labels without adding the draft labels', async () => {
+    const repo = createRepo('repo-a');
+    const bug = { id: 1, name: 'bug', color: 'ff0000' };
+    const urgent = { id: 2, name: 'urgent', color: 'ff9900' };
+    const docs = { id: 3, name: 'docs', color: '0000ff' };
+    const initialIssue = createIssue(12, { labels: [bug] });
+    const latestIssue = createIssue(12, { labels: [bug, urgent] });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [initialIssue], rawCount: 1 });
+    mockFetchRepoLabels.mockResolvedValue([bug, urgent, docs]);
+    mockFetchIssue.mockResolvedValue(latestIssue);
+    mockUpdateIssue.mockResolvedValue(createIssue(12, { labels: [urgent] }));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを編集' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'bug' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを保存' }));
+
+    await waitFor(() => expect(mockUpdateIssue).toHaveBeenCalledWith('alice', 'repo-a', 12, {
+      labels: ['urgent'],
+    }));
+  });
+
+  it('refreshes labels without PATCH when the latest issue already matches the draft', async () => {
+    const repo = createRepo('repo-a');
+    const bug = { id: 1, name: 'bug', color: 'ff0000' };
+    const urgent = { id: 2, name: 'urgent', color: 'ff9900' };
+    const docs = { id: 3, name: 'docs', color: '0000ff' };
+    const initialIssue = createIssue(12, { labels: [bug, urgent] });
+    const latestIssue = createIssue(12, { labels: [bug, docs] });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [initialIssue], rawCount: 1 });
+    mockFetchRepoLabels.mockResolvedValue([bug, urgent, docs]);
+    mockFetchIssue.mockResolvedValue(latestIssue);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを編集' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'urgent' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを保存' }));
+
+    expect((await screen.findByRole('status')).textContent).toContain('変更はありませんでした');
+    expect(within(screen.getByRole('dialog')).getByText('bug、docs')).toBeTruthy();
+    expect(mockFetchIssue).toHaveBeenCalledWith('alice', 'repo-a', 12);
+    expect(mockUpdateIssue).not.toHaveBeenCalled();
+  });
+
+  it('does not PATCH labels when fetching the latest issue fails', async () => {
+    const repo = createRepo('repo-a');
+    const bug = { id: 1, name: 'bug', color: 'ff0000' };
+    const docs = { id: 3, name: 'docs', color: '0000ff' };
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12, { labels: [bug] })], rawCount: 1 });
+    mockFetchRepoLabels.mockResolvedValue([bug, docs]);
+    mockFetchIssue.mockRejectedValueOnce(new Error('API request failed with status 500'));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを編集' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを保存' }));
+
+    expect((await screen.findByRole('alert')).textContent).toContain('ラベルを保存することができませんでした');
+    expect(mockUpdateIssue).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch the latest issue when label saving is cancelled', async () => {
+    const repo = createRepo('repo-a');
+    const bug = { id: 1, name: 'bug', color: 'ff0000' };
+    const docs = { id: 3, name: 'docs', color: '0000ff' };
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12, { labels: [bug] })], rawCount: 1 });
+    mockFetchRepoLabels.mockResolvedValue([bug, docs]);
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを編集' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'docs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ラベルを保存' }));
+
+    await waitFor(() => expect((screen.getByRole('button', { name: 'ラベルを保存' }) as HTMLButtonElement).disabled).toBe(false));
+    expect(mockFetchIssue).not.toHaveBeenCalled();
+    expect(mockUpdateIssue).not.toHaveBeenCalled();
   });
 
   it('keeps a comment submission locked when the detail panel is reopened', async () => {

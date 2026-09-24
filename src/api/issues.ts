@@ -106,6 +106,11 @@ export async function fetchIssuesPage(
   return { issues, rawCount: issues.length };
 }
 
+/** Fetch one issue immediately before applying an update. */
+export async function fetchIssue(owner: string, repo: string, issueNumber: number): Promise<GitHubIssue> {
+  return githubRestRequest<GitHubIssue>(`/repos/${owner}/${repo}/issues/${issueNumber}`);
+}
+
 /** Fetch the labels available to assign to an issue in a repository. */
 export async function fetchRepoLabels(owner: string, repo: string): Promise<GitHubLabel[]> {
   return githubRestRequest<GitHubLabel[]>(`/repos/${owner}/${repo}/labels?per_page=100`);

@@ -244,6 +244,42 @@ describe('GitHub proxy allowlist', () => {
     expect((init as RequestInit).body).toBeUndefined();
   });
 
+  it('allows GET for one GitHub issue', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ number: 42 }), { status: 200 }));
+    const request = makeRequest(
+      'https://devboard.test/api/github/repos/octocat/hello-world/issues/42',
+      { method: 'GET' }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path: ['repos', 'octocat', 'hello-world', 'issues', '42'] },
+    } as any);
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.github.com/repos/octocat/hello-world/issues/42',
+      expect.objectContaining({ method: 'GET', body: undefined })
+    );
+  });
+
+  it('still rejects DELETE for one GitHub issue', async () => {
+    const request = makeRequest(
+      'https://devboard.test/api/github/repos/octocat/hello-world/issues/42',
+      { method: 'DELETE' }
+    );
+
+    const response = await onRequest({
+      request,
+      env: {} as any,
+      params: { path: ['repos', 'octocat', 'hello-world', 'issues', '42'] },
+    } as any);
+
+    expect(response.status).toBe(405);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('allows whitelisted REST POST requests to create GitHub issues', async () => {
     fetchMock.mockResolvedValueOnce(new Response(
       JSON.stringify({ number: 42, html_url: 'https://github.com/octocat/hello-world/issues/42' }),

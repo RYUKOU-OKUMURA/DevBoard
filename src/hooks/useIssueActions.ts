@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { addIssueComment, updateIssue, type GitHubIssue } from '../api/issues';
+import { addIssueComment, fetchIssue, updateIssue, type GitHubIssue } from '../api/issues';
 import type { IssueAction, TrackedIssueUpdate, TrackedRepoIssueItem } from './useTrackedRepoIssues';
 
 export type { IssueAction } from './useTrackedRepoIssues';
@@ -58,6 +58,7 @@ export function useIssueActions({
   const { issue, repo } = item;
   const [error, setError] = useState<string | null>(null);
   const [labelsError, setLabelsError] = useState<string | null>(null);
+  const [labelsNotice, setLabelsNotice] = useState<string | null>(null);
 
   const runAction = useCallback(async (
     action: IssueAction,
@@ -127,15 +128,12 @@ export function useIssueActions({
   }, [issue, repo.nameWithOwner, runAction]);
 
   const saveLabels = useCallback((labelNames: string[], baselineLabelNames: string[]) => {
-    const current = new Set(issue.labels.map((label) => label.name));
     const baseline = new Set(baselineLabelNames);
     const selected = new Set(labelNames);
     const added = [...selected].filter((name) => !baseline.has(name));
     const removed = [...baseline].filter((name) => !selected.has(name));
-    const merged = new Set(current);
-    removed.forEach((name) => merged.delete(name));
-    added.forEach((name) => merged.add(name));
     if (added.length === 0 && removed.length === 0) return Promise.resolve(null);
+    setLabelsNotice(null);
     return runAction(
       'labels',
       'ラベルを保存する',
@@ -144,8 +142,17 @@ export function useIssueActions({
         `追加: ${added.length > 0 ? added.join('、') : 'なし'}`,
         `外す: ${removed.length > 0 ? removed.join('、') : 'なし'}`,
       ].join('\n'),
-      () => {
+      async () => {
         const { owner, repo: repoName } = parseRepoNameWithOwner(repo.nameWithOwner);
+        const latest = await fetchIssue(owner, repoName, issue.number);
+        const latestNames = new Set(latest.labels.map((label) => label.name));
+        const merged = new Set(latestNames);
+        removed.forEach((name) => merged.delete(name));
+        added.forEach((name) => merged.add(name));
+        if (merged.size === latestNames.size && [...merged].every((name) => latestNames.has(name))) {
+          setLabelsNotice('変更はありませんでした。');
+          return latest;
+        }
         return updateIssue(owner, repoName, issue.number, { labels: [...merged] });
       }
     );
@@ -165,5 +172,6 @@ export function useIssueActions({
     pendingAction,
     error,
     labelsError,
+    labelsNotice,
   };
 }

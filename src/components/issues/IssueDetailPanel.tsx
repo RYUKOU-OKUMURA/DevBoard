@@ -57,6 +57,7 @@ export function IssueDetailPanel({
     clearLabelsError,
     error,
     labelsError,
+    labelsNotice,
   } =
     useIssueActions({ item, onIssueUpdated, pendingAction, beginAction, endAction });
   const [comment, setComment] = useState('');
@@ -225,6 +226,11 @@ export function IssueDetailPanel({
           {labelsError && (
             <p role="alert" className="mt-stack-md rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] p-inset-md text-body-sm text-[var(--accent-red-emphasis)]">
               {labelsError}
+            </p>
+          )}
+          {labelsNotice && (
+            <p role="status" className="mt-stack-md text-body-sm text-[var(--text-secondary)]">
+              {labelsNotice}
             </p>
           )}
           <section aria-label="Issue操作" className="mt-stack-lg grid gap-stack-md">
