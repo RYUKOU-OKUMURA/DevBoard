@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GitHubIssue } from '../issues';
-import { fetchIssues, fetchIssuesPage } from '../issues';
+import { fetchIssue, fetchIssues, fetchIssuesPage, fetchRepoLabels } from '../issues';
 
 const mockGithubRestRequest = vi.hoisted(() => vi.fn());
 
@@ -43,5 +43,21 @@ describe('issues API', () => {
       1,
       '/repos/alice/repo/issues?state=all&per_page=100&page=1&sort=updated&direction=desc'
     );
+  });
+
+  it('fetches up to 100 labels for a repository', async () => {
+    const labels = [{ id: 1, name: 'bug', color: 'ff0000' }];
+    mockGithubRestRequest.mockResolvedValueOnce(labels);
+
+    await expect(fetchRepoLabels('alice', 'repo')).resolves.toEqual(labels);
+    expect(mockGithubRestRequest).toHaveBeenCalledWith('/repos/alice/repo/labels?per_page=100');
+  });
+
+  it('fetches one issue by number', async () => {
+    const issue = createIssue(42);
+    mockGithubRestRequest.mockResolvedValueOnce(issue);
+
+    await expect(fetchIssue('alice', 'repo', 42)).resolves.toEqual(issue);
+    expect(mockGithubRestRequest).toHaveBeenCalledWith('/repos/alice/repo/issues/42');
   });
 });

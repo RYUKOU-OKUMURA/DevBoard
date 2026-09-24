@@ -197,6 +197,116 @@ describe('useTrackedRepoIssues', () => {
     expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2);
   });
 
+  it('replaces one issue in the account cache so it stays updated after remount', async () => {
+    const repo = createRepo('repo');
+    const initialIssue = createIssue(1);
+    const closedIssue = createIssue(1, { state: 'closed', closed_at: '2026-02-01T00:00:00.000Z' });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [initialIssue], rawCount: 1 });
+
+    const first = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(first.result.current.isLoading).toBe(false));
+    act(() => first.result.current.replaceIssue(repo.id, closedIssue.id, closedIssue));
+    expect(first.result.current.items[0]?.issue).toEqual(closedIssue);
+    first.unmount();
+
+    const second = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(second.result.current.isLoading).toBe(false));
+    expect(second.result.current.items[0]?.issue).toEqual(closedIssue);
+    expect(mockFetchIssuesPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies sequential issue updates to the latest cached issue', async () => {
+    const repo = createRepo('repo');
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({
+      issues: [createIssue(1, { comments: 2 })],
+      rawCount: 1,
+    });
+    const { result } = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const addComment = (current: GitHubIssue) => ({ ...current, comments: current.comments + 1 });
+    act(() => {
+      result.current.replaceIssue(repo.id, 1, addComment);
+      result.current.replaceIssue(repo.id, 1, addComment);
+    });
+
+    expect(result.current.items[0]?.issue.comments).toBe(4);
+  });
+
+  it('upserts a successful update when a reload removed the issue', async () => {
+    const repo = createRepo('repo');
+    const issue = createIssue(1, { comments: 2 });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage
+      .mockResolvedValueOnce({ issues: [issue], rawCount: 1 })
+      .mockResolvedValueOnce({ issues: [], rawCount: 0 });
+
+    const { result } = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => result.current.reload());
+    await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.items).toHaveLength(0));
+
+    act(() => result.current.replaceIssue(
+      repo.id,
+      issue.id,
+      (current) => ({ ...current, comments: current.comments + 1 }),
+      issue
+    ));
+
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0]?.issue.comments).toBe(3);
+  });
+
+  it('keeps a local action result when an earlier reload omits the issue', async () => {
+    const repo = createRepo('repo');
+    const initialIssue = createIssue(1);
+    const closedIssue = createIssue(1, { state: 'closed', closed_at: '2026-02-01T00:00:00.000Z' });
+    let resolveReload: (result: { issues: GitHubIssue[]; rawCount: number }) => void = () => undefined;
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage
+      .mockResolvedValueOnce({ issues: [initialIssue], rawCount: 1 })
+      .mockReturnValueOnce(new Promise((resolve) => { resolveReload = resolve; }));
+
+    const { result } = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => result.current.reload());
+    await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2));
+    act(() => result.current.replaceIssue(repo.id, initialIssue.id, closedIssue));
+
+    await act(async () => resolveReload({ issues: [], rawCount: 0 }));
+
+    expect(result.current.items.map(({ issue: loaded }) => loaded)).toEqual([closedIssue]);
+  });
+
+  it('uses a newer GET result over an older local replacement', async () => {
+    const repo = createRepo('repo');
+    const initialIssue = createIssue(1, { updated_at: '2026-01-01T00:00:00.000Z' });
+    const localIssue = createIssue(1, {
+      state: 'closed',
+      updated_at: '2026-02-01T00:00:00.000Z',
+      closed_at: '2026-02-01T00:00:00.000Z',
+    });
+    const newerGetIssue = createIssue(1, { updated_at: '2026-03-01T00:00:00.000Z' });
+    let resolveReload: (result: { issues: GitHubIssue[]; rawCount: number }) => void = () => undefined;
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage
+      .mockResolvedValueOnce({ issues: [initialIssue], rawCount: 1 })
+      .mockReturnValueOnce(new Promise((resolve) => { resolveReload = resolve; }));
+
+    const { result } = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => result.current.reload());
+    await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2));
+    act(() => result.current.replaceIssue(repo.id, 1, localIssue));
+    await act(async () => resolveReload({ issues: [newerGetIssue], rawCount: 1 }));
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.items[0]?.issue).toEqual(newerGetIssue);
+  });
+
   it('ignores a previous account response after switching accounts', async () => {
     const repo = createRepo('shared-repo');
     setTracked('account-a', repo.id);

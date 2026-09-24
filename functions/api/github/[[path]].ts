@@ -23,7 +23,7 @@ const REST_ALLOWLIST: RestRule[] = [
   // Issues list / create
   { pattern: /^repos\/[^/]+\/[^/]+\/issues$/, methods: new Set(['GET', 'POST']) },
   // Single issue update
-  { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+$/, methods: new Set(['PATCH']) },
+  { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+$/, methods: new Set(['GET', 'PATCH']) },
   // Issue comments create
   { pattern: /^repos\/[^/]+\/[^/]+\/issues\/\d+\/comments$/, methods: new Set(['POST']) },
   // Repository labels list

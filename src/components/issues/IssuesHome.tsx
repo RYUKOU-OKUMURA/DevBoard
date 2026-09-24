@@ -1,8 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { Repo } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { formatLastUpdateTime } from '../../utils/timeFormatter';
-import { useTrackedRepoIssues, type TrackedRepoIssueItem } from '../../hooks/useTrackedRepoIssues';
+import {
+  beginTrackedIssueAction,
+  endTrackedIssueAction,
+  useTrackedIssueAction,
+  useTrackedRepoIssues,
+  type IssueAction,
+  type TrackedIssueUpdate,
+  type TrackedRepoIssueItem,
+} from '../../hooks/useTrackedRepoIssues';
 import { GithubTermHint } from '../practice/GithubTermHint';
 import { IssueDetailPanel } from './IssueDetailPanel';
 import { IssueFilterBar, type IssueFilters } from './IssueFilterBar';
@@ -22,10 +30,32 @@ const INITIAL_FILTERS: IssueFilters = {
 };
 
 export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeProps) {
-  const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, trackedCount } =
+  const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, replaceIssue, trackedCount } =
     useTrackedRepoIssues(accountId, repos);
   const [filters, setFilters] = useState<IssueFilters>(INITIAL_FILTERS);
-  const [selectedItem, setSelectedItem] = useState<TrackedRepoIssueItem | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<{ repoId: string; issueNumber: number } | null>(null);
+  const selectedItem = selectedIssue
+    ? items.find(({ repo, issue }) => repo.id === selectedIssue.repoId && issue.number === selectedIssue.issueNumber)
+    : undefined;
+  const pendingAction = useTrackedIssueAction(
+    accountId,
+    selectedIssue?.repoId ?? '',
+    selectedIssue?.issueNumber ?? 0
+  );
+  const beginAction = useCallback((repoId: string, issueNumber: number, action: IssueAction) => {
+    return beginTrackedIssueAction(accountId, repoId, issueNumber, action);
+  }, [accountId]);
+  const endAction = useCallback((repoId: string, issueNumber: number) => {
+    endTrackedIssueAction(accountId, repoId, issueNumber);
+  }, [accountId]);
+  const handleIssueUpdated = useCallback((
+    repoId: string,
+    issueId: number,
+    update: TrackedIssueUpdate,
+    fallbackIssue: TrackedRepoIssueItem['issue']
+  ) => {
+    return replaceIssue(repoId, issueId, update, fallbackIssue);
+  }, [replaceIssue]);
 
   const repoOptions = useMemo(() => {
     const byId = new Map(items.map(({ repo }) => [repo.id, repo.nameWithOwner]));
@@ -117,7 +147,10 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
         ) : filteredItems.length > 0 ? (
           <>
             <p className="text-caption text-[var(--text-muted)]" aria-live="polite">{filteredItems.length} 件のIssue</p>
-            <IssueList items={filteredItems} onSelect={setSelectedItem} />
+            <IssueList
+              items={filteredItems}
+              onSelect={({ repo, issue }) => setSelectedIssue({ repoId: repo.id, issueNumber: issue.number })}
+            />
           </>
         ) : items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border-subtle)] bg-surface-primary p-inset-xl text-center text-body-sm text-[var(--text-secondary)]">
@@ -133,7 +166,17 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
 
         <GithubTermHint terms={['issue']} />
       </div>
-      {selectedItem && <IssueDetailPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
+      {selectedItem && (
+        <IssueDetailPanel
+          key={`${selectedItem.repo.id}#${selectedItem.issue.number}`}
+          item={selectedItem}
+          onClose={() => setSelectedIssue(null)}
+          pendingAction={pendingAction}
+          beginAction={beginAction}
+          endAction={endAction}
+          onIssueUpdated={handleIssueUpdated}
+        />
+      )}
     </div>
   );
 }
