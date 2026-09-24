@@ -2,6 +2,7 @@
 
 import type { Env, OAuthSessionData } from '../../lib/types';
 import { generateSessionId } from '../../lib/session';
+import { getAuthSecretStatus } from '../../lib/secretValidation';
 import {
   generateCodeVerifier,
   generateCodeChallenge,
@@ -10,6 +11,13 @@ import {
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
+  const { sessionSecretValid, encryptionKeyValid } = getAuthSecretStatus(env);
+
+  if (!sessionSecretValid || !encryptionKeyValid) {
+    return new Response('サーバーの認証設定が不完全です。管理者は /api/auth/status を確認してください。', {
+      status: 503,
+    });
+  }
 
   try {
     // セッションID生成

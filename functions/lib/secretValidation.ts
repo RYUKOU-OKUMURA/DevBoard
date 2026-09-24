@@ -15,3 +15,11 @@ export const isValidHexSecret = (
   return (minBytes === undefined || bytes >= minBytes) &&
     (exactBytes === undefined || bytes === exactBytes);
 };
+
+export const getAuthSecretStatus = (env: {
+  SESSION_SECRET?: unknown;
+  ENCRYPTION_KEY?: unknown;
+}) => ({
+  sessionSecretValid: isValidHexSecret(env.SESSION_SECRET, { minBytes: 32 }),
+  encryptionKeyValid: isValidHexSecret(env.ENCRYPTION_KEY, { exactBytes: 32 }),
+});

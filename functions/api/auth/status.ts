@@ -1,7 +1,7 @@
 // Diagnostics endpoint - reports auth configuration readiness (safe, no secrets)
 
 import type { Env } from '../../lib/types';
-import { isValidHexSecret } from '../../lib/secretValidation';
+import { getAuthSecretStatus } from '../../lib/secretValidation';
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
@@ -19,8 +19,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const hasClientSecret = Boolean(env.GITHUB_CLIENT_SECRET);
   const hasEncryptionKey = Boolean(env.ENCRYPTION_KEY);
   const hasSessionSecret = Boolean(env.SESSION_SECRET);
-  const sessionSecretValid = isValidHexSecret(env.SESSION_SECRET, { minBytes: 32 });
-  const encryptionKeyValid = isValidHexSecret(env.ENCRYPTION_KEY, { exactBytes: 32 });
+  const { sessionSecretValid, encryptionKeyValid } = getAuthSecretStatus(env);
 
   // KV health check (no user data, short‑lived dummy key)
   let kvOk = false;
