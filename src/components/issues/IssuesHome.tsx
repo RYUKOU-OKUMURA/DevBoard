@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { GitHubIssue } from '../../api/issues';
 import type { Repo } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { formatLastUpdateTime } from '../../utils/timeFormatter';
@@ -22,10 +23,18 @@ const INITIAL_FILTERS: IssueFilters = {
 };
 
 export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeProps) {
-  const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, trackedCount } =
+  const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, replaceIssue, trackedCount } =
     useTrackedRepoIssues(accountId, repos);
   const [filters, setFilters] = useState<IssueFilters>(INITIAL_FILTERS);
   const [selectedItem, setSelectedItem] = useState<TrackedRepoIssueItem | null>(null);
+  const handleIssueUpdated = (repoId: string, issue: GitHubIssue) => {
+    replaceIssue(repoId, issue);
+    setSelectedItem((current) =>
+      current?.repo.id === repoId && current.issue.number === issue.number
+        ? { ...current, issue }
+        : current
+    );
+  };
 
   const repoOptions = useMemo(() => {
     const byId = new Map(items.map(({ repo }) => [repo.id, repo.nameWithOwner]));
@@ -133,7 +142,13 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
 
         <GithubTermHint terms={['issue']} />
       </div>
-      {selectedItem && <IssueDetailPanel item={selectedItem} onClose={() => setSelectedItem(null)} />}
+      {selectedItem && (
+        <IssueDetailPanel
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onIssueUpdated={handleIssueUpdated}
+        />
+      )}
     </div>
   );
 }

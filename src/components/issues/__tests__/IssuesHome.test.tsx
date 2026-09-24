@@ -9,9 +9,15 @@ import { clearTrackedRepoIssuesCache } from '../../../hooks/useTrackedRepoIssues
 import { IssuesHome } from '../IssuesHome';
 
 const mockFetchIssuesPage = vi.hoisted(() => vi.fn());
+const mockFetchRepoLabels = vi.hoisted(() => vi.fn());
+const mockUpdateIssue = vi.hoisted(() => vi.fn());
+const mockAddIssueComment = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../api/issues', () => ({
   fetchIssuesPage: (...args: unknown[]) => mockFetchIssuesPage(...args),
+  fetchRepoLabels: (...args: unknown[]) => mockFetchRepoLabels(...args),
+  updateIssue: (...args: unknown[]) => mockUpdateIssue(...args),
+  addIssueComment: (...args: unknown[]) => mockAddIssueComment(...args),
 }));
 
 function createRepo(id: string, nameWithOwner = `alice/${id}`): Repo {
@@ -55,7 +61,11 @@ describe('IssuesHome', () => {
     localStorage.clear();
     clearTrackedRepoIssuesCache();
     mockFetchIssuesPage.mockReset();
+    mockFetchRepoLabels.mockReset();
+    mockUpdateIssue.mockReset();
+    mockAddIssueComment.mockReset();
     mockFetchIssuesPage.mockResolvedValue({ issues: [], rawCount: 0 });
+    mockFetchRepoLabels.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -93,6 +103,32 @@ describe('IssuesHome', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(document.activeElement).toBe(card);
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('updates the selected issue and hides a newly closed issue from the default filter', async () => {
+    const repo = createRepo('repo-a');
+    const openIssue = createIssue(12, { html_url: 'https://github.com/alice/repo-a/issues/12' });
+    const closedIssue = createIssue(12, {
+      state: 'closed',
+      closed_at: '2026-02-01T00:00:00.000Z',
+      html_url: 'https://github.com/alice/repo-a/issues/12',
+    });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [openIssue], rawCount: 1 });
+    mockUpdateIssue.mockResolvedValue(closedIssue);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    fireEvent.click(screen.getByRole('button', { name: 'このIssueを閉じる（Close）' }));
+
+    expect(mockUpdateIssue).toHaveBeenCalledWith('alice', 'repo-a', 12, { state: 'closed' });
+    expect(await screen.findByText('完了（Closed）')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('状態で絞り込み'), { target: { value: 'closed' } });
+    const closedCard = await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' });
+    expect(within(closedCard).getByText('完了（Closed）')).toBeTruthy();
   });
 
   it('explains how to add a tracked repository when there are none', () => {
