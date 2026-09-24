@@ -11,7 +11,12 @@ interface IssueDetailPanelProps {
   pendingAction: IssueAction | null;
   beginAction: (repoId: string, issueNumber: number, action: IssueAction) => boolean;
   endAction: (repoId: string, issueNumber: number) => void;
-  onIssueUpdated: (repoId: string, issueId: number, update: TrackedIssueUpdate) => GitHubIssue | null;
+  onIssueUpdated: (
+    repoId: string,
+    issueId: number,
+    update: TrackedIssueUpdate,
+    fallbackIssue: GitHubIssue
+  ) => GitHubIssue | null;
 }
 
 function formatIssueDate(value: string): string {
@@ -44,14 +49,25 @@ export function IssueDetailPanel({
   onIssueUpdated,
 }: IssueDetailPanelProps) {
   const { issue, repo } = item;
-  const { changeState, postComment, saveLabels, loadLabelsError, clearError, error } =
+  const {
+    changeState,
+    postComment,
+    saveLabels,
+    loadLabelsError,
+    clearLabelsError,
+    error,
+    labelsError,
+  } =
     useIssueActions({ item, onIssueUpdated, pendingAction, beginAction, endAction });
   const [comment, setComment] = useState('');
   const [isLabelEditorOpen, setIsLabelEditorOpen] = useState(false);
   const [repoLabels, setRepoLabels] = useState<GitHubLabel[]>([]);
   const [labelsLoaded, setLabelsLoaded] = useState(false);
   const [isLoadingLabels, setIsLoadingLabels] = useState(false);
-  const [selectedLabelNames, setSelectedLabelNames] = useState<Set<string>>(new Set());
+  const [labelDraft, setLabelDraft] = useState<{ baseline: Set<string>; selected: Set<string> }>({
+    baseline: new Set(),
+    selected: new Set(),
+  });
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -63,7 +79,7 @@ export function IssueDetailPanel({
 
   const loadLabels = async () => {
     setIsLoadingLabels(true);
-    clearError();
+    clearLabelsError();
     try {
       const [owner, ...repoParts] = repo.nameWithOwner.split('/');
       const repoName = repoParts.join('/');
@@ -82,18 +98,28 @@ export function IssueDetailPanel({
       setIsLabelEditorOpen(false);
       return;
     }
-    setSelectedLabelNames(new Set(issue.labels.map((label) => label.name)));
+    const currentNames = new Set(issue.labels.map((label) => label.name));
+    setLabelDraft({ baseline: currentNames, selected: currentNames });
     setIsLabelEditorOpen(true);
     if (!labelsLoaded) void loadLabels();
   };
+
+  useEffect(() => {
+    const latestNames = new Set(issue.labels.map((label) => label.name));
+    setLabelDraft((current) => {
+      const unchanged = current.baseline.size === current.selected.size &&
+        [...current.baseline].every((name) => current.selected.has(name));
+      return unchanged ? { baseline: latestNames, selected: latestNames } : current;
+    });
+  }, [issue.labels]);
 
   const visibleLabels = Array.from(
     new Map([...issue.labels, ...repoLabels].map((label) => [label.name, label])).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
   const currentLabelNames = new Set(issue.labels.map((label) => label.name));
   const labelsChanged =
-    currentLabelNames.size !== selectedLabelNames.size ||
-    [...currentLabelNames].some((name) => !selectedLabelNames.has(name));
+    currentLabelNames.size !== labelDraft.selected.size ||
+    [...currentLabelNames].some((name) => !labelDraft.selected.has(name));
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -196,6 +222,11 @@ export function IssueDetailPanel({
               {error}
             </p>
           )}
+          {labelsError && (
+            <p role="alert" className="mt-stack-md rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] p-inset-md text-body-sm text-[var(--accent-red-emphasis)]">
+              {labelsError}
+            </p>
+          )}
           <section aria-label="Issue操作" className="mt-stack-lg grid gap-stack-md">
             <button
               type="button"
@@ -252,7 +283,7 @@ export function IssueDetailPanel({
                 <div className="grid gap-stack-sm rounded-lg border border-[var(--border-subtle)] bg-surface-secondary p-inset-md">
                   {isLoadingLabels ? (
                     <p role="status" className="text-body-sm text-[var(--text-secondary)]">Label（目印）候補を取得中…</p>
-                  ) : error && !labelsLoaded ? (
+                  ) : labelsError && !labelsLoaded ? (
                     <div className="grid gap-stack-sm">
                       <button
                         type="button"
@@ -270,12 +301,12 @@ export function IssueDetailPanel({
                           <label key={label.name} className="flex items-center gap-inline-sm text-body-sm text-[var(--text-secondary)]">
                             <input
                               type="checkbox"
-                              checked={selectedLabelNames.has(label.name)}
-                              onChange={(event) => setSelectedLabelNames((current) => {
-                                const next = new Set(current);
+                              checked={labelDraft.selected.has(label.name)}
+                              onChange={(event) => setLabelDraft((current) => {
+                                const next = new Set(current.selected);
                                 if (event.target.checked) next.add(label.name);
                                 else next.delete(label.name);
-                                return next;
+                                return { ...current, selected: next };
                               })}
                               className={`${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
                             />
@@ -286,10 +317,16 @@ export function IssueDetailPanel({
                       <button
                         type="button"
                         onClick={async () => {
-                          const updatedIssue = await saveLabels([...selectedLabelNames]);
-                          if (updatedIssue) setSelectedLabelNames(new Set(updatedIssue.labels.map((label) => label.name)));
+                          const updatedIssue = await saveLabels(
+                            [...labelDraft.selected],
+                            [...labelDraft.baseline]
+                          );
+                          if (updatedIssue) {
+                            const updatedNames = new Set(updatedIssue.labels.map((label) => label.name));
+                            setLabelDraft({ baseline: updatedNames, selected: updatedNames });
+                          }
                         }}
-                        disabled={pendingAction !== null || isLoadingLabels || !labelsChanged}
+                        disabled={pendingAction !== null || isLoadingLabels || !labelsLoaded || !labelsChanged}
                         className={`inline-flex w-fit items-center justify-center rounded-lg bg-[var(--accent-blue)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse transition-colors motion-reduce:transition-none hover:bg-[var(--accent-blue-strong)] disabled:cursor-not-allowed disabled:opacity-70 ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
                       >
                         {pendingAction === 'labels' ? '保存中…' : 'ラベルを保存'}

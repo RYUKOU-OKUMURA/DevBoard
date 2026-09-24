@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import { addIssueComment, updateIssue, type GitHubIssue } from '../api/issues';
-import type { TrackedIssueUpdate, TrackedRepoIssueItem } from './useTrackedRepoIssues';
+import type { IssueAction, TrackedIssueUpdate, TrackedRepoIssueItem } from './useTrackedRepoIssues';
 
-export type IssueAction = 'state' | 'comment' | 'labels';
+export type { IssueAction } from './useTrackedRepoIssues';
 
 function parseRepoNameWithOwner(nameWithOwner: string): { owner: string; repo: string } {
   const [owner, ...repoParts] = nameWithOwner.split('/');
@@ -40,7 +40,12 @@ interface IssueActionsOptions {
   pendingAction: IssueAction | null;
   beginAction: (repoId: string, issueNumber: number, action: IssueAction) => boolean;
   endAction: (repoId: string, issueNumber: number) => void;
-  onIssueUpdated: (repoId: string, issueId: number, update: TrackedIssueUpdate) => GitHubIssue | null;
+  onIssueUpdated: (
+    repoId: string,
+    issueId: number,
+    update: TrackedIssueUpdate,
+    fallbackIssue: GitHubIssue
+  ) => GitHubIssue | null;
 }
 
 export function useIssueActions({
@@ -52,6 +57,7 @@ export function useIssueActions({
 }: IssueActionsOptions) {
   const { issue, repo } = item;
   const [error, setError] = useState<string | null>(null);
+  const [labelsError, setLabelsError] = useState<string | null>(null);
 
   const runAction = useCallback(async (
     action: IssueAction,
@@ -75,7 +81,8 @@ export function useIssueActions({
 
       setError(null);
       const update = await request();
-      return onIssueUpdated(repo.id, issue.id, update);
+      const fallbackIssue = typeof update === 'function' ? update(issue) : update;
+      return onIssueUpdated(repo.id, issue.id, update, issue) ?? fallbackIssue;
     } catch (actionError) {
       setError(toJapaneseIssueActionError(operation, actionError));
       return null;
@@ -119,11 +126,15 @@ export function useIssueActions({
     );
   }, [issue, repo.nameWithOwner, runAction]);
 
-  const saveLabels = useCallback((labelNames: string[]) => {
+  const saveLabels = useCallback((labelNames: string[], baselineLabelNames: string[]) => {
     const current = new Set(issue.labels.map((label) => label.name));
+    const baseline = new Set(baselineLabelNames);
     const selected = new Set(labelNames);
-    const added = [...selected].filter((name) => !current.has(name));
-    const removed = [...current].filter((name) => !selected.has(name));
+    const added = [...selected].filter((name) => !baseline.has(name));
+    const removed = [...baseline].filter((name) => !selected.has(name));
+    const merged = new Set(current);
+    removed.forEach((name) => merged.delete(name));
+    added.forEach((name) => merged.add(name));
     if (added.length === 0 && removed.length === 0) return Promise.resolve(null);
     return runAction(
       'labels',
@@ -135,15 +146,24 @@ export function useIssueActions({
       ].join('\n'),
       () => {
         const { owner, repo: repoName } = parseRepoNameWithOwner(repo.nameWithOwner);
-        return updateIssue(owner, repoName, issue.number, { labels: [...selected] });
+        return updateIssue(owner, repoName, issue.number, { labels: [...merged] });
       }
     );
   }, [issue, repo.nameWithOwner, runAction]);
 
   const loadLabelsError = useCallback((error: unknown) => {
-    setError(toJapaneseIssueActionError('ラベル候補を取得する', error));
+    setLabelsError(toJapaneseIssueActionError('ラベル候補を取得する', error));
   }, []);
-  const clearError = useCallback(() => setError(null), []);
+  const clearLabelsError = useCallback(() => setLabelsError(null), []);
 
-  return { changeState, postComment, saveLabels, loadLabelsError, clearError, pendingAction, error };
+  return {
+    changeState,
+    postComment,
+    saveLabels,
+    loadLabelsError,
+    clearLabelsError,
+    pendingAction,
+    error,
+    labelsError,
+  };
 }

@@ -235,6 +235,52 @@ describe('useTrackedRepoIssues', () => {
     expect(result.current.items[0]?.issue.comments).toBe(4);
   });
 
+  it('upserts a successful update when a reload removed the issue', async () => {
+    const repo = createRepo('repo');
+    const issue = createIssue(1, { comments: 2 });
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage
+      .mockResolvedValueOnce({ issues: [issue], rawCount: 1 })
+      .mockResolvedValueOnce({ issues: [], rawCount: 0 });
+
+    const { result } = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => result.current.reload());
+    await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.items).toHaveLength(0));
+
+    act(() => result.current.replaceIssue(
+      repo.id,
+      issue.id,
+      (current) => ({ ...current, comments: current.comments + 1 }),
+      issue
+    ));
+
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0]?.issue.comments).toBe(3);
+  });
+
+  it('keeps a local action result when an earlier reload omits the issue', async () => {
+    const repo = createRepo('repo');
+    const initialIssue = createIssue(1);
+    const closedIssue = createIssue(1, { state: 'closed', closed_at: '2026-02-01T00:00:00.000Z' });
+    let resolveReload: (result: { issues: GitHubIssue[]; rawCount: number }) => void = () => undefined;
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage
+      .mockResolvedValueOnce({ issues: [initialIssue], rawCount: 1 })
+      .mockReturnValueOnce(new Promise((resolve) => { resolveReload = resolve; }));
+
+    const { result } = renderHook(() => useTrackedRepoIssues('alice-id', [repo]));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    act(() => result.current.reload());
+    await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(2));
+    act(() => result.current.replaceIssue(repo.id, initialIssue.id, closedIssue));
+
+    await act(async () => resolveReload({ issues: [], rawCount: 0 }));
+
+    expect(result.current.items.map(({ issue: loaded }) => loaded)).toEqual([closedIssue]);
+  });
+
   it('uses a newer GET result over an older local replacement', async () => {
     const repo = createRepo('repo');
     const initialIssue = createIssue(1, { updated_at: '2026-01-01T00:00:00.000Z' });
