@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import type { GitHubIssue } from '../types';
+import type { LegacySyncIssue } from '../types';
 import { GlassModal } from './ui/GlassModal';
 import { focusRing } from '../lib/focusRing';
 
@@ -12,7 +12,7 @@ interface IssueImportDialogProps {
   onClose: () => void;
   repoNameWithOwner: string;
   onImport: (issueNumbers: number[]) => Promise<void>;
-  fetchIssues: (repoNameWithOwner: string) => Promise<GitHubIssue[]>;
+  fetchIssues: (repoNameWithOwner: string) => Promise<LegacySyncIssue[]>;
   existingIssueNumbers: Set<number>;
 }
 
@@ -24,7 +24,7 @@ export const IssueImportDialog: React.FC<IssueImportDialogProps> = ({
   fetchIssues,
   existingIssueNumbers,
 }) => {
-  const [issues, setIssues] = useState<GitHubIssue[]>([]);
+  const [issues, setIssues] = useState<LegacySyncIssue[]>([]);
   const [selectedIssues, setSelectedIssues] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
