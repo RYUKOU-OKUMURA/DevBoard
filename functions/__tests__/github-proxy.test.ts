@@ -104,15 +104,33 @@ describe('GitHub proxy allowlist', () => {
   });
 
   it.each([
-    { path: ['repos', 'o', '..', 'issues'] },
-    { path: ['repos', 'o', '%2E%2E', 'issues'] },
-    { path: ['repos', '.', 'r', 'issues'] },
-    { path: ['repos', 'o', '%2e.', 'issues'] },
-  ])('rejects dot segments before forwarding: $path', async ({ path }) => {
+    { name: 'dot segment', path: ['repos', 'o', '..', 'issues'], method: 'GET' },
+    { name: 'encoded dot segment', path: ['repos', 'o', '%2E%2E', 'issues'], method: 'GET' },
+    { name: 'dot owner', path: ['repos', '.', 'r', 'issues'], method: 'GET' },
+    { name: 'mixed encoded dot segment', path: ['repos', 'o', '%2e.', 'issues'], method: 'GET' },
+    { name: 'backslash traversal', path: ['repos', 'o\\..\\..', 'user', 'issues'], method: 'GET' },
+    { name: 'hash and backslash path confusion', path: ['repos', '..\\..\\user', 'repos#', 'issues'], method: 'GET' },
+    { name: 'question mark', path: ['repos', 'o?x', 'r', 'issues'], method: 'GET' },
+    { name: 'encoded traversal text', path: ['repos', '%2E%2E', 'r', 'issues'], method: 'GET' },
+    { name: 'encoded backslash text', path: ['repos', '%5C', 'r', 'issues'], method: 'GET' },
+    { name: 'space', path: ['repos', 'o name', 'r', 'issues'], method: 'GET' },
+    { name: 'empty segment', path: ['repos', '', 'r', 'issues'], method: 'GET' },
+    {
+      name: 'GraphQL segment',
+      path: ['graphql', 'repos', 'viewer?x'],
+      method: 'POST',
+      body: { queryId: 'viewerRepos', variables: {} },
+    },
+  ])('rejects $name before forwarding', async ({ path, method, body }) => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const request = makeRequest(
-      `https://devboard.test/api/github/${path.join('/')}`,
-      { method: 'GET' }
+      'https://devboard.test/api/github/test',
+      {
+        method,
+        ...(body
+          ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+          : {}),
+      }
     );
 
     const response = await onRequest({
@@ -126,7 +144,7 @@ describe('GitHub proxy allowlist', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(
       '[GitHub Proxy] Blocked request',
-      expect.objectContaining({ reason: 'dot segment in path' })
+      expect.objectContaining({ reason: 'invalid path segment' })
     );
   });
 
@@ -151,7 +169,7 @@ describe('GitHub proxy allowlist', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(
       '[GitHub Proxy] Blocked request',
-      expect.objectContaining({ reason: 'dot segment in path' })
+      expect.objectContaining({ reason: 'invalid path segment' })
     );
   });
 

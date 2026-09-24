@@ -44,15 +44,6 @@ const logRejection = (reason: string, details: Record<string, unknown>) => {
   console.warn('[GitHub Proxy] Blocked request', { reason, ...details });
 };
 
-const isDotSegment = (segment: string): boolean => {
-  try {
-    const decoded = decodeURIComponent(segment);
-    return decoded === '.' || decoded === '..';
-  } catch {
-    return false;
-  }
-};
-
 export const onRequest: PagesFunction<Env> = async (context) => {
   const { env, request, params } = context;
 
@@ -69,15 +60,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     const url = new URL(request.url);
     const pathArray = (params.path as string[] | undefined) ?? [];
-    const apiPath = pathArray.filter(Boolean).join('/');
+    const apiPath = pathArray.join('/');
 
     if (!apiPath) {
       logRejection('empty path', { method: request.method });
       return createErrorResponse(403, 'Forbidden');
     }
 
-    if (apiPath.split('/').some(isDotSegment)) {
-      logRejection('dot segment in path', { method: request.method, path: apiPath });
+    if (apiPath.split('/').some((segment) =>
+      !/^[A-Za-z0-9_.-]+$/.test(segment) || segment === '.' || segment === '..'
+    )) {
+      logRejection('invalid path segment', { method: request.method, path: apiPath });
       return createErrorResponse(403, 'Forbidden');
     }
 
