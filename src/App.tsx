@@ -22,6 +22,7 @@ import { focusRing } from './lib/focusRing';
 const TabNavigation = lazy(() => import('./components/TabNavigation').then((m) => ({ default: m.TabNavigation })));
 const RepositoryHome = lazy(() => import('./components/repositories/RepositoryHome').then((m) => ({ default: m.RepositoryHome })));
 const PracticeHome = lazy(() => import('./components/practice/PracticeHome').then((m) => ({ default: m.PracticeHome })));
+const IssuesHome = lazy(() => import('./components/issues/IssuesHome').then((m) => ({ default: m.IssuesHome })));
 const AdvancedHome = lazy(() => import('./components/advanced/AdvancedHome').then((m) => ({ default: m.AdvancedHome })));
 const RepoBoard = lazy(() => import('./components/RepoBoard').then((m) => ({ default: m.RepoBoard })));
 const ManualRepoBoard = lazy(() => import('./components/ManualRepoBoard').then((m) => ({ default: m.ManualRepoBoard })));
@@ -513,6 +514,19 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                   {repositoryPanel}
                 </Suspense>
               </TagsProvider>
+            )}
+          </div>
+
+          {/* Issues Tab */}
+          <div className={activeTab === 'issues' ? 'h-full overflow-auto animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
+            {activeTab === 'issues' && (
+              <Suspense fallback={<LoadingScreen />}>
+                <IssuesHome
+                  accountId={user.userId || user.username}
+                  repos={repos}
+                  onOpenRepositories={handleBackToRepositoryHome}
+                />
+              </Suspense>
             )}
           </div>
 
