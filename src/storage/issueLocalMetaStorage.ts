@@ -149,7 +149,7 @@ function readLegacyDueDate(value: unknown): string | undefined {
   const dateOnly = value.slice(0, 10);
   if (!isDateOnly(dateOnly)) return undefined;
   if (value === dateOnly) return dateOnly;
-  const isDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?$/i.test(value);
+  const isDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/i.test(value);
   return isDateTime && !Number.isNaN(Date.parse(value)) ? dateOnly : undefined;
 }
 
@@ -167,24 +167,21 @@ export function migrateLinkedIssueTodos(accountId: string): boolean {
   if (getStorageString(migrationKey, '') === '1') return true;
 
   const metas = getIssueLocalMetaMap(accountId);
-  const latestTodoByIssue = new Map<string, LegacyTodo>();
+  const latestMetaByIssue = new Map<string, IssueLocalMeta>();
   getLegacyTodos(accountId).forEach((todo) => {
     if (!isLegacyTodo(todo)) return;
     const key = getIssueLocalMetaEntryKey(todo.repoId, todo.issueNumber);
     if (metas[key]) return;
-    const existing = latestTodoByIssue.get(key);
-    if (!existing || Date.parse(todo.updatedAt) > Date.parse(existing.updatedAt as string)) {
-      latestTodoByIssue.set(key, todo);
-    }
+    const meta = legacyMeta(todo);
+    if (!meta) return;
+    const existing = latestMetaByIssue.get(key);
+    if (!existing || Date.parse(meta.updatedAt) > Date.parse(existing.updatedAt)) latestMetaByIssue.set(key, meta);
   });
 
   let changed = false;
-  latestTodoByIssue.forEach((todo, key) => {
-    const meta = legacyMeta(todo);
-    if (meta && !metas[key]) {
-      metas[key] = meta;
-      changed = true;
-    }
+  latestMetaByIssue.forEach((meta, key) => {
+    metas[key] = meta;
+    changed = true;
   });
 
   if (changed && !saveIssueLocalMetaMap(accountId, metas)) return false;

@@ -65,6 +65,36 @@ describe('issueLocalMetaStorage', () => {
     expect(localStorage.getItem(LEGACY_KEY)).toBe(raw);
   });
 
+  it('keeps the newest todo that can produce metadata', () => {
+    localStorage.setItem(LEGACY_KEY, JSON.stringify([
+      {
+        repoId: 'repo-a', issueNumber: 8, priority: 'high', dueDate: '2026-04-01',
+        description: 'older valid todo', updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        repoId: 'repo-a', issueNumber: 8, priority: 'urgent', dueDate: '2026-04-01Tbad',
+        description: 42, updatedAt: '2026-02-01T00:00:00.000Z',
+      },
+    ]));
+
+    expect(migrateLinkedIssueTodos(ACCOUNT)).toBe(true);
+    expect(getIssueLocalMeta(ACCOUNT, 'repo-a', 8)).toEqual({
+      priority: 'high', dueDate: '2026-04-01', note: 'older valid todo', updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+  });
+
+  it('migrates legacy due dates with offsets that omit the colon', () => {
+    localStorage.setItem(LEGACY_KEY, JSON.stringify([
+      {
+        repoId: 'repo-a', issueNumber: 8, priority: 'medium', dueDate: '2026-04-01T00:00:00+0900',
+        updatedAt: '2026-02-01T00:00:00.000Z',
+      },
+    ]));
+
+    expect(migrateLinkedIssueTodos(ACCOUNT)).toBe(true);
+    expect(getIssueLocalMeta(ACCOUNT, 'repo-a', 8)?.dueDate).toBe('2026-04-01');
+  });
+
   it('skips malformed linked todos and migrates valid entries after them', () => {
     const validTodo = {
       repoId: 'repo-a', issueNumber: 8, priority: 'high', dueDate: '2026-04-04',
