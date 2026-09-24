@@ -9,11 +9,13 @@ import type { TrackedIssueUpdate } from '../../../hooks/useTrackedRepoIssues';
 import type { Repo } from '../../../types';
 import { IssueDetailPanel } from '../IssueDetailPanel';
 
+const mockFetchIssue = vi.hoisted(() => vi.fn());
 const mockFetchRepoLabels = vi.hoisted(() => vi.fn());
 const mockUpdateIssue = vi.hoisted(() => vi.fn());
 const mockAddIssueComment = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../api/issues', () => ({
+  fetchIssue: (...args: unknown[]) => mockFetchIssue(...args),
   fetchRepoLabels: (...args: unknown[]) => mockFetchRepoLabels(...args),
   updateIssue: (...args: unknown[]) => mockUpdateIssue(...args),
   addIssueComment: (...args: unknown[]) => mockAddIssueComment(...args),
@@ -86,9 +88,11 @@ function renderPanel(initialIssue = createIssue()) {
 
 describe('IssueDetailPanel actions', () => {
   beforeEach(() => {
+    mockFetchIssue.mockReset();
     mockFetchRepoLabels.mockReset();
     mockUpdateIssue.mockReset();
     mockAddIssueComment.mockReset();
+    mockFetchIssue.mockResolvedValue(createIssue());
     mockFetchRepoLabels.mockResolvedValue([]);
   });
 
@@ -174,6 +178,7 @@ describe('IssueDetailPanel actions', () => {
     mockFetchRepoLabels.mockResolvedValueOnce(labels);
     const updatedIssue = createIssue({ labels });
     const { onIssueUpdated } = renderPanel(createIssue({ labels: [labels[0]!] }));
+    mockFetchIssue.mockResolvedValueOnce(createIssue({ labels: [labels[0]!] }));
 
     fireEvent.click(screen.getByRole('button', { name: 'ラベルを編集' }));
     const docs = await screen.findByRole('checkbox', { name: 'docs' });
@@ -211,6 +216,7 @@ describe('IssueDetailPanel actions', () => {
     const bug = { id: 1, name: 'bug', color: 'ff0000' };
     const docs = { id: 2, name: 'docs', color: '00ff00' };
     mockFetchRepoLabels.mockResolvedValueOnce([bug, docs]);
+    mockFetchIssue.mockResolvedValueOnce(createIssue({ labels: [bug] }));
     mockUpdateIssue.mockRejectedValueOnce(new Error('API request failed with status 422'));
     renderPanel(createIssue({ labels: [bug] }));
 
