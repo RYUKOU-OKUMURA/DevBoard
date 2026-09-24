@@ -94,6 +94,7 @@ export function isAdvancedSubTab(value: unknown): value is AdvancedSubTab {
 
 export * from './repo';
 export * from './practice';
+export * from './issueLocalMeta';
 
 // Export ToDo types
 export * from './todo';
