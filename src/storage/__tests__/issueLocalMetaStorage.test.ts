@@ -13,6 +13,18 @@ import {
 const ACCOUNT = 'alice-id';
 const LEGACY_KEY = `github-dashboard-todos:${ACCOUNT}`;
 
+describe('issue local meta inProgress', () => {
+  it('keeps inProgress only when true and drops the entry when nothing else remains', () => {
+    localStorage.clear();
+    updateIssueLocalMeta('alice-id', 'repo-a', 1, { inProgress: true });
+    expect(getIssueLocalMeta('alice-id', 'repo-a', 1)?.inProgress).toBe(true);
+    updateIssueLocalMeta('alice-id', 'repo-a', 1, { note: 'memo' });
+    expect(getIssueLocalMeta('alice-id', 'repo-a', 1)?.inProgress).toBe(true);
+    updateIssueLocalMeta('alice-id', 'repo-a', 1, { inProgress: false, note: '' });
+    expect(getIssueLocalMeta('alice-id', 'repo-a', 1)).toBeNull();
+  });
+});
+
 describe('issueLocalMetaStorage', () => {
   beforeEach(() => localStorage.clear());
 
