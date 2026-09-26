@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { useIssueActions, type IssueAction } from '../../hooks/useIssueActions';
 import type { TrackedIssueUpdate, TrackedRepoIssueItem } from '../../hooks/useTrackedRepoIssues';
 import { focusRing } from '../../lib/focusRing';
-import type { IssueLocalMeta, IssueLocalMetaPatch, IssueLocalPriority } from '../../types';
+import type { IssueLocalMeta, IssueLocalMetaPatch, IssueLocalPriority, PracticeIssueDraft } from '../../types';
 
 interface IssueDetailPanelProps {
   item: TrackedRepoIssueItem;
@@ -21,6 +21,8 @@ interface IssueDetailPanelProps {
     update: TrackedIssueUpdate,
     fallbackIssue: GitHubIssue
   ) => GitHubIssue | null;
+  linkedPracticeDraft?: PracticeIssueDraft | null;
+  onOpenPracticeDraft?: () => void;
 }
 
 function formatIssueDate(value: string): string {
@@ -54,6 +56,8 @@ export function IssueDetailPanel({
   localMetaSaveError,
   onSaveLocalMeta,
   onIssueUpdated,
+  linkedPracticeDraft,
+  onOpenPracticeDraft,
 }: IssueDetailPanelProps) {
   const { issue, repo } = item;
   const {
@@ -217,6 +221,24 @@ export function IssueDetailPanel({
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-inset-lg py-inset-md">
+          {linkedPracticeDraft && onOpenPracticeDraft && (
+            <section
+              aria-label="練習ドラフトとの関連"
+              className="mb-stack-lg rounded-lg border border-[var(--accent-blue-border)] bg-[var(--accent-blue-muted)] p-inset-md"
+            >
+              <p className="text-caption font-semibold text-[var(--accent-blue-emphasis)]">
+                練習ドラフトから作成したIssue（DevBoard内の練習）
+              </p>
+              <p className="mt-stack-xs text-body-sm text-[var(--text-secondary)]">{linkedPracticeDraft.title || '無題の下書き'}</p>
+              <button
+                type="button"
+                onClick={onOpenPracticeDraft}
+                className={`mt-stack-sm inline-flex w-fit items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-primary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
+              >
+                練習画面で見る
+              </button>
+            </section>
+          )}
           <dl>
             <DetailRow label="状態">{issue.state === 'open' ? '未完了（Open）' : '完了（Closed）'}</DetailRow>
             <DetailRow label="Label（目印）">

@@ -131,6 +131,28 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
   const { viewMode: repositoryViewMode, setViewMode: setRepositoryViewMode } = useRepositoryView(
     user.userId || user.username
   );
+  const accountId = user.userId || user.username;
+  const [focusIssue, setFocusIssue] = useState<{ repoId: string; issueNumber: number } | null>(null);
+  const [focusDraftId, setFocusDraftId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFocusIssue(null);
+    setFocusDraftId(null);
+  }, [accountId]);
+
+  const handleOpenIssueFromPractice = useCallback((repoId: string, issueNumber: number) => {
+    setFocusIssue({ repoId, issueNumber });
+    setActiveTab('issues');
+  }, [setActiveTab]);
+
+  const handleOpenPracticeFromIssue = useCallback((draftId: string) => {
+    setFocusDraftId(draftId);
+    setActiveTab('practice');
+  }, [setActiveTab]);
+
+  const handleOpenIssuesTab = useCallback(() => {
+    setActiveTab('issues');
+  }, [setActiveTab]);
 
   // activity/manual の旧 tab 値も高度な機能面として扱い、空白画面を防ぐ
   const isAdvancedSurface =
@@ -522,9 +544,12 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
             {activeTab === 'issues' && (
               <Suspense fallback={<LoadingScreen />}>
                 <IssuesHome
-                  accountId={user.userId || user.username}
+                  accountId={accountId}
                   repos={repos}
                   onOpenRepositories={handleBackToRepositoryHome}
+                  focusIssue={focusIssue}
+                  onFocusIssueHandled={() => setFocusIssue(null)}
+                  onOpenPracticeDraft={handleOpenPracticeFromIssue}
                 />
               </Suspense>
             )}
@@ -534,7 +559,13 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
           <div className={activeTab === 'practice' ? 'h-full overflow-auto animate-slide-fade-in motion-reduce:animate-none' : 'hidden'}>
             {activeTab === 'practice' && (
               <Suspense fallback={<LoadingScreen />}>
-                <PracticeHome accountId={user.userId || user.username} repos={repos} />
+                <PracticeHome
+                  accountId={accountId}
+                  repos={repos}
+                  onOpenIssue={handleOpenIssueFromPractice}
+                  focusDraftId={focusDraftId}
+                  onFocusDraftHandled={() => setFocusDraftId(null)}
+                />
               </Suspense>
             )}
           </div>
@@ -552,6 +583,7 @@ function AuthenticatedApp({ user }: AuthenticatedAppProps) {
                   onOpenActivity={() => setAdvancedSubTab('activity')}
                   onOpenManualRepos={() => setAdvancedSubTab('manual')}
                   onOpenLegacyBoard={() => setAdvancedSubTab('legacy')}
+                  onOpenIssues={handleOpenIssuesTab}
                   legacyContent={
                     <TagsProvider scope="kanban">
                       <SplitPanel
