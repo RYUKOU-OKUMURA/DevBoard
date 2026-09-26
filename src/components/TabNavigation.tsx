@@ -11,7 +11,7 @@ interface TabNavigationProps {
   advancedCount?: number;
 }
 
-const ICONS: Record<PrimaryTabType, JSX.Element> = {
+const ICONS: Record<PrimaryTabType, React.JSX.Element> = {
   board: (
     <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="7" height="7" />
