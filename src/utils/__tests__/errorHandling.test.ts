@@ -24,6 +24,8 @@ describe('errorHandling helpers', () => {
 
     expect(message).toContain('Authentication failed');
     expect(showToast).toHaveBeenCalledTimes(1);
-    expect(showToast.mock.calls[0][0].title).toBe('API呼び出し');
+    expect(showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'API呼び出し' }),
+    );
   });
 });

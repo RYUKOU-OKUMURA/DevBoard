@@ -5,6 +5,9 @@
   "description": "リポジトリをカンバン形式で視覚化し、開発プロジェクトの状況を素早く把握するための Web アプリケーションです。",
   "private": true,
   "main": "src/main.ts",
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
   "packageManager": "npm@10.9.0",
   "scripts": {
     "dev": "vite",
@@ -35,19 +38,19 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^8.46.3",
-    "@vitejs/plugin-react": "^4.2.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.4.0",
     "eslint": "^8.54.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-refresh": "^0.4.24",
-    "jsdom": "^24.1.3",
+    "jsdom": "^30.1.1",
     "lockfile-lint": "^4.12.1",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
     "terser": "^5.44.0",
     "typescript": "^5.3.0",
-    "vite": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
   },
   "repository": {
     "type": "git",

@@ -2,17 +2,11 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-const vendorChunks = {
-  react: ["react", "react-dom"],
-  motion: ["framer-motion"],
-  dnd: ["@dnd-kit/core", "@dnd-kit/sortable", "@dnd-kit/utilities"],
-};
-
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   envPrefix: ["VITE_", "DEVBOARD_"],
@@ -38,9 +32,24 @@ export default defineConfig({
         comments: false,
       },
     },
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: vendorChunks,
+        codeSplitting: {
+          groups: [
+            {
+              name: "react",
+              test: /node_modules[\\/](?:react|react-dom)[\\/]/,
+            },
+            {
+              name: "motion",
+              test: /node_modules[\\/]framer-motion[\\/]/,
+            },
+            {
+              name: "dnd",
+              test: /node_modules[\\/]@dnd-kit[\\/]/,
+            },
+          ],
+        },
         chunkFileNames: "assets/[name]-[hash].js",
         entryFileNames: "assets/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash].[ext]",
