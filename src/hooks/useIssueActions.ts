@@ -35,9 +35,8 @@ function toJapaneseIssueActionError(operation: string, error: unknown): string {
   return `${prefix}時間を置いて再試行してください。`;
 }
 
-interface IssueActionsOptions {
+export interface IssueActionContext {
   item: TrackedRepoIssueItem;
-  pendingAction: IssueAction | null;
   beginAction: (repoId: string, issueNumber: number, action: IssueAction) => boolean;
   endAction: (repoId: string, issueNumber: number) => void;
   onIssueUpdated: (
@@ -46,6 +45,53 @@ interface IssueActionsOptions {
     update: TrackedIssueUpdate,
     fallbackIssue: GitHubIssue
   ) => GitHubIssue | null;
+}
+
+interface IssueActionsOptions extends IssueActionContext {
+  pendingAction: IssueAction | null;
+}
+
+export type IssueActionResult = { issue: GitHubIssue | null; error: string | null };
+
+async function runConfirmedIssueAction(
+  { item: { issue, repo }, beginAction, endAction, onIssueUpdated }: IssueActionContext,
+  action: IssueAction,
+  operation: string,
+  description: string,
+  request: () => Promise<TrackedIssueUpdate>
+): Promise<IssueActionResult> {
+  if (!beginAction(repo.id, issue.number, action)) return { issue: null, error: null };
+
+  try {
+    const confirmed = window.confirm([
+      description,
+      '',
+      `リポジトリ名: ${repo.nameWithOwner}`,
+      `Issue番号: #${issue.number}`,
+      `タイトル: ${issue.title}`,
+      '',
+      'GitHub上のデータが変わります。続けますか？',
+    ].join('\n'));
+    if (!confirmed) return { issue: null, error: null };
+
+    const update = await request();
+    const fallbackIssue = typeof update === 'function' ? update(issue) : update;
+    return { issue: onIssueUpdated(repo.id, issue.id, update, issue) ?? fallbackIssue, error: null };
+  } catch (actionError) {
+    return { issue: null, error: toJapaneseIssueActionError(operation, actionError) };
+  } finally {
+    endAction(repo.id, issue.number);
+  }
+}
+
+export function changeIssueState(context: IssueActionContext, state: 'open' | 'closed'): Promise<IssueActionResult> {
+  const { issue, repo } = context.item;
+  const actionText = state === 'closed' ? 'Close（Issueを閉じる）' : 'Reopen（Issueを再オープンする）';
+  const operation = state === 'closed' ? 'Issueを閉じる' : 'Issueを再オープンする';
+  return runConfirmedIssueAction(context, 'state', operation, `${actionText}を実行します。`, () => {
+    const { owner, repo: repoName } = parseRepoNameWithOwner(repo.nameWithOwner);
+    return updateIssue(owner, repoName, issue.number, { state });
+  });
 }
 
 export function useIssueActions({
@@ -60,52 +106,29 @@ export function useIssueActions({
   const [labelsError, setLabelsError] = useState<string | null>(null);
   const [labelsNotice, setLabelsNotice] = useState<string | null>(null);
 
+  const applyResult = useCallback((result: IssueActionResult) => {
+    if (result.error) setError(result.error);
+    else if (result.issue) setError(null);
+    return result.issue;
+  }, []);
+
   const runAction = useCallback(async (
     action: IssueAction,
     operation: string,
     description: string,
     request: () => Promise<TrackedIssueUpdate>
-  ): Promise<GitHubIssue | null> => {
-    if (!beginAction(repo.id, issue.number, action)) return null;
+  ): Promise<GitHubIssue | null> => applyResult(await runConfirmedIssueAction(
+    { item, beginAction, endAction, onIssueUpdated },
+    action,
+    operation,
+    description,
+    request
+  )), [applyResult, beginAction, endAction, item, onIssueUpdated]);
 
-    try {
-      const confirmed = window.confirm([
-        description,
-        '',
-        `リポジトリ名: ${repo.nameWithOwner}`,
-        `Issue番号: #${issue.number}`,
-        `タイトル: ${issue.title}`,
-        '',
-        'GitHub上のデータが変わります。続けますか？',
-      ].join('\n'));
-      if (!confirmed) return null;
-
-      setError(null);
-      const update = await request();
-      const fallbackIssue = typeof update === 'function' ? update(issue) : update;
-      return onIssueUpdated(repo.id, issue.id, update, issue) ?? fallbackIssue;
-    } catch (actionError) {
-      setError(toJapaneseIssueActionError(operation, actionError));
-      return null;
-    } finally {
-      endAction(repo.id, issue.number);
-    }
-  }, [beginAction, endAction, issue.id, issue.number, issue.title, onIssueUpdated, repo.id, repo.nameWithOwner]);
-
-  const changeState = useCallback(() => {
-    const state = issue.state === 'open' ? 'closed' : 'open';
-    const actionText = state === 'closed' ? 'Close（Issueを閉じる）' : 'Reopen（Issueを再オープンする）';
-    const operation = state === 'closed' ? 'Issueを閉じる' : 'Issueを再オープンする';
-    return runAction(
-      'state',
-      operation,
-      `${actionText}を実行します。`,
-      () => {
-        const { owner, repo: repoName } = parseRepoNameWithOwner(repo.nameWithOwner);
-        return updateIssue(owner, repoName, issue.number, { state });
-      }
-    );
-  }, [issue.number, issue.state, repo.nameWithOwner, runAction]);
+  const changeState = useCallback(async () => applyResult(await changeIssueState(
+    { item, beginAction, endAction, onIssueUpdated },
+    issue.state === 'open' ? 'closed' : 'open'
+  )), [applyResult, beginAction, endAction, issue.state, item, onIssueUpdated]);
 
   const postComment = useCallback((body: string) => {
     if (!body.trim()) return Promise.resolve(null);

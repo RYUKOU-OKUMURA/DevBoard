@@ -41,7 +41,7 @@ export function IssueList({ items, onSelect, getMeta, label = 'Issue（やるこ
               )}
               <span>#{issue.number}</span>
               <span className="rounded-full border border-[var(--border-subtle)] bg-surface-secondary px-inline-sm py-inline-xs text-caption font-semibold text-[var(--text-secondary)]">
-                {issue.state === 'open' ? '未完了（Open）' : '完了（Closed）'}
+                {issue.state === 'open' ? (meta?.inProgress ? '作業中（Open）' : '未完了（Open）') : '完了（Closed）'}
               </span>
             </div>
             <h2 className="mt-stack-sm break-words text-title-3 font-semibold text-[var(--text-primary)]">
