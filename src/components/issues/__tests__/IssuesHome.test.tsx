@@ -11,6 +11,8 @@ import { clearTrackedRepoIssuesCache } from '../../../hooks/useTrackedRepoIssues
 import type { Todo, TodoPriority, TodoStatus } from '../../../types/todo';
 import { createTodo, getTodoById, updateTodo } from '../../../utils/todoStorage';
 import { getLegacyTodoConversionMap } from '../../../storage/legacyTodoConvertedStorage';
+import { savePracticeIssueDrafts } from '../../../storage/practiceStorage';
+import type { PracticeIssueDraft } from '../../../types';
 import { IssuesHome } from '../IssuesHome';
 
 const mockFetchIssuesPage = vi.hoisted(() => vi.fn());
@@ -1047,6 +1049,174 @@ describe('IssuesHome', () => {
       const status = await screen.findByRole('status');
       expect(status.textContent).toContain('Issue #92 を作成しました');
       expect(status.textContent).toContain('優先度・期限・メモを引き継げませんでした');
+    });
+  });
+
+  describe('practice and issue cross-links (13-C3)', () => {
+    function createPracticeDraft(overrides: Partial<PracticeIssueDraft> = {}): PracticeIssueDraft {
+      return {
+        id: 'draft-linked',
+        repoId: 'repo-a',
+        title: '練習から作ったIssue',
+        reason: '理由',
+        doneCriteria: [],
+        generatedMarkdown: 'md',
+        syncStatus: 'synced',
+        githubIssueNumber: 12,
+        githubIssueUrl: 'https://github.com/alice/repo-a/issues/12',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+        ...overrides,
+      };
+    }
+
+    it('opens the detail panel from focusIssue after load and calls onFocusIssueHandled', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12, { title: 'Cross link' })], rawCount: 1 });
+      const onHandled = vi.fn();
+
+      render(
+        <IssuesHome
+          accountId="alice-id"
+          repos={[repo]}
+          onOpenRepositories={() => undefined}
+          focusIssue={{ repoId: repo.id, issueNumber: 12 }}
+          onFocusIssueHandled={onHandled}
+        />
+      );
+
+      await waitFor(() => expect(onHandled).toHaveBeenCalledTimes(1));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Cross link')).toBeTruthy();
+    });
+
+    it('opens a closed issue from focusIssue regardless of open-only filters', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      mockFetchIssuesPage.mockResolvedValue({
+        issues: [createIssue(5, { title: 'Closed issue', state: 'closed' })],
+        rawCount: 1,
+      });
+      const onHandled = vi.fn();
+
+      render(
+        <IssuesHome
+          accountId="alice-id"
+          repos={[repo]}
+          onOpenRepositories={() => undefined}
+          focusIssue={{ repoId: repo.id, issueNumber: 5 }}
+          onFocusIssueHandled={onHandled}
+        />
+      );
+
+      await waitFor(() => expect(onHandled).toHaveBeenCalled());
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Closed issue')).toBeTruthy();
+    });
+
+    it('shows tracked-repo guidance when focusIssue is still missing after refetch', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(1)], rawCount: 1 });
+      const onHandled = vi.fn();
+
+      render(
+        <IssuesHome
+          accountId="alice-id"
+          repos={[repo]}
+          onOpenRepositories={() => undefined}
+          focusIssue={{ repoId: repo.id, issueNumber: 99 }}
+          onFocusIssueHandled={onHandled}
+        />
+      );
+
+      await waitFor(() => expect(onHandled).toHaveBeenCalled());
+      expect(mockFetchIssuesPage.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByRole('status').textContent).toContain('取得範囲に無いか');
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('refetches when focus targets an issue missing from warm cache', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(1)], rawCount: 1 });
+      const shared = { accountId: 'alice-id', repos: [repo], onOpenRepositories: () => undefined };
+
+      const { rerender } = render(<IssuesHome {...shared} />);
+      await waitFor(() => expect(mockFetchIssuesPage).toHaveBeenCalledTimes(1));
+
+      mockFetchIssuesPage.mockResolvedValue({
+        issues: [createIssue(1), createIssue(99, { title: 'Fresh from GitHub' })],
+        rawCount: 2,
+      });
+      const onHandled = vi.fn();
+      rerender(
+        <IssuesHome
+          {...shared}
+          focusIssue={{ repoId: repo.id, issueNumber: 99 }}
+          onFocusIssueHandled={onHandled}
+        />
+      );
+
+      await waitFor(() => expect(mockFetchIssuesPage.mock.calls.length).toBeGreaterThanOrEqual(2));
+      await waitFor(() => expect(onHandled).toHaveBeenCalled());
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Fresh from GitHub')).toBeTruthy();
+    });
+
+    it('shows untracked guidance when focusIssue repo is not in progress tracking', async () => {
+      const repo = createRepo('repo-a');
+      mockFetchIssuesPage.mockResolvedValue({ issues: [], rawCount: 0 });
+      const onHandled = vi.fn();
+
+      render(
+        <IssuesHome
+          accountId="alice-id"
+          repos={[repo]}
+          onOpenRepositories={() => undefined}
+          focusIssue={{ repoId: repo.id, issueNumber: 1 }}
+          onFocusIssueHandled={onHandled}
+        />
+      );
+
+      await waitFor(() => expect(onHandled).toHaveBeenCalled());
+      expect(screen.getByRole('status').textContent).toContain('進捗管理に追加すると');
+      expect(mockFetchIssuesPage).not.toHaveBeenCalled();
+    });
+
+    it('shows practice navigation when a linked draft exists and invokes onOpenPracticeDraft', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      savePracticeIssueDrafts('alice-id', [createPracticeDraft()]);
+      mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12)], rawCount: 1 });
+      const onOpenPracticeDraft = vi.fn();
+
+      render(
+        <IssuesHome
+          accountId="alice-id"
+          repos={[repo]}
+          onOpenRepositories={() => undefined}
+          onOpenPracticeDraft={onOpenPracticeDraft}
+        />
+      );
+
+      fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+      fireEvent.click(screen.getByRole('button', { name: '練習画面で見る' }));
+
+      expect(onOpenPracticeDraft).toHaveBeenCalledWith('draft-linked');
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('does not show practice navigation without a matching draft', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12)], rawCount: 1 });
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+
+      expect(screen.queryByRole('button', { name: '練習画面で見る' })).toBeNull();
     });
   });
 });

@@ -12,6 +12,7 @@ interface AdvancedHomeProps {
   onOpenActivity: () => void;
   onOpenManualRepos: () => void;
   onOpenLegacyBoard: () => void;
+  onOpenIssues: () => void;
   // 各サブタブの本文。App側で既存コンポーネントを渡す
   legacyContent: ReactNode;
   activityContent: ReactNode;
@@ -64,7 +65,11 @@ function OverviewContent({
   onOpenActivity,
   onOpenManualRepos,
   onOpenLegacyBoard,
-}: Pick<AdvancedHomeProps, 'activityCount' | 'manualRepoCount' | 'onOpenActivity' | 'onOpenManualRepos' | 'onOpenLegacyBoard'>) {
+  onOpenIssues,
+}: Pick<
+  AdvancedHomeProps,
+  'activityCount' | 'manualRepoCount' | 'onOpenActivity' | 'onOpenManualRepos' | 'onOpenLegacyBoard' | 'onOpenIssues'
+>) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-stack-md px-inset-lg py-inset-md">
       <header className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-md shadow-sm">
@@ -105,14 +110,16 @@ function OverviewContent({
         <AdvancedCard
           title="TODO / AI / GitHub Actions"
           description="TODOボード、AI実装コマンド、実行履歴、GitHub Actions連携は上級者向け候補として扱います。"
-          detail="独立した「やること」画面の本格化やAI連携の拡張はMVP外に置き、現時点では旧カンバンのWorkspace内で使う方針です。"
+          detail="TODOは新しい「Issue（やること）」画面にまとめました。Issueと紐づいていない旧TODOもそこでGitHub Issueに変換できます。旧カンバンのWorkspace内のTODO・AIは引き続きここから開けます。"
+          actionLabel="Issue（やること）画面へ"
+          onClick={onOpenIssues}
         />
       </div>
     </div>
   );
 }
 
-function TodoAiPlaceholder() {
+function TodoAiPlaceholder({ onOpenIssues }: { onOpenIssues: () => void }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-stack-md px-inset-lg py-inset-md">
       <header className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-md shadow-sm">
@@ -121,6 +128,16 @@ function TodoAiPlaceholder() {
         <p className="mt-stack-xs max-w-2xl text-body-sm leading-relaxed text-[var(--text-secondary)]">
           上級者向け候補として置いています。本格実装はMVP外です。旧カンバンのWorkspace下部パネルからご利用いただけます。
         </p>
+        <p className="mt-stack-sm max-w-2xl text-body-sm leading-relaxed text-[var(--text-secondary)]">
+          TODOは新しい「Issue（やること）」画面にまとめました。Issueと紐づいていない旧TODOもそこでGitHub Issueに変換できます。
+        </p>
+        <button
+          type="button"
+          onClick={onOpenIssues}
+          className={`mt-stack-md inline-flex w-fit items-center justify-center rounded-lg bg-[var(--accent-green)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse shadow-sm transition-colors motion-reduce:transition-none hover:bg-[var(--accent-green-strong)] ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+        >
+          Issue（やること）画面へ
+        </button>
       </header>
     </div>
   );
@@ -134,6 +151,7 @@ export function AdvancedHome({
   onOpenActivity,
   onOpenManualRepos,
   onOpenLegacyBoard,
+  onOpenIssues,
   legacyContent,
   activityContent,
   manualContent,
@@ -157,6 +175,7 @@ export function AdvancedHome({
               onOpenActivity={onOpenActivity}
               onOpenManualRepos={onOpenManualRepos}
               onOpenLegacyBoard={onOpenLegacyBoard}
+              onOpenIssues={onOpenIssues}
             />
           </div>
         )}
@@ -175,7 +194,7 @@ export function AdvancedHome({
 
         {activeSubTab === 'todoai' && (
           <div className="h-full animate-slide-fade-in motion-reduce:animate-none">
-            {todoAiContent ?? <TodoAiPlaceholder />}
+            {todoAiContent ?? <TodoAiPlaceholder onOpenIssues={onOpenIssues} />}
           </div>
         )}
       </div>

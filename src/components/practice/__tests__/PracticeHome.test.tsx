@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PracticeIssueDraft, PracticePullRequestDraft, Repo } from '../../../types';
 import { savePracticeIssueDrafts, savePracticePullRequestDrafts } from '../../../storage/practiceStorage';
 import { PracticeHome } from '../PracticeHome';
@@ -60,6 +60,7 @@ describe('PracticeHome', () => {
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   it('shows saved practice drafts with their repository names', () => {
@@ -142,5 +143,72 @@ describe('PracticeHome', () => {
     render(<PracticeHome accountId={ACCOUNT_ID} repos={[createRepo()]} />);
 
     expect(screen.getByText('まだ練習下書きがありません')).toBeTruthy();
+  });
+
+  it('calls onOpenIssue for synced drafts with githubIssueNumber', () => {
+    savePracticeIssueDrafts(ACCOUNT_ID, [
+      createDraft({
+        syncStatus: 'synced',
+        githubIssueNumber: 42,
+        githubIssueUrl: 'https://github.com/alice/frontend-app/issues/42',
+      }),
+    ]);
+    const onOpenIssue = vi.fn();
+
+    render(<PracticeHome accountId={ACCOUNT_ID} repos={[createRepo()]} onOpenIssue={onOpenIssue} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Issue（やること）画面で開く' }));
+    expect(onOpenIssue).toHaveBeenCalledWith('repo-1', 42);
+  });
+
+  it('does not show Issue screen button without githubIssueNumber', () => {
+    savePracticeIssueDrafts(ACCOUNT_ID, [createDraft()]);
+    const onOpenIssue = vi.fn();
+
+    render(<PracticeHome accountId={ACCOUNT_ID} repos={[createRepo()]} onOpenIssue={onOpenIssue} />);
+
+    expect(screen.queryByRole('button', { name: 'Issue（やること）画面で開く' })).toBeNull();
+  });
+
+  it('scrolls to, focuses, and highlights the draft when focusDraftId is set', async () => {
+    savePracticeIssueDrafts(ACCOUNT_ID, [createDraft({ id: 'focus-me' })]);
+    const onHandled = vi.fn();
+    if (!HTMLElement.prototype.scrollIntoView) {
+      HTMLElement.prototype.scrollIntoView = () => undefined;
+    }
+    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => undefined);
+
+    render(
+      <PracticeHome
+        accountId={ACCOUNT_ID}
+        repos={[createRepo()]}
+        focusDraftId="focus-me"
+        onFocusDraftHandled={onHandled}
+      />
+    );
+
+    await waitFor(() => expect(onHandled).toHaveBeenCalled());
+    expect(scrollIntoView).toHaveBeenCalled();
+    const article = document.getElementById('practice-issue-draft-focus-me');
+    await waitFor(() => {
+      expect(article?.className).toContain('ring-[var(--accent-green-border)]');
+      expect(document.activeElement).toBe(article);
+    });
+  });
+
+  it('calls onFocusDraftHandled when focusDraftId does not match any draft', async () => {
+    savePracticeIssueDrafts(ACCOUNT_ID, [createDraft()]);
+    const onHandled = vi.fn();
+
+    render(
+      <PracticeHome
+        accountId={ACCOUNT_ID}
+        repos={[createRepo()]}
+        focusDraftId="missing-draft"
+        onFocusDraftHandled={onHandled}
+      />
+    );
+
+    await waitFor(() => expect(onHandled).toHaveBeenCalled());
   });
 });

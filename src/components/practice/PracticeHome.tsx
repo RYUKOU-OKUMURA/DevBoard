@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ColumnKey, PracticeIssueDraft, PracticePullRequestDraft, Repo } from '../../types';
 import { DEFAULT_CLASSIFY_CONFIG, classifyRepo, configToOptions } from '../../lib/classifyRepo';
 import { focusRing } from '../../lib/focusRing';
@@ -11,6 +11,9 @@ import { GithubTermHint } from './GithubTermHint';
 interface PracticeHomeProps {
   accountId: string;
   repos: Repo[];
+  onOpenIssue?: (repoId: string, issueNumber: number) => void;
+  focusDraftId?: string | null;
+  onFocusDraftHandled?: () => void;
 }
 
 interface DraftWithRepo {
@@ -75,7 +78,13 @@ function PracticeEmptyState() {
   );
 }
 
-export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
+export function PracticeHome({
+  accountId,
+  repos,
+  onOpenIssue,
+  focusDraftId = null,
+  onFocusDraftHandled,
+}: PracticeHomeProps) {
   const {
     createIssueDraft,
     createGitHubIssueFromDraft,
@@ -93,6 +102,7 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
   } = usePracticePullRequests(accountId);
   const { getMeta, saveError: repositoryMetaSaveError, updateMeta } = useRepositoryMeta(accountId);
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null);
+  const [highlightedDraftId, setHighlightedDraftId] = useState<string | null>(null);
   const classifyOptions = useMemo(() => configToOptions(DEFAULT_CLASSIFY_CONFIG), []);
 
   const repoById = useMemo(() => {
@@ -132,6 +142,31 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
 
   const totalDraftCount = drafts.length + pullRequestDrafts.length;
 
+  useEffect(() => {
+    if (!focusDraftId) return;
+    const exists = draftItems.some(({ draft }) => draft.id === focusDraftId);
+    if (!exists) {
+      onFocusDraftHandled?.();
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      const element = document.getElementById(`practice-issue-draft-${focusDraftId}`);
+      if (element instanceof HTMLElement) {
+        element.scrollIntoView({ block: 'center' });
+        element.focus({ preventScroll: true });
+      }
+      setHighlightedDraftId(focusDraftId);
+      onFocusDraftHandled?.();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [draftItems, focusDraftId, onFocusDraftHandled]);
+
+  useEffect(() => {
+    if (!highlightedDraftId) return;
+    const timer = window.setTimeout(() => setHighlightedDraftId(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [highlightedDraftId]);
+
   const getAutoHealth = (repo: Repo): ColumnKey => classifyRepo(repo, classifyOptions);
 
   return (
@@ -163,10 +198,18 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
             {draftItems.length > 0 && (
               <section aria-label="保存済みIssue練習ドラフト一覧" className="grid gap-stack-sm">
                 <h2 className="text-title-3 font-semibold text-[var(--text-primary)]">Issue / やることカード</h2>
-                {draftItems.map(({ draft, repo }) => (
+                {draftItems.map(({ draft, repo }) => {
+                  const linkedIssueNumber = draft.githubIssueNumber;
+                  return (
                   <article
                     key={draft.id}
-                    className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-lg shadow-sm"
+                    id={`practice-issue-draft-${draft.id}`}
+                    tabIndex={-1}
+                    className={`rounded-lg border bg-surface-primary p-inset-lg shadow-sm transition-shadow motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] ${
+                      highlightedDraftId === draft.id
+                        ? 'border-[var(--accent-green-border)] ring-2 ring-[var(--accent-green-border)]'
+                        : 'border-[var(--border-subtle)]'
+                    }`}
                   >
                     <div className="flex flex-col gap-stack-md lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
@@ -211,13 +254,24 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
                       </div>
 
                       {repo && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRepo(repo)}
-                          className={`inline-flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent-green)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse shadow-sm transition-colors motion-reduce:transition-none hover:bg-[var(--accent-green-strong)] ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
-                        >
-                          リポジトリ詳細へ戻る
-                        </button>
+                        <div className="flex shrink-0 flex-col gap-stack-xs sm:flex-row sm:items-center">
+                          {linkedIssueNumber != null && onOpenIssue && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenIssue(draft.repoId, linkedIssueNumber)}
+                              className={`inline-flex items-center justify-center rounded-lg border border-[var(--border-strong)] bg-surface-secondary px-inset-md py-inset-sm text-body-sm font-semibold text-[var(--text-primary)] shadow-sm transition-colors motion-reduce:transition-none hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
+                            >
+                              Issue（やること）画面で開く
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRepo(repo)}
+                            className={`inline-flex items-center justify-center rounded-lg bg-[var(--accent-green)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse shadow-sm transition-colors motion-reduce:transition-none hover:bg-[var(--accent-green-strong)] ${focusRing.default} focus-visible:ring-[var(--accent-green)]`}
+                          >
+                            リポジトリ詳細へ戻る
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -243,7 +297,8 @@ export function PracticeHome({ accountId, repos }: PracticeHomeProps) {
                       </div>
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </section>
             )}
 

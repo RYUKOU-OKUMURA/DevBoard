@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import type { Repo } from '../../types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PracticeIssueDraft, Repo } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { formatLastUpdateTime } from '../../utils/timeFormatter';
 import { useIssueLocalMeta } from '../../hooks/useIssueLocalMeta';
@@ -23,11 +23,17 @@ import { LegacyTodoSection } from './LegacyTodoSection';
 import { useLegacyTodoConversion } from '../../hooks/useLegacyTodoConversion';
 import { resolveRepositoryMeta } from '../repositories/repositoryProgressModel';
 import { getRepositoryMetaMap } from '../../storage/repositoryMetaStorage';
+import { getPracticeIssueDrafts } from '../../storage/practiceStorage';
+
+type FocusIssueTarget = { repoId: string; issueNumber: number };
 
 interface IssuesHomeProps {
   accountId: string;
   repos: Repo[];
   onOpenRepositories: () => void;
+  focusIssue?: FocusIssueTarget | null;
+  onFocusIssueHandled?: () => void;
+  onOpenPracticeDraft?: (draftId: string) => void;
 }
 
 const INITIAL_FILTERS: IssueFilters = {
@@ -46,7 +52,14 @@ const VIEW_OPTIONS: { value: IssueViewMode; label: string }[] = [
   { value: 'kanban', label: 'カンバン' },
 ];
 
-export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeProps) {
+export function IssuesHome({
+  accountId,
+  repos,
+  onOpenRepositories,
+  focusIssue = null,
+  onFocusIssueHandled,
+  onOpenPracticeDraft,
+}: IssuesHomeProps) {
   const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, replaceIssue, trackedCount } =
     useTrackedRepoIssues(accountId, repos);
   const { getMeta, updateMeta, reloadMeta, saveError: localMetaSaveError } = useIssueLocalMeta(accountId);
@@ -54,6 +67,7 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
   const [viewMode, setViewMode] = useState<IssueViewMode>('list');
   const [moveError, setMoveError] = useState<string | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<{ repoId: string; issueNumber: number } | null>(null);
+  const [focusIssueNotice, setFocusIssueNotice] = useState<string | null>(null);
   const selectedItem = selectedIssue
     ? items.find(({ repo, issue }) => repo.id === selectedIssue.repoId && issue.number === selectedIssue.issueNumber)
     : undefined;
@@ -136,6 +150,55 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
   }, [filteredItems]);
   const handleSelect = ({ repo, issue }: TrackedRepoIssueItem) =>
     setSelectedIssue({ repoId: repo.id, issueNumber: issue.number });
+
+  const focusReloadAttemptedKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!focusIssue) {
+      focusReloadAttemptedKeyRef.current = null;
+      return;
+    }
+    if (isLoading) return;
+
+    const focusKey = `${focusIssue.repoId}:${focusIssue.issueNumber}`;
+    const match = items.find(
+      ({ repo, issue }) => repo.id === focusIssue.repoId && issue.number === focusIssue.issueNumber
+    );
+    if (match) {
+      setFocusIssueNotice(null);
+      setSelectedIssue({ repoId: focusIssue.repoId, issueNumber: focusIssue.issueNumber });
+      focusReloadAttemptedKeyRef.current = null;
+      onFocusIssueHandled?.();
+      return;
+    }
+
+    if (focusReloadAttemptedKeyRef.current !== focusKey) {
+      focusReloadAttemptedKeyRef.current = focusKey;
+      if (isRepoTracked(focusIssue.repoId)) {
+        reload();
+        return;
+      }
+    }
+
+    setFocusIssueNotice(
+      isRepoTracked(focusIssue.repoId)
+        ? 'このIssueは一覧の取得範囲に無いか、まだ反映されていません。「再読み込み」をお試しください。'
+        : 'このIssueは一覧にありません。リポジトリを進捗管理に追加すると表示されます。'
+    );
+    focusReloadAttemptedKeyRef.current = null;
+    onFocusIssueHandled?.();
+  }, [focusIssue, isLoading, items, isRepoTracked, onFocusIssueHandled, reload]);
+
+  const linkedPracticeDraft = useMemo((): PracticeIssueDraft | null => {
+    if (!selectedIssue) return null;
+    return (
+      getPracticeIssueDrafts(accountId).find(
+        (draft) =>
+          draft.repoId === selectedIssue.repoId && draft.githubIssueNumber === selectedIssue.issueNumber
+      ) ?? null
+    );
+  }, [accountId, selectedIssue]);
+
   const handleMove = async (item: TrackedRepoIssueItem, to: KanbanColumn) => {
     const { repo, issue } = item;
     const from = getKanbanColumn(issue.state, getMeta(repo.id, issue.number));
@@ -187,6 +250,12 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
             />
           </div>
         </header>
+
+        {focusIssueNotice && (
+          <p role="status" className="rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-md text-body-sm text-[var(--text-secondary)]">
+            {focusIssueNotice}
+          </p>
+        )}
 
         <LegacyTodoSection
           todos={unlinkedTodos}
@@ -314,6 +383,15 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
           localMetaSaveError={localMetaSaveError}
           onSaveLocalMeta={(patch) => updateMeta(selectedItem.repo.id, selectedItem.issue.number, patch)}
           onIssueUpdated={handleIssueUpdated}
+          linkedPracticeDraft={linkedPracticeDraft}
+          onOpenPracticeDraft={
+            linkedPracticeDraft && onOpenPracticeDraft
+              ? () => {
+                  setSelectedIssue(null);
+                  onOpenPracticeDraft(linkedPracticeDraft.id);
+                }
+              : undefined
+          }
         />
       )}
     </div>
