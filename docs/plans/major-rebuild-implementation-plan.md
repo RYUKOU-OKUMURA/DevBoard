@@ -281,13 +281,13 @@ DevBoardを、従来のカンバン中心のリポジトリ一覧から、GitHub
 - [x] `npm info eslint version` と `npm info @typescript-eslint/eslint-plugin version` を確認する。（10.11.0 / 8.70.1、本PRでは未更新）
 - [x] 非破壊で直せる `npm audit` 指摘を先に処理する。（13-0で実施、58件→4件。Vite 8/Vitest 5更新で4件→0件）
 - [x] Vite / Vitest更新を単独PRで検討する。（chore/phase11-vite-vitest、check:ci通過、`.nvmrc`=`24` 追加）
-- [ ] React 19系への更新を単独PRで検討する。
+- [x] React 19系への更新を単独PRで検討する。（chore/phase11-react19、react 19.3.0、@testing-library/react 16.3.3、check:ci 通過、react チャンク gzip +24kB（React 19 本体の増加）、framer-motion 12.43 へマイナー更新、@dnd-kit の型定義はグローバル JSX 参照のため skipLibCheck 前提）
 - [ ] Tailwind 4系への移行を単独PRで検討する。
 - [ ] ESLint Flat Config移行を単独PRで検討する。
 
 検証:
 
-- [ ] 各更新PRで `npm run check:ci` が通る。（Vite/Vitest PRのみ2026-09-26に通過。他更新PRは未実施）
+- [ ] 各更新PRで `npm run check:ci` が通る。（Vite/Vitest PR・React 19 PRは2026-09-26に通過。他更新PRは未実施）
 - [ ] Cloudflare Pagesのビルド環境で動く。（`.nvmrc`=`24` で Node を指定。Cloudflare Pages v3 は `engines` を読まない。本番ビルドは未確認）
 
 ### フェーズ 12: ナビ・ビュー切り替えのブラッシュアップ ✅ 完了
