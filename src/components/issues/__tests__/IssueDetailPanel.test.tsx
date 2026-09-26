@@ -7,6 +7,7 @@ import type { GitHubIssue } from '../../../api/issues';
 import type { IssueAction } from '../../../hooks/useIssueActions';
 import type { TrackedIssueUpdate } from '../../../hooks/useTrackedRepoIssues';
 import type { Repo } from '../../../types';
+import type { IssueLocalMeta } from '../../../types';
 import { IssueDetailPanel } from '../IssueDetailPanel';
 
 const mockFetchIssue = vi.hoisted(() => vi.fn());
@@ -52,8 +53,9 @@ function createIssue(overrides: Partial<GitHubIssue> = {}): GitHubIssue {
   };
 }
 
-function renderPanel(initialIssue = createIssue()) {
+function renderPanel(initialIssue = createIssue(), localMeta: IssueLocalMeta | null = null) {
   const onIssueUpdated = vi.fn();
+  const onSaveLocalMeta = vi.fn(() => true);
   function Harness() {
     const [issue, setIssue] = useState(initialIssue);
     const [pendingAction, setPendingAction] = useState<IssueAction | null>(null);
@@ -73,6 +75,9 @@ function renderPanel(initialIssue = createIssue()) {
           actionLock.current = false;
           setPendingAction(null);
         }}
+        localMeta={localMeta}
+        localMetaSaveError={null}
+        onSaveLocalMeta={onSaveLocalMeta}
         onIssueUpdated={(repoId, _issueId, update: TrackedIssueUpdate) => {
           const updatedIssue = typeof update === 'function' ? update(issue) : update;
           onIssueUpdated(repoId, updatedIssue);
@@ -83,7 +88,7 @@ function renderPanel(initialIssue = createIssue()) {
     );
   }
   render(<Harness />);
-  return { onIssueUpdated };
+  return { onIssueUpdated, onSaveLocalMeta };
 }
 
 describe('IssueDetailPanel actions', () => {
@@ -99,6 +104,20 @@ describe('IssueDetailPanel actions', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it('edits local priority, deadline, and note without a GitHub confirmation', () => {
+    const confirm = vi.spyOn(window, 'confirm');
+    const { onSaveLocalMeta } = renderPanel();
+
+    fireEvent.change(screen.getByLabelText('優先度'), { target: { value: 'high' } });
+    fireEvent.change(screen.getByLabelText('期限'), { target: { value: '2026-12-31' } });
+    fireEvent.change(screen.getByLabelText('自分メモ'), { target: { value: 'このブラウザだけのメモ' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(onSaveLocalMeta).toHaveBeenCalledWith({ priority: 'high', dueDate: '2026-12-31', note: 'このブラウザだけのメモ' });
+    expect(screen.getByRole('status').textContent).toBe('保存しました');
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   it('does not close an issue when confirmation is cancelled', () => {

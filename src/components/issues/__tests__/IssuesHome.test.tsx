@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GitHubIssue } from '../../../api/issues';
 import type { Repo } from '../../../types';
 import { createDefaultRepositoryMeta, getRepositoryMetaMap, saveRepositoryMetaMap } from '../../../storage/repositoryMetaStorage';
+import { getIssueLocalMeta, updateIssueLocalMeta } from '../../../storage/issueLocalMetaStorage';
 import { clearTrackedRepoIssuesCache } from '../../../hooks/useTrackedRepoIssues';
 import { IssuesHome } from '../IssuesHome';
 
@@ -74,6 +75,8 @@ describe('IssuesHome', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -109,6 +112,55 @@ describe('IssuesHome', () => {
     expect(onOpen).not.toHaveBeenCalled();
   });
 
+  it('saves local issue metadata and restores it when the detail panel is reopened', async () => {
+    const repo = createRepo('repo-a');
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12)], rawCount: 1 });
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('優先度'), { target: { value: 'high' } });
+    fireEvent.change(within(dialog).getByLabelText('期限'), { target: { value: '2026-12-31' } });
+    fireEvent.change(within(dialog).getByLabelText('自分メモ'), { target: { value: 'ローカルメモ' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: '保存' }));
+
+    expect(await screen.findByText('保存しました')).toBeTruthy();
+    expect(getIssueLocalMeta('alice-id', repo.id, 12)).toMatchObject({
+      priority: 'high', dueDate: '2026-12-31', note: 'ローカルメモ',
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: '詳細パネルを閉じる' }));
+    fireEvent.click(screen.getByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' }));
+
+    const reopenedDialog = screen.getByRole('dialog');
+    expect((within(reopenedDialog).getByLabelText('優先度') as HTMLSelectElement).value).toBe('high');
+    expect((within(reopenedDialog).getByLabelText('期限') as HTMLInputElement).value).toBe('2026-12-31');
+    expect((within(reopenedDialog).getByLabelText('自分メモ') as HTMLTextAreaElement).value).toBe('ローカルメモ');
+  });
+
+  it('mounts with mixed malformed legacy todos and migrates the valid todo', async () => {
+    const repo = createRepo('repo-a');
+    setTracked('alice-id', repo.id);
+    localStorage.setItem('github-dashboard-todos:alice-id', JSON.stringify([
+      null,
+      42,
+      'x',
+      { repoId: 'repo-a' },
+      {
+        repoId: repo.id, issueNumber: 12, priority: 'high', dueDate: '2026-09-24',
+        description: 'migrated memo', updatedAt: '2026-09-20T00:00:00.000Z',
+      },
+    ]));
+    mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12)], rawCount: 1 });
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+
+    const card = await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' });
+    expect(card.textContent).toContain('優先度: 高');
+    expect(card.textContent).toContain('期限: 2026-09-24');
+    expect(getIssueLocalMeta('alice-id', repo.id, 12)).toMatchObject({ note: 'migrated memo' });
+  });
+
   it('updates the selected issue and hides a newly closed issue from the default filter', async () => {
     const repo = createRepo('repo-a');
     const openIssue = createIssue(12, { html_url: 'https://github.com/alice/repo-a/issues/12' });
@@ -130,6 +182,7 @@ describe('IssuesHome', () => {
     expect(await screen.findByText('完了（Closed）')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' })).toBeNull();
 
+    fireEvent.change(screen.getByLabelText('優先度で絞り込み'), { target: { value: 'all' } });
     fireEvent.change(screen.getByLabelText('状態で絞り込み'), { target: { value: 'closed' } });
     const closedCard = await screen.findByRole('button', { name: 'alice/repo-a #12: Issue 12 の詳細を開く' });
     expect(within(closedCard).getByText('完了（Closed）')).toBeTruthy();
@@ -574,6 +627,49 @@ describe('IssuesHome', () => {
 
     expect(screen.getByText('1 件のIssue')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'alice/repo-b #3: Issue 3 の詳細を開く' })).toBeTruthy();
+  });
+
+  it('shows priority and due status, filters by priority, and does not emphasize closed deadlines', async () => {
+    vi.stubEnv('TZ', 'Asia/Tokyo');
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-23T15:30:00.000Z'));
+    const repo = createRepo('repo-a');
+    setTracked('alice-id', repo.id);
+    const todayText = '2026-09-24';
+    const yesterdayText = '2026-09-23';
+    updateIssueLocalMeta('alice-id', repo.id, 1, { priority: 'high', dueDate: yesterdayText });
+    updateIssueLocalMeta('alice-id', repo.id, 2, { priority: 'medium', dueDate: todayText });
+    updateIssueLocalMeta('alice-id', repo.id, 4, { priority: 'low', dueDate: '2000-01-01' });
+    mockFetchIssuesPage.mockResolvedValue({
+      issues: [createIssue(1), createIssue(2), createIssue(3), createIssue(4, { state: 'closed' })],
+      rawCount: 4,
+    });
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const overdueCard = screen.getByRole('button', { name: 'alice/repo-a #1: Issue 1 の詳細を開く' });
+    const todayCard = screen.getByRole('button', { name: 'alice/repo-a #2: Issue 2 の詳細を開く' });
+    expect(overdueCard.textContent).toContain('優先度: 高');
+    expect(overdueCard.textContent).toContain(`期限: ${yesterdayText}（期限切れ）`);
+    expect(todayCard.textContent).toContain('優先度: 中');
+    expect(todayCard.textContent).toContain(`期限: ${todayText}（今日まで）`);
+    expect(screen.getByText('3 件のIssue')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('優先度で絞り込み'), { target: { value: 'high' } });
+    expect(screen.getByText('1 件のIssue')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('優先度で絞り込み'), { target: { value: 'unset' } });
+    expect(screen.getByRole('button', { name: 'alice/repo-a #3: Issue 3 の詳細を開く' })).toBeTruthy();
+    expect(screen.getByText('1 件のIssue')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('優先度で絞り込み'), { target: { value: 'all' } });
+    fireEvent.change(screen.getByLabelText('状態で絞り込み'), { target: { value: 'closed' } });
+    const closedCard = screen.getByRole('button', { name: 'alice/repo-a #4: Issue 4 の詳細を開く' });
+    expect(closedCard.textContent).toContain('期限: 2000-01-01');
+    expect(closedCard.textContent).not.toContain('期限切れ');
   });
 
   it('shows a separate empty message when tracked repositories have no issues', async () => {

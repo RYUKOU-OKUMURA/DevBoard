@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { Repo } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { formatLastUpdateTime } from '../../utils/timeFormatter';
+import { useIssueLocalMeta } from '../../hooks/useIssueLocalMeta';
 import {
   beginTrackedIssueAction,
   endTrackedIssueAction,
@@ -27,11 +28,13 @@ const INITIAL_FILTERS: IssueFilters = {
   repoId: 'all',
   label: 'all',
   assignee: 'all',
+  priority: 'all',
 };
 
 export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeProps) {
   const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, replaceIssue, trackedCount } =
     useTrackedRepoIssues(accountId, repos);
+  const { getMeta, updateMeta, saveError: localMetaSaveError } = useIssueLocalMeta(accountId);
   const [filters, setFilters] = useState<IssueFilters>(INITIAL_FILTERS);
   const [selectedIssue, setSelectedIssue] = useState<{ repoId: string; issueNumber: number } | null>(null);
   const selectedItem = selectedIssue
@@ -70,16 +73,21 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
     [items]
   );
   const filteredItems = useMemo(() => {
-    const matches = items.filter(({ repo, issue }) =>
-      (filters.state === 'all' || issue.state === filters.state) &&
-      (filters.repoId === 'all' || repo.id === filters.repoId) &&
-      (filters.label === 'all' || issue.labels.some((label) => label.name === filters.label)) &&
-      (filters.assignee === 'all' || issue.assignees.some((person) => person.login === filters.assignee))
-    );
+    const matches = items.filter(({ repo, issue }) => {
+      const meta = getMeta(repo.id, issue.number);
+      return (
+        (filters.state === 'all' || issue.state === filters.state) &&
+        (filters.repoId === 'all' || repo.id === filters.repoId) &&
+        (filters.label === 'all' || issue.labels.some((label) => label.name === filters.label)) &&
+        (filters.assignee === 'all' || issue.assignees.some((person) => person.login === filters.assignee)) &&
+        (filters.priority === 'all' ||
+          (filters.priority === 'unset' ? !meta?.priority : meta?.priority === filters.priority))
+      );
+    });
     return matches.sort(
       (a, b) => new Date(b.issue.updated_at).getTime() - new Date(a.issue.updated_at).getTime()
     );
-  }, [filters, items]);
+  }, [filters, getMeta, items]);
 
   return (
     <div className="h-full overflow-auto bg-surface-app">
@@ -149,6 +157,7 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
             <p className="text-caption text-[var(--text-muted)]" aria-live="polite">{filteredItems.length} 件のIssue</p>
             <IssueList
               items={filteredItems}
+              getMeta={getMeta}
               onSelect={({ repo, issue }) => setSelectedIssue({ repoId: repo.id, issueNumber: issue.number })}
             />
           </>
@@ -168,12 +177,15 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
       </div>
       {selectedItem && (
         <IssueDetailPanel
-          key={`${selectedItem.repo.id}#${selectedItem.issue.number}`}
+          key={`${accountId}:${selectedItem.repo.id}#${selectedItem.issue.number}`}
           item={selectedItem}
           onClose={() => setSelectedIssue(null)}
           pendingAction={pendingAction}
           beginAction={beginAction}
           endAction={endAction}
+          localMeta={getMeta(selectedItem.repo.id, selectedItem.issue.number)}
+          localMetaSaveError={localMetaSaveError}
+          onSaveLocalMeta={(patch) => updateMeta(selectedItem.repo.id, selectedItem.issue.number, patch)}
           onIssueUpdated={handleIssueUpdated}
         />
       )}

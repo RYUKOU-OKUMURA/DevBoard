@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { useIssueActions, type IssueAction } from '../../hooks/useIssueActions';
 import type { TrackedIssueUpdate, TrackedRepoIssueItem } from '../../hooks/useTrackedRepoIssues';
 import { focusRing } from '../../lib/focusRing';
+import type { IssueLocalMeta, IssueLocalMetaPatch, IssueLocalPriority } from '../../types';
 
 interface IssueDetailPanelProps {
   item: TrackedRepoIssueItem;
@@ -11,6 +12,9 @@ interface IssueDetailPanelProps {
   pendingAction: IssueAction | null;
   beginAction: (repoId: string, issueNumber: number, action: IssueAction) => boolean;
   endAction: (repoId: string, issueNumber: number) => void;
+  localMeta: IssueLocalMeta | null;
+  localMetaSaveError: string | null;
+  onSaveLocalMeta: (patch: IssueLocalMetaPatch) => boolean;
   onIssueUpdated: (
     repoId: string,
     issueId: number,
@@ -46,6 +50,9 @@ export function IssueDetailPanel({
   pendingAction,
   beginAction,
   endAction,
+  localMeta,
+  localMetaSaveError,
+  onSaveLocalMeta,
   onIssueUpdated,
 }: IssueDetailPanelProps) {
   const { issue, repo } = item;
@@ -61,6 +68,10 @@ export function IssueDetailPanel({
   } =
     useIssueActions({ item, onIssueUpdated, pendingAction, beginAction, endAction });
   const [comment, setComment] = useState('');
+  const [priority, setPriority] = useState<IssueLocalPriority | ''>(localMeta?.priority ?? '');
+  const [dueDate, setDueDate] = useState(localMeta?.dueDate ?? '');
+  const [note, setNote] = useState(localMeta?.note ?? '');
+  const [localMetaNotice, setLocalMetaNotice] = useState('');
   const [isLabelEditorOpen, setIsLabelEditorOpen] = useState(false);
   const [repoLabels, setRepoLabels] = useState<GitHubLabel[]>([]);
   const [labelsLoaded, setLabelsLoaded] = useState(false);
@@ -73,6 +84,12 @@ export function IssueDetailPanel({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const titleId = useId();
+
+  useEffect(() => {
+    setPriority(localMeta?.priority ?? '');
+    setDueDate(localMeta?.dueDate ?? '');
+    setNote(localMeta?.note ?? '');
+  }, [localMeta]);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -217,6 +234,56 @@ export function IssueDetailPanel({
             <p className="mt-stack-sm min-h-12 whitespace-pre-wrap break-words rounded-lg border border-[var(--border-subtle)] bg-surface-secondary p-inset-md text-body-sm leading-relaxed text-[var(--text-secondary)]">
               {issue.body || '本文はありません。'}
             </p>
+          </section>
+          <section aria-label="自分用メモ" className="mt-stack-lg grid gap-stack-sm rounded-lg border border-[var(--border-subtle)] bg-surface-secondary p-inset-md">
+            <div>
+              <h3 className="text-body-sm font-semibold text-[var(--text-primary)]">自分用メモ（このブラウザだけに保存・GitHubには送られません）</h3>
+              <p className="mt-stack-xs text-caption text-[var(--text-muted)]">優先度・期限・メモは、このアカウントのブラウザ内に保存されます。</p>
+            </div>
+            <label className="grid gap-stack-xs text-body-sm text-[var(--text-secondary)]">
+              優先度
+              <select
+                value={priority}
+                onChange={(event) => { setPriority(event.target.value as IssueLocalPriority | ''); setLocalMetaNotice(''); }}
+                className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
+              >
+                <option value="">未設定</option>
+                <option value="high">高</option>
+                <option value="medium">中</option>
+                <option value="low">低</option>
+              </select>
+            </label>
+            <label className="grid gap-stack-xs text-body-sm text-[var(--text-secondary)]">
+              期限
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(event) => { setDueDate(event.target.value); setLocalMetaNotice(''); }}
+                className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
+              />
+            </label>
+            <label className="grid gap-stack-xs text-body-sm text-[var(--text-secondary)]">
+              自分メモ
+              <textarea
+                value={note}
+                onChange={(event) => { setNote(event.target.value); setLocalMetaNotice(''); }}
+                maxLength={2000}
+                rows={4}
+                className={`w-full resize-y rounded-lg border border-[var(--border-subtle)] bg-surface-primary px-inset-md py-inset-sm text-body-sm text-[var(--text-primary)] transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                const saved = onSaveLocalMeta({ priority: priority || null, dueDate: dueDate || null, note });
+                setLocalMetaNotice(saved ? '保存しました' : '');
+              }}
+              className={`inline-flex w-fit items-center justify-center rounded-lg bg-[var(--accent-blue)] px-inset-md py-inset-sm text-body-sm font-semibold text-text-inverse transition-colors motion-reduce:transition-none hover:bg-[var(--accent-blue-strong)] ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
+            >
+              保存
+            </button>
+            {localMetaSaveError && <p role="alert" className="text-body-sm text-[var(--accent-red-emphasis)]">{localMetaSaveError}</p>}
+            {localMetaNotice && <p role="status" className="text-body-sm text-[var(--text-secondary)]">{localMetaNotice}</p>}
           </section>
           {error && (
             <p role="alert" className="mt-stack-md rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] p-inset-md text-body-sm text-[var(--accent-red-emphasis)]">

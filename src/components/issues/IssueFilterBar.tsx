@@ -1,12 +1,14 @@
 import { focusRing } from '../../lib/focusRing';
 
 export type IssueStateFilter = 'all' | 'open' | 'closed';
+export type IssuePriorityFilter = 'all' | 'high' | 'medium' | 'low' | 'unset';
 
 export interface IssueFilters {
   state: IssueStateFilter;
   repoId: string;
   label: string;
   assignee: string;
+  priority: IssuePriorityFilter;
 }
 
 interface IssueFilterBarProps {
@@ -27,7 +29,7 @@ export function IssueFilterBar({
   onChange,
 }: IssueFilterBarProps) {
   return (
-    <section aria-label="Issue（やること）の絞り込み" className="grid gap-stack-sm sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label="Issue（やること）の絞り込み" className="grid gap-stack-sm sm:grid-cols-2 xl:grid-cols-5">
       <label className="grid gap-stack-xs text-body-sm text-[var(--text-secondary)]">
         状態
         <select
@@ -81,6 +83,21 @@ export function IssueFilterBar({
           {assigneeOptions.map((assignee) => (
             <option key={assignee} value={assignee}>{assignee}</option>
           ))}
+        </select>
+      </label>
+      <label className="grid gap-stack-xs text-body-sm text-[var(--text-secondary)]">
+        優先度
+        <select
+          aria-label="優先度で絞り込み"
+          className={selectClassName}
+          value={filters.priority}
+          onChange={(event) => onChange({ ...filters, priority: event.target.value as IssuePriorityFilter })}
+        >
+          <option value="all">すべて</option>
+          <option value="high">高</option>
+          <option value="medium">中</option>
+          <option value="low">低</option>
+          <option value="unset">未設定</option>
         </select>
       </label>
     </section>
