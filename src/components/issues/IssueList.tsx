@@ -7,6 +7,8 @@ interface IssueListProps {
   items: TrackedRepoIssueItem[];
   onSelect: (item: TrackedRepoIssueItem) => void;
   getMeta: (repoId: string, issueNumber: number) => IssueLocalMeta | null;
+  label?: string;
+  showRepoName?: boolean;
 }
 
 function getTodayDate(): string {
@@ -14,10 +16,10 @@ function getTodayDate(): string {
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 }
 
-export function IssueList({ items, onSelect, getMeta }: IssueListProps) {
+export function IssueList({ items, onSelect, getMeta, label = 'Issue（やること）一覧', showRepoName = true }: IssueListProps) {
   const today = getTodayDate();
   return (
-    <ul aria-label="Issue（やること）一覧" className="grid list-none gap-stack-sm p-0">
+    <ul aria-label={label} className="grid list-none gap-stack-sm p-0">
       {items.map(({ repo, issue }) => {
         const meta = getMeta(repo.id, issue.number);
         const isOverdue = issue.state === 'open' && Boolean(meta?.dueDate && meta.dueDate < today);
@@ -31,11 +33,15 @@ export function IssueList({ items, onSelect, getMeta }: IssueListProps) {
             className={`w-full rounded-lg border border-[var(--border-subtle)] bg-surface-primary p-inset-md text-left shadow-sm transition-colors motion-reduce:transition-none hover:border-[var(--accent-blue-border)] hover:bg-surface-hover ${focusRing.default} focus-visible:ring-[var(--accent-blue)]`}
           >
             <div className="flex flex-wrap items-center gap-inline-sm text-caption text-[var(--text-muted)]">
-              <span>{repo.nameWithOwner}</span>
-              <span aria-hidden="true">·</span>
+              {showRepoName && (
+                <>
+                  <span>{repo.nameWithOwner}</span>
+                  <span aria-hidden="true">·</span>
+                </>
+              )}
               <span>#{issue.number}</span>
               <span className="rounded-full border border-[var(--border-subtle)] bg-surface-secondary px-inline-sm py-inline-xs text-caption font-semibold text-[var(--text-secondary)]">
-                {issue.state === 'open' ? '未完了（Open）' : '完了（Closed）'}
+                {issue.state === 'open' ? (meta?.inProgress ? '作業中（Open）' : '未完了（Open）') : '完了（Closed）'}
               </span>
             </div>
             <h2 className="mt-stack-sm break-words text-title-3 font-semibold text-[var(--text-primary)]">

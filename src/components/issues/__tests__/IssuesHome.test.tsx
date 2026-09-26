@@ -629,6 +629,62 @@ describe('IssuesHome', () => {
     expect(screen.getByRole('button', { name: 'alice/repo-b #3: Issue 3 の詳細を開く' })).toBeTruthy();
   });
 
+  it('groups issues by repository when the repository view is selected', async () => {
+    const repoA = createRepo('repo-a');
+    const repoB = createRepo('repo-b');
+    setTracked('alice-id', repoA.id);
+    setTracked('alice-id', repoB.id);
+    mockFetchIssuesPage.mockImplementation(async (_owner: string, name: string) => ({
+      issues: name === 'repo-a' ? [createIssue(1), createIssue(2)] : [createIssue(3)],
+      rawCount: name === 'repo-a' ? 2 : 1,
+    }));
+
+    render(<IssuesHome accountId="alice-id" repos={[repoA, repoB]} onOpenRepositories={() => undefined} />);
+    await screen.findByRole('button', { name: 'alice/repo-a #1: Issue 1 の詳細を開く' });
+    expect(screen.getByRole('button', { name: 'リスト' }).getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'リポジトリ別' }));
+
+    const groupA = screen.getByRole('region', { name: 'alice/repo-a のIssue' });
+    const groupB = screen.getByRole('region', { name: 'alice/repo-b のIssue' });
+    expect(within(groupA).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(groupA).getByText('2 件')).toBeTruthy();
+    expect(within(groupB).getByRole('button', { name: 'alice/repo-b #3: Issue 3 の詳細を開く' })).toBeTruthy();
+  });
+
+  it('moves kanban cards locally between todo and doing, and closes on GitHub only after confirmation', async () => {
+    const repo = createRepo('repo-a');
+    setTracked('alice-id', repo.id);
+    mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(1), createIssue(2, { state: 'closed' })], rawCount: 2 });
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+    await screen.findByRole('button', { name: 'alice/repo-a #1: Issue 1 の詳細を開く' });
+    fireEvent.click(screen.getByRole('button', { name: 'カンバン' }));
+
+    const column = (name: string) => screen.getByRole('region', { name: `${name}の列` });
+    expect(within(column('やる')).getByText('Issue 1')).toBeTruthy();
+    expect(within(column('完了')).getByText('Issue 2')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: '#1 を「作業中」へ移動' }));
+    expect(within(column('作業中')).getByText('Issue 1')).toBeTruthy();
+    expect(getIssueLocalMeta('alice-id', repo.id, 1)?.inProgress).toBe(true);
+    expect(confirmSpy).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '#1 を「完了」へ移動' }));
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(mockUpdateIssue).not.toHaveBeenCalled();
+    expect(within(column('作業中')).getByText('Issue 1')).toBeTruthy();
+
+    confirmSpy.mockReturnValue(true);
+    mockUpdateIssue.mockResolvedValue(createIssue(1, { state: 'closed', updated_at: '2026-02-01T00:00:00.000Z' }));
+    fireEvent.click(screen.getByRole('button', { name: '#1 を「完了」へ移動' }));
+
+    await waitFor(() => expect(within(column('完了')).getByText('Issue 1')).toBeTruthy());
+    expect(mockUpdateIssue).toHaveBeenCalledWith('alice', 'repo-a', 1, { state: 'closed' });
+    expect(getIssueLocalMeta('alice-id', repo.id, 1)).toBeNull();
+  });
+
   it('shows priority and due status, filters by priority, and does not emphasize closed deadlines', async () => {
     vi.stubEnv('TZ', 'Asia/Tokyo');
     vi.useFakeTimers();

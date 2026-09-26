@@ -55,11 +55,12 @@ function normalizeMeta(value: unknown): IssueLocalMeta | null {
   const priority = isPriority(record.priority) ? record.priority : undefined;
   const dueDate = isDateOnly(record.dueDate) ? record.dueDate : undefined;
   const note = typeof record.note === 'string' ? record.note.slice(0, MAX_NOTE_LENGTH) : undefined;
-  if (!priority && !dueDate && !note) return null;
+  const inProgress = record.inProgress === true ? true : undefined;
+  if (!priority && !dueDate && !note && !inProgress) return null;
   const updatedAt = typeof record.updatedAt === 'string' && !Number.isNaN(Date.parse(record.updatedAt))
     ? record.updatedAt
     : new Date().toISOString();
-  return { priority, dueDate, note, updatedAt };
+  return { priority, dueDate, note, inProgress, updatedAt };
 }
 
 function normalizeMap(value: unknown): IssueLocalMetaMap {
@@ -109,7 +110,8 @@ export function updateIssueLocalMeta(
   const note = patch.note === undefined
     ? current?.note
     : patch.note.slice(0, MAX_NOTE_LENGTH);
-  const next = normalizeMeta({ priority, dueDate, note, updatedAt: now });
+  const inProgress = patch.inProgress === undefined ? current?.inProgress : patch.inProgress;
+  const next = normalizeMeta({ priority, dueDate, note, inProgress, updatedAt: now });
   const updated = { ...metas };
   if (next) updated[key] = next;
   else delete updated[key];

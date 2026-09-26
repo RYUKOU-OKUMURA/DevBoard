@@ -3,6 +3,7 @@ import type { Repo } from '../../types';
 import { focusRing } from '../../lib/focusRing';
 import { formatLastUpdateTime } from '../../utils/timeFormatter';
 import { useIssueLocalMeta } from '../../hooks/useIssueLocalMeta';
+import { changeIssueState } from '../../hooks/useIssueActions';
 import {
   beginTrackedIssueAction,
   endTrackedIssueAction,
@@ -15,6 +16,8 @@ import {
 import { GithubTermHint } from '../practice/GithubTermHint';
 import { IssueDetailPanel } from './IssueDetailPanel';
 import { IssueFilterBar, type IssueFilters } from './IssueFilterBar';
+import { IssueKanban } from './IssueKanban';
+import { getKanbanColumn, type KanbanColumn } from './kanbanColumn';
 import { IssueList } from './IssueList';
 
 interface IssuesHomeProps {
@@ -31,11 +34,21 @@ const INITIAL_FILTERS: IssueFilters = {
   priority: 'all',
 };
 
+type IssueViewMode = 'list' | 'repo' | 'kanban';
+
+const VIEW_OPTIONS: { value: IssueViewMode; label: string }[] = [
+  { value: 'list', label: 'リスト' },
+  { value: 'repo', label: 'リポジトリ別' },
+  { value: 'kanban', label: 'カンバン' },
+];
+
 export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeProps) {
   const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, replaceIssue, trackedCount } =
     useTrackedRepoIssues(accountId, repos);
   const { getMeta, updateMeta, saveError: localMetaSaveError } = useIssueLocalMeta(accountId);
   const [filters, setFilters] = useState<IssueFilters>(INITIAL_FILTERS);
+  const [viewMode, setViewMode] = useState<IssueViewMode>('list');
+  const [moveError, setMoveError] = useState<string | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<{ repoId: string; issueNumber: number } | null>(null);
   const selectedItem = selectedIssue
     ? items.find(({ repo, issue }) => repo.id === selectedIssue.repoId && issue.number === selectedIssue.issueNumber)
@@ -76,7 +89,7 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
     const matches = items.filter(({ repo, issue }) => {
       const meta = getMeta(repo.id, issue.number);
       return (
-        (filters.state === 'all' || issue.state === filters.state) &&
+        (viewMode === 'kanban' || filters.state === 'all' || issue.state === filters.state) &&
         (filters.repoId === 'all' || repo.id === filters.repoId) &&
         (filters.label === 'all' || issue.labels.some((label) => label.name === filters.label)) &&
         (filters.assignee === 'all' || issue.assignees.some((person) => person.login === filters.assignee)) &&
@@ -87,7 +100,32 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
     return matches.sort(
       (a, b) => new Date(b.issue.updated_at).getTime() - new Date(a.issue.updated_at).getTime()
     );
-  }, [filters, getMeta, items]);
+  }, [filters, getMeta, items, viewMode]);
+  const repoGroups = useMemo(() => {
+    const groups = new Map<string, { repo: TrackedRepoIssueItem['repo']; items: TrackedRepoIssueItem[] }>();
+    for (const item of filteredItems) {
+      const group = groups.get(item.repo.id);
+      if (group) group.items.push(item);
+      else groups.set(item.repo.id, { repo: item.repo, items: [item] });
+    }
+    return Array.from(groups.values());
+  }, [filteredItems]);
+  const handleSelect = ({ repo, issue }: TrackedRepoIssueItem) =>
+    setSelectedIssue({ repoId: repo.id, issueNumber: issue.number });
+  const handleMove = async (item: TrackedRepoIssueItem, to: KanbanColumn) => {
+    const { repo, issue } = item;
+    const from = getKanbanColumn(issue.state, getMeta(repo.id, issue.number));
+    if (from === to) return;
+    if (from === 'done' || to === 'done') {
+      const result = await changeIssueState(
+        { item, beginAction, endAction, onIssueUpdated: handleIssueUpdated },
+        to === 'done' ? 'closed' : 'open'
+      );
+      setMoveError(result.error);
+      if (!result.issue) return;
+    }
+    updateMeta(repo.id, issue.number, { inProgress: to === 'doing' });
+  };
 
   return (
     <div className="h-full overflow-auto bg-surface-app">
@@ -154,12 +192,67 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
           </p>
         ) : filteredItems.length > 0 ? (
           <>
-            <p className="text-caption text-[var(--text-muted)]" aria-live="polite">{filteredItems.length} 件のIssue</p>
-            <IssueList
-              items={filteredItems}
-              getMeta={getMeta}
-              onSelect={({ repo, issue }) => setSelectedIssue({ repoId: repo.id, issueNumber: issue.number })}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-inline-sm">
+              <p className="text-caption text-[var(--text-muted)]" aria-live="polite">{filteredItems.length} 件のIssue</p>
+              <div
+                role="group"
+                aria-label="Issueの表示モード"
+                className="inline-flex items-center gap-inline-xs rounded-lg border border-[var(--border-subtle)] bg-surface-secondary p-inline-xs"
+              >
+                {VIEW_OPTIONS.map((option) => {
+                  const selected = option.value === viewMode;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setViewMode(option.value)}
+                      className={`rounded-md px-inset-md py-inset-xs text-body-sm font-semibold transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] ${
+                        selected
+                          ? 'border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)]'
+                          : 'border border-transparent text-[var(--text-secondary)] hover:bg-surface-hover'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {viewMode === 'kanban' ? (
+              <>
+                <p className="text-caption text-[var(--text-muted)]">
+                  カードはドラッグかボタンで移動できます。「完了」への出し入れはGitHubでIssueを閉じる / 再オープンします（確認あり）。カンバンでは状態の絞り込みは使いません。
+                </p>
+                {moveError && (
+                  <p role="alert" className="rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] p-inset-md text-body-sm text-[var(--accent-red-emphasis)]">
+                    {moveError}
+                  </p>
+                )}
+                <IssueKanban items={filteredItems} getMeta={getMeta} onSelect={handleSelect} onMove={(item, to) => void handleMove(item, to)} />
+              </>
+            ) : viewMode === 'list' ? (
+              <IssueList items={filteredItems} getMeta={getMeta} onSelect={handleSelect} />
+            ) : (
+              repoGroups.map(({ repo, items: groupItems }) => {
+                const repoName = repo.nameWithOwner;
+                return (
+                  <section key={repo.id} aria-label={`${repoName} のIssue`} className="flex flex-col gap-stack-sm">
+                    <h2 className="flex items-baseline gap-inline-sm text-body font-semibold text-[var(--text-primary)]">
+                      <span className="break-all">{repoName}</span>
+                      <span className="text-caption font-normal text-[var(--text-muted)]">{groupItems.length} 件</span>
+                    </h2>
+                    <IssueList
+                      items={groupItems}
+                      getMeta={getMeta}
+                      onSelect={handleSelect}
+                      label={`${repoName} のIssue一覧`}
+                      showRepoName={false}
+                    />
+                  </section>
+                );
+              })
+            )}
           </>
         ) : items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border-subtle)] bg-surface-primary p-inset-xl text-center text-body-sm text-[var(--text-secondary)]">
