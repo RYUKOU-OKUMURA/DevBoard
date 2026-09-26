@@ -629,6 +629,29 @@ describe('IssuesHome', () => {
     expect(screen.getByRole('button', { name: 'alice/repo-b #3: Issue 3 の詳細を開く' })).toBeTruthy();
   });
 
+  it('groups issues by repository when the repository view is selected', async () => {
+    const repoA = createRepo('repo-a');
+    const repoB = createRepo('repo-b');
+    setTracked('alice-id', repoA.id);
+    setTracked('alice-id', repoB.id);
+    mockFetchIssuesPage.mockImplementation(async (_owner: string, name: string) => ({
+      issues: name === 'repo-a' ? [createIssue(1), createIssue(2)] : [createIssue(3)],
+      rawCount: name === 'repo-a' ? 2 : 1,
+    }));
+
+    render(<IssuesHome accountId="alice-id" repos={[repoA, repoB]} onOpenRepositories={() => undefined} />);
+    await screen.findByRole('button', { name: 'alice/repo-a #1: Issue 1 の詳細を開く' });
+    expect(screen.getByRole('button', { name: 'リスト' }).getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'リポジトリ別' }));
+
+    const groupA = screen.getByRole('region', { name: 'alice/repo-a のIssue' });
+    const groupB = screen.getByRole('region', { name: 'alice/repo-b のIssue' });
+    expect(within(groupA).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(groupA).getByText('2 件')).toBeTruthy();
+    expect(within(groupB).getByRole('button', { name: 'alice/repo-b #3: Issue 3 の詳細を開く' })).toBeTruthy();
+  });
+
   it('shows priority and due status, filters by priority, and does not emphasize closed deadlines', async () => {
     vi.stubEnv('TZ', 'Asia/Tokyo');
     vi.useFakeTimers();

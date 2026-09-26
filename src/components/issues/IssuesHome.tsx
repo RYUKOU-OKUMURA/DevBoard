@@ -31,11 +31,19 @@ const INITIAL_FILTERS: IssueFilters = {
   priority: 'all',
 };
 
+type IssueViewMode = 'list' | 'repo';
+
+const VIEW_OPTIONS: { value: IssueViewMode; label: string }[] = [
+  { value: 'list', label: 'リスト' },
+  { value: 'repo', label: 'リポジトリ別' },
+];
+
 export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeProps) {
   const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, replaceIssue, trackedCount } =
     useTrackedRepoIssues(accountId, repos);
   const { getMeta, updateMeta, saveError: localMetaSaveError } = useIssueLocalMeta(accountId);
   const [filters, setFilters] = useState<IssueFilters>(INITIAL_FILTERS);
+  const [viewMode, setViewMode] = useState<IssueViewMode>('list');
   const [selectedIssue, setSelectedIssue] = useState<{ repoId: string; issueNumber: number } | null>(null);
   const selectedItem = selectedIssue
     ? items.find(({ repo, issue }) => repo.id === selectedIssue.repoId && issue.number === selectedIssue.issueNumber)
@@ -88,6 +96,17 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
       (a, b) => new Date(b.issue.updated_at).getTime() - new Date(a.issue.updated_at).getTime()
     );
   }, [filters, getMeta, items]);
+  const repoGroups = useMemo(() => {
+    const groups = new Map<string, { repo: TrackedRepoIssueItem['repo']; items: TrackedRepoIssueItem[] }>();
+    for (const item of filteredItems) {
+      const group = groups.get(item.repo.id);
+      if (group) group.items.push(item);
+      else groups.set(item.repo.id, { repo: item.repo, items: [item] });
+    }
+    return Array.from(groups.values());
+  }, [filteredItems]);
+  const handleSelect = ({ repo, issue }: TrackedRepoIssueItem) =>
+    setSelectedIssue({ repoId: repo.id, issueNumber: issue.number });
 
   return (
     <div className="h-full overflow-auto bg-surface-app">
@@ -154,12 +173,55 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
           </p>
         ) : filteredItems.length > 0 ? (
           <>
-            <p className="text-caption text-[var(--text-muted)]" aria-live="polite">{filteredItems.length} 件のIssue</p>
-            <IssueList
-              items={filteredItems}
-              getMeta={getMeta}
-              onSelect={({ repo, issue }) => setSelectedIssue({ repoId: repo.id, issueNumber: issue.number })}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-inline-sm">
+              <p className="text-caption text-[var(--text-muted)]" aria-live="polite">{filteredItems.length} 件のIssue</p>
+              <div
+                role="group"
+                aria-label="Issueの表示モード"
+                className="inline-flex items-center gap-inline-xs rounded-lg border border-[var(--border-subtle)] bg-surface-secondary p-inline-xs"
+              >
+                {VIEW_OPTIONS.map((option) => {
+                  const selected = option.value === viewMode;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setViewMode(option.value)}
+                      className={`rounded-md px-inset-md py-inset-xs text-body-sm font-semibold transition-colors motion-reduce:transition-none ${focusRing.default} focus-visible:ring-[var(--accent-green)] ${
+                        selected
+                          ? 'border border-[var(--accent-green-border)] bg-[var(--accent-green-muted)] text-[var(--accent-green-emphasis)]'
+                          : 'border border-transparent text-[var(--text-secondary)] hover:bg-surface-hover'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {viewMode === 'list' ? (
+              <IssueList items={filteredItems} getMeta={getMeta} onSelect={handleSelect} />
+            ) : (
+              repoGroups.map(({ repo, items: groupItems }) => {
+                const repoName = repo.nameWithOwner;
+                return (
+                  <section key={repo.id} aria-label={`${repoName} のIssue`} className="flex flex-col gap-stack-sm">
+                    <h2 className="flex items-baseline gap-inline-sm text-body font-semibold text-[var(--text-primary)]">
+                      <span className="break-all">{repoName}</span>
+                      <span className="text-caption font-normal text-[var(--text-muted)]">{groupItems.length} 件</span>
+                    </h2>
+                    <IssueList
+                      items={groupItems}
+                      getMeta={getMeta}
+                      onSelect={handleSelect}
+                      label={`${repoName} のIssue一覧`}
+                      showRepoName={false}
+                    />
+                  </section>
+                );
+              })
+            )}
           </>
         ) : items.length === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border-subtle)] bg-surface-primary p-inset-xl text-center text-body-sm text-[var(--text-secondary)]">
