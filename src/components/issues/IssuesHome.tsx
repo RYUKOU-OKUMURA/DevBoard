@@ -19,6 +19,10 @@ import { IssueFilterBar, type IssueFilters } from './IssueFilterBar';
 import { IssueKanban } from './IssueKanban';
 import { getKanbanColumn, type KanbanColumn } from './kanbanColumn';
 import { IssueList } from './IssueList';
+import { LegacyTodoSection } from './LegacyTodoSection';
+import { useLegacyTodoConversion } from '../../hooks/useLegacyTodoConversion';
+import { resolveRepositoryMeta } from '../repositories/repositoryProgressModel';
+import { getRepositoryMetaMap } from '../../storage/repositoryMetaStorage';
 
 interface IssuesHomeProps {
   accountId: string;
@@ -45,7 +49,7 @@ const VIEW_OPTIONS: { value: IssueViewMode; label: string }[] = [
 export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeProps) {
   const { items, errorsByRepoId, isLoading, lastFetchedAt, reload, replaceIssue, trackedCount } =
     useTrackedRepoIssues(accountId, repos);
-  const { getMeta, updateMeta, saveError: localMetaSaveError } = useIssueLocalMeta(accountId);
+  const { getMeta, updateMeta, reloadMeta, saveError: localMetaSaveError } = useIssueLocalMeta(accountId);
   const [filters, setFilters] = useState<IssueFilters>(INITIAL_FILTERS);
   const [viewMode, setViewMode] = useState<IssueViewMode>('list');
   const [moveError, setMoveError] = useState<string | null>(null);
@@ -72,6 +76,26 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
   ) => {
     return replaceIssue(repoId, issueId, update, fallbackIssue);
   }, [replaceIssue]);
+  const handleIssueUpsert = useCallback((repoId: string, issue: TrackedRepoIssueItem['issue']) => {
+    reloadMeta();
+    replaceIssue(repoId, issue.id, issue, issue);
+  }, [reloadMeta, replaceIssue]);
+  const isRepoTracked = useCallback((repoId: string) => {
+    const meta = getRepositoryMetaMap(accountId)[repoId] ?? null;
+    return resolveRepositoryMeta(repoId, meta).tracked;
+  }, [accountId]);
+  const {
+    unlinkedTodos,
+    isConverting,
+    errorsByTodoId,
+    convertedByTodoId,
+    successNotice,
+    convertTodo,
+    getRepo,
+  } = useLegacyTodoConversion(accountId, repos, {
+    isRepoTracked,
+    onIssueUpsert: handleIssueUpsert,
+  });
 
   const repoOptions = useMemo(() => {
     const byId = new Map(items.map(({ repo }) => [repo.id, repo.nameWithOwner]));
@@ -163,6 +187,16 @@ export function IssuesHome({ accountId, repos, onOpenRepositories }: IssuesHomeP
             />
           </div>
         </header>
+
+        <LegacyTodoSection
+          todos={unlinkedTodos}
+          isConverting={isConverting}
+          errorsByTodoId={errorsByTodoId}
+          convertedByTodoId={convertedByTodoId}
+          successNotice={successNotice}
+          getRepoName={(repoId) => getRepo(repoId)?.nameWithOwner}
+          onConvert={(todo) => void convertTodo(todo)}
+        />
 
         {Object.entries(errorsByRepoId).length > 0 && (
           <section role="alert" aria-label="リポジトリごとの取得エラー" className="rounded-lg border border-[var(--accent-red-border)] bg-[var(--accent-red-muted)] p-inset-md text-body-sm text-[var(--accent-red-emphasis)]">

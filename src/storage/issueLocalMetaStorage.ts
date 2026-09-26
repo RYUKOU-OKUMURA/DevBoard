@@ -146,7 +146,7 @@ function isLegacyTodo(value: unknown): value is LegacyTodo {
     typeof todo.updatedAt === 'string' && !Number.isNaN(Date.parse(todo.updatedAt));
 }
 
-function readLegacyDueDate(value: unknown): string | undefined {
+export function readLegacyDueDate(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const dateOnly = value.slice(0, 10);
   if (!isDateOnly(dateOnly)) return undefined;

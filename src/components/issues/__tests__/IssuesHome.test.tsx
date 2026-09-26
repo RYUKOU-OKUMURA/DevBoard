@@ -6,7 +6,11 @@ import type { GitHubIssue } from '../../../api/issues';
 import type { Repo } from '../../../types';
 import { createDefaultRepositoryMeta, getRepositoryMetaMap, saveRepositoryMetaMap } from '../../../storage/repositoryMetaStorage';
 import { getIssueLocalMeta, updateIssueLocalMeta } from '../../../storage/issueLocalMetaStorage';
+import * as storageUtils from '../../../utils/storage';
 import { clearTrackedRepoIssuesCache } from '../../../hooks/useTrackedRepoIssues';
+import type { Todo, TodoPriority, TodoStatus } from '../../../types/todo';
+import { createTodo, getTodoById, updateTodo } from '../../../utils/todoStorage';
+import { getLegacyTodoConversionMap } from '../../../storage/legacyTodoConvertedStorage';
 import { IssuesHome } from '../IssuesHome';
 
 const mockFetchIssuesPage = vi.hoisted(() => vi.fn());
@@ -14,6 +18,7 @@ const mockFetchIssue = vi.hoisted(() => vi.fn());
 const mockFetchRepoLabels = vi.hoisted(() => vi.fn());
 const mockUpdateIssue = vi.hoisted(() => vi.fn());
 const mockAddIssueComment = vi.hoisted(() => vi.fn());
+const mockCreateIssue = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../api/issues', () => ({
   fetchIssue: (...args: unknown[]) => mockFetchIssue(...args),
@@ -21,6 +26,7 @@ vi.mock('../../../api/issues', () => ({
   fetchRepoLabels: (...args: unknown[]) => mockFetchRepoLabels(...args),
   updateIssue: (...args: unknown[]) => mockUpdateIssue(...args),
   addIssueComment: (...args: unknown[]) => mockAddIssueComment(...args),
+  createIssue: (...args: unknown[]) => mockCreateIssue(...args),
 }));
 
 function createRepo(id: string, nameWithOwner = `alice/${id}`): Repo {
@@ -59,6 +65,30 @@ function setTracked(accountId: string, repoId: string, tracked = true): void {
   saveRepositoryMetaMap(accountId, { ...getRepositoryMetaMap(accountId), [repoId]: { ...meta, tracked } });
 }
 
+function seedLegacyTodo(
+  accountId: string,
+  data: {
+    title: string;
+    repoId: string;
+    description?: string;
+    dueDate?: string;
+    priority?: TodoPriority;
+    status?: TodoStatus;
+  }
+): Todo {
+  const todo = createTodo(accountId, {
+    title: data.title,
+    repoId: data.repoId,
+    status: data.status ?? 'todo',
+    priority: data.priority ?? 'medium',
+    labels: [],
+    syncEnabled: false,
+    description: data.description,
+    dueDate: data.dueDate,
+  });
+  return todo;
+}
+
 describe('IssuesHome', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -68,6 +98,7 @@ describe('IssuesHome', () => {
     mockFetchRepoLabels.mockReset();
     mockUpdateIssue.mockReset();
     mockAddIssueComment.mockReset();
+    mockCreateIssue.mockReset();
     mockFetchIssuesPage.mockResolvedValue({ issues: [], rawCount: 0 });
     mockFetchIssue.mockResolvedValue(createIssue(12));
     mockFetchRepoLabels.mockResolvedValue([]);
@@ -735,5 +766,287 @@ describe('IssuesHome', () => {
     render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
 
     expect(await screen.findByText('対象リポジトリにIssueはありません。')).toBeTruthy();
+  });
+
+  describe('legacy unlinked todos', () => {
+    it('lists only todos without issueNumber in the legacy section', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', { title: '未リンクのTODO', repoId: repo.id });
+      const linked = seedLegacyTodo('alice-id', { title: 'リンク済みTODO', repoId: repo.id });
+      updateTodo('alice-id', linked.id, { issueNumber: 12, issueUrl: 'https://github.com/alice/repo-a/issues/12' });
+      mockFetchIssuesPage.mockResolvedValue({ issues: [createIssue(12)], rawCount: 1 });
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+
+      const section = await screen.findByRole('region', { name: 'Issueになっていない旧TODO' });
+      expect(within(section).getByText('未リンクのTODO')).toBeTruthy();
+      expect(within(section).queryByText('リンク済みTODO')).toBeNull();
+    });
+
+    it('does not call createIssue when conversion is cancelled', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', { title: 'キャンセル対象', repoId: repo.id });
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+
+      expect(confirmSpy).toHaveBeenCalledTimes(1);
+      expect(mockCreateIssue).not.toHaveBeenCalled();
+    });
+
+    it('creates a GitHub issue, links the todo, migrates local meta, and shows the new issue', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      const todo = seedLegacyTodo('alice-id', {
+        title: '変換するTODO',
+        repoId: repo.id,
+        description: 'メモ本文',
+        priority: 'high',
+        dueDate: '2026-12-31T09:00:00.000Z',
+      });
+      const created = createIssue(42, { title: '変換するTODO', body: 'メモ本文' });
+      mockCreateIssue.mockResolvedValue(created);
+      mockFetchIssuesPage.mockResolvedValue({ issues: [], rawCount: 0 });
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+
+      await waitFor(() => expect(mockCreateIssue).toHaveBeenCalledWith('alice', 'repo-a', {
+        title: '変換するTODO',
+        body: 'メモ本文',
+      }));
+      expect(getTodoById('alice-id', todo.id)).toMatchObject({
+        issueNumber: 42,
+        issueUrl: created.html_url,
+      });
+      expect(getIssueLocalMeta('alice-id', repo.id, 42)).toMatchObject({
+        priority: 'high',
+        dueDate: '2026-12-31',
+        note: 'メモ本文',
+      });
+      await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Issue #42 を作成しました'));
+      const card = await screen.findByRole('button', { name: 'alice/repo-a #42: 変換するTODO の詳細を開く' });
+      expect(card.textContent).toContain('優先度: 高');
+    });
+
+    it('keeps the todo unlinked and shows an error when createIssue fails', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', { title: '失敗するTODO', repoId: repo.id });
+      mockCreateIssue.mockRejectedValue(new Error('GitHub API error status 500'));
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      const section = await screen.findByRole('region', { name: 'Issueになっていない旧TODO' });
+      fireEvent.click(within(section).getByRole('button', { name: 'GitHub Issueにする' }));
+
+      expect(await within(section).findByRole('alert')).toBeTruthy();
+      expect(within(section).getByText('失敗するTODO')).toBeTruthy();
+    });
+
+    it('disables conversion when the todo repository is missing from repos', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', { title: '見えないリポジトリ', repoId: 'missing-repo' });
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      const button = await screen.findByRole('button', { name: 'GitHub Issueにする' });
+      expect((button as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('ignores a stale todo after issueNumber is written before confirm', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      const todo = seedLegacyTodo('alice-id', { title: '途中でリンク', repoId: repo.id });
+      const confirmSpy = vi.spyOn(window, 'confirm').mockImplementation(() => {
+        updateTodo('alice-id', todo.id, {
+          issueNumber: 99,
+          issueUrl: 'https://github.com/alice/repo-a/issues/99',
+        });
+        return true;
+      });
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+
+      await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1));
+      expect(mockCreateIssue).not.toHaveBeenCalled();
+    });
+
+    it('does not call createIssue again after remount when todo save failed but conversion was recorded', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      const todo = seedLegacyTodo('alice-id', { title: '記録だけ成功', repoId: repo.id });
+      const created = createIssue(55, { title: '記録だけ成功' });
+      mockCreateIssue.mockResolvedValue(created);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const originalSetStorageItem = storageUtils.setStorageItem;
+      vi.spyOn(storageUtils, 'setStorageItem').mockImplementation((key, value) => {
+        if (key === 'github-dashboard-todos:alice-id' && JSON.stringify(value).includes('"issueNumber":55')) {
+          return false;
+        }
+        return originalSetStorageItem(key, value);
+      });
+
+      const view = render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+      await waitFor(() => expect(mockCreateIssue).toHaveBeenCalledTimes(1));
+      expect(getLegacyTodoConversionMap('alice-id')[todo.id]).toBe(55);
+
+      view.unmount();
+      cleanup();
+      clearTrackedRepoIssuesCache();
+      mockCreateIssue.mockClear();
+      mockFetchIssuesPage.mockResolvedValue({ issues: [], rawCount: 0 });
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      const button = await screen.findByRole('button', { name: 'GitHub Issueにする' });
+      expect((button as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.click(button);
+      expect(mockCreateIssue).not.toHaveBeenCalled();
+    });
+
+    it('does not pollute tracked issue cache when converting an untracked repository todo', async () => {
+      const trackedRepo = createRepo('repo-a');
+      const untrackedRepo = createRepo('repo-b', 'alice/repo-b');
+      setTracked('alice-id', trackedRepo.id);
+      seedLegacyTodo('alice-id', { title: '未追跡リポのTODO', repoId: untrackedRepo.id });
+      const created = createIssue(77, { title: '未追跡リポのTODO', html_url: 'https://github.com/alice/repo-b/issues/77' });
+      mockCreateIssue.mockResolvedValue(created);
+      mockFetchIssuesPage.mockImplementation(async (owner, repoName) => {
+        if (owner === 'alice' && repoName === 'repo-a') {
+          return { issues: [createIssue(1)], rawCount: 1 };
+        }
+        if (owner === 'alice' && repoName === 'repo-b') {
+          return { issues: [createIssue(77), createIssue(78)], rawCount: 2 };
+        }
+        return { issues: [], rawCount: 0 };
+      });
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      const props = {
+        accountId: 'alice-id' as const,
+        repos: [trackedRepo, untrackedRepo],
+        onOpenRepositories: () => undefined,
+      };
+      const view = render(<IssuesHome {...props} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+
+      const status = await screen.findByRole('status');
+      expect(status.textContent).toContain('Issue #77 を作成しました');
+      expect(screen.getByText('リポジトリを進捗管理に追加すると一覧に出ます。')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'alice/repo-b #77: 未追跡リポのTODO の詳細を開く' })).toBeNull();
+
+      view.unmount();
+      cleanup();
+      clearTrackedRepoIssuesCache();
+      setTracked('alice-id', untrackedRepo.id);
+      render(<IssuesHome {...props} />);
+      expect(await screen.findByRole('button', { name: 'alice/repo-b #78: Issue 78 の詳細を開く' })).toBeTruthy();
+    });
+
+    it('allows only one in-flight conversion when the button is clicked twice', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', { title: '連打防止', repoId: repo.id });
+      let resolveCreate!: (issue: GitHubIssue) => void;
+      mockCreateIssue.mockImplementation(
+        () => new Promise<GitHubIssue>((resolve) => {
+          resolveCreate = resolve;
+        })
+      );
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      const button = await screen.findByRole('button', { name: 'GitHub Issueにする' });
+      fireEvent.click(button);
+      fireEvent.click(button);
+
+      expect(confirmSpy).toHaveBeenCalledTimes(1);
+      expect(mockCreateIssue).toHaveBeenCalledTimes(1);
+
+      resolveCreate(createIssue(88, { title: '連打防止' }));
+      await waitFor(() => expect(screen.getByRole('status').textContent).toContain('Issue #88'));
+    });
+
+    it('migrates local meta when dueDate is date-only', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', {
+        title: '日付のみ期限',
+        repoId: repo.id,
+        dueDate: '2026-12-31',
+        priority: 'low',
+      });
+      mockCreateIssue.mockResolvedValue(createIssue(91, { title: '日付のみ期限' }));
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+
+      await waitFor(() => expect(getIssueLocalMeta('alice-id', repo.id, 91)).toMatchObject({
+        dueDate: '2026-12-31',
+        priority: 'low',
+      }));
+    });
+
+    it('shows a done badge on completed legacy todos', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', { title: '完了済みTODO', repoId: repo.id, status: 'done' });
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      const section = await screen.findByRole('region', { name: 'Issueになっていない旧TODO' });
+      expect(within(section).getByText('旧TODOでは完了')).toBeTruthy();
+    });
+
+    it('persists conversion for the starting account when accountId changes during createIssue', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      const todo = seedLegacyTodo('alice-id', { title: 'アカウント切替', repoId: repo.id });
+      let resolveCreate!: (issue: GitHubIssue) => void;
+      mockCreateIssue.mockImplementation(
+        () => new Promise<GitHubIssue>((resolve) => {
+          resolveCreate = resolve;
+        })
+      );
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      const shared = { repos: [repo], onOpenRepositories: () => undefined };
+      const { rerender } = render(<IssuesHome accountId="alice-id" {...shared} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+
+      rerender(<IssuesHome accountId="bob-id" {...shared} />);
+      resolveCreate(createIssue(66, { title: 'アカウント切替' }));
+
+      await waitFor(() => expect(getLegacyTodoConversionMap('alice-id')[todo.id]).toBe(66));
+      expect(getTodoById('alice-id', todo.id)?.issueNumber).toBe(66);
+    });
+
+    it('shows a meta migration warning inside the success notice when local meta save fails', async () => {
+      const repo = createRepo('repo-a');
+      setTracked('alice-id', repo.id);
+      seedLegacyTodo('alice-id', {
+        title: 'メタ失敗',
+        repoId: repo.id,
+        description: 'メモ',
+        priority: 'high',
+      });
+      mockCreateIssue.mockResolvedValue(createIssue(92, { title: 'メタ失敗', body: 'メモ' }));
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const metaModule = await import('../../../storage/issueLocalMetaStorage');
+      vi.spyOn(metaModule, 'updateIssueLocalMeta').mockReturnValue(false);
+
+      render(<IssuesHome accountId="alice-id" repos={[repo]} onOpenRepositories={() => undefined} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'GitHub Issueにする' }));
+
+      const status = await screen.findByRole('status');
+      expect(status.textContent).toContain('Issue #92 を作成しました');
+      expect(status.textContent).toContain('優先度・期限・メモを引き継げませんでした');
+    });
   });
 });

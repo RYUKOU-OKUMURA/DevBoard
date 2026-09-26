@@ -45,5 +45,9 @@ export function useIssueLocalMeta(accountId: string) {
     return true;
   }, [accountId]);
 
-  return { metaAccountId: state.accountId, saveError: state.saveError, getMeta, updateMeta };
+  const reloadMeta = useCallback(() => {
+    setState((current) => ({ ...current, accountId, metaByIssueKey: getIssueLocalMetaMap(accountId) }));
+  }, [accountId]);
+
+  return { metaAccountId: state.accountId, saveError: state.saveError, getMeta, updateMeta, reloadMeta };
 }
