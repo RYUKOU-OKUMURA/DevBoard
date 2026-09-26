@@ -11,7 +11,7 @@ function parseRepoNameWithOwner(nameWithOwner: string): { owner: string; repo: s
   return { owner, repo };
 }
 
-function toJapaneseIssueActionError(operation: string, error: unknown): string {
+export function toJapaneseIssueActionError(operation: string, error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   const errorName = error instanceof Error ? error.name : '';
   const status = message.match(/status\s+(\d{3})/i)?.[1];
